@@ -1,8 +1,9 @@
 'use client';
 
-import { doc, addDoc, updateDoc, deleteDoc, collection, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, addDoc, updateDoc, deleteDoc, collection, serverTimestamp } from "firebase/firestore";
 import { firebaseFirestore as db } from '@/firebase/config';
 import type { fee as Fee } from '@/lib/data-types';
+import { resolveAcademicYearForWrite } from '@/lib/academic-year-utils';
 
 const COLLECTION_NAME = 'frais_scolarite';
 
@@ -15,10 +16,15 @@ export const FeesService = {
      */
     createFee: async (schoolId: string, data: Omit<Fee, 'id'>) => {
         try {
+            const schoolSnap = await getDoc(doc(db, `ecoles/${schoolId}`));
+            const academicYear = data.academicYear ?? resolveAcademicYearForWrite({
+                schoolCurrentYear: schoolSnap.data()?.currentAcademicYear,
+            });
             const collectionRef = collection(db, `ecoles/${schoolId}/${COLLECTION_NAME}`);
             const docRef = await addDoc(collectionRef, {
                 ...data,
                 schoolId,
+                academicYear,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             });

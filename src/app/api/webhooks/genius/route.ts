@@ -1,91 +1,82 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { processSubscriptionPayment, processTuitionPayment } from '@/lib/payment-processing';
-import { getAdminDb } from '@/firebase/admin';
-import crypto from 'crypto';
+import { parsePaymentReference } from '@/lib/payment-reference';
+import { verifyTimestampedHmac } from '@/lib/webhook-verify';
+import { claimWebhookEvent } from '@/lib/webhook-idempotence';
+
+const SUCCESS_STATUSES = new Set(['success', 'completed', 'paid']);
+const FAILURE_STATUSES = new Set(['failed', 'cancelled', 'canceled', 'expired', 'declined']);
+const REFUND_STATUSES = new Set(['refunded']);
 
 export async function POST(req: NextRequest) {
     try {
+        const rawBody = await req.text();
         const signature = req.headers.get('x-webhook-signature');
         const timestamp = req.headers.get('x-webhook-timestamp');
-        const eventType = req.headers.get('x-webhook-event');
-        const rawBody = await req.text();
-        const secret = process.env.GENIUS_PAY_API_SECRET || process.env.GENIUS_PAY_CLIENT_SECRET;
+        const event = req.headers.get('x-webhook-event') || 'unknown';
 
-        // 1. Vérification de la signature
-        if (signature && timestamp && secret) {
-            const expected = crypto
-                .createHmac('sha256', secret)
-                .update(`${timestamp}.${rawBody}`)
-                .digest('hex');
-            
-            // Timing-safe equal (to avoid timing attacks)
-            if (expected !== signature) {
-                console.error("[Genius Webhook] Signature invalide");
-                return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
-            }
-        } else if (process.env.NODE_ENV === 'production') {
-            console.warn("[Genius Webhook] Signature ou secret manquant en production");
-            // return NextResponse.json({ error: 'Missing signature headers' }, { status: 400 }); // Décommenter pour forcer
+        const sig = verifyTimestampedHmac(
+            rawBody,
+            signature,
+            timestamp,
+            process.env.GENIUS_WEBHOOK_SECRET,
+        );
+        if (!sig.valid) {
+            console.error(`[Genius Webhook] Signature invalide: ${sig.reason}`);
+            return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
         }
 
         const body = JSON.parse(rawBody);
-        const { transaction_id, order_id, status, id } = body;
-        const eventId = id || transaction_id;
+        const { id: eventId, transaction_id, reference, order_id, status, amount } = body;
+        const normalizedStatus = String(status ?? '').toLowerCase();
+        console.log(`[Genius Webhook] event=${event} id=${eventId} txn=${transaction_id} order=${order_id} status=${status}`);
 
-        console.log(`[Genius Webhook] Notification reçue - Event: ${eventType}, EventID: ${eventId}, Order: ${order_id}, Status: ${status}`);
-
-        // 3. Gestion de l'idempotence
-        if (eventId) {
-            const db = getAdminDb();
-            const webhookRef = db.collection('webhook_events').doc(`genius_${eventId}`);
-            const webhookDoc = await webhookRef.get();
-
-            if (webhookDoc.exists) {
-                console.log(`[Genius Webhook] Événement ${eventId} déjà traité.`);
-                return NextResponse.json({ received: true, message: 'Already processed' });
-            }
-
-            // Marquer comme en cours de traitement
-            await webhookRef.set({
-                eventId,
-                provider: 'genius_pay',
-                status,
-                order_id,
-                receivedAt: new Date().toISOString()
-            });
+        const idempotenceKey = String(eventId ?? transaction_id ?? reference ?? '').trim();
+        if (!idempotenceKey) {
+            console.error('[Genius Webhook] Payload sans identifiant exploitable — refusé.');
+            return NextResponse.json({ error: 'Missing event identifier' }, { status: 400 });
+        }
+        const isNew = await claimWebhookEvent('genius', idempotenceKey, {
+            rawBody,
+            status: normalizedStatus,
+            eventType: event,
+        });
+        if (!isNew) {
+            return NextResponse.json({ received: true, duplicate: true });
         }
 
-        if (status === 'SUCCESS' || status === 'COMPLETED') {
-            // format: type__schoolId__studentIdOrDuration__amount
-            const parts = order_id.split('__');
-            const type = parts[0];
+        if (FAILURE_STATUSES.has(normalizedStatus)) {
+            console.warn(`[Genius Webhook] Paiement échoué/annulé pour order=${order_id} status=${status}.`);
+            return NextResponse.json({ received: true, ignored: true, reason: normalizedStatus });
+        }
 
-            // 2. Traitement en "arrière-plan" (Next.js serverless ne garantit pas la continuité si on n'await pas,
-            // mais les fonctions Firebase Firestore sont généralement très rapides < 5s)
-            const processPayment = async () => {
-                if (type === 'subscription') {
-                    const schoolId = parts[1];
-                    const duration = parseInt(parts[2], 10) || 1;
-                    
-                    await processSubscriptionPayment(schoolId, 'Abonnement', duration, 'Genius Pay');
-                    console.log(`[Genius Webhook] Abonnement traité pour l'école ${schoolId}`);
+        if (REFUND_STATUSES.has(normalizedStatus)) {
+            console.warn(`[Genius Webhook] Remboursement reçu pour order=${order_id} — non géré automatiquement.`);
+            return NextResponse.json({ received: true, ignored: true, reason: 'refund_manual_review' });
+        }
 
-                } else if (type === 'tuition') {
-                    const schoolId = parts[1];
-                    const studentId = parts[2];
-                    const amount = parseFloat(parts[3]);
+        if (!SUCCESS_STATUSES.has(normalizedStatus)) {
+            // pending / processing — on accuse réception et on attend l'événement final.
+            return NextResponse.json({ received: true, awaiting: normalizedStatus || 'unknown' });
+        }
 
-                    await processTuitionPayment(schoolId, studentId, amount, 'Genius Pay');
-                    console.log(`[Genius Webhook] Scolarité traitée pour l'élève ${studentId}`);
-                }
-            };
+        const parsed = parsePaymentReference(order_id);
+        if (!parsed) {
+            console.warn(`[Genius Webhook] order_id invalide: ${order_id}`);
+            return NextResponse.json({ error: 'Invalid order_id format' }, { status: 400 });
+        }
 
-            await processPayment();
+        const paidAmount = typeof amount === 'number' ? amount : parsed.amount;
+
+        if (parsed.type === 'subscription') {
+            await processSubscriptionPayment(parsed.schoolId, parsed.planName, parsed.durationMonths, 'Genius Pay', paidAmount, 'XOF');
+        } else {
+            await processTuitionPayment(parsed.schoolId, parsed.studentId, paidAmount, 'Genius Pay');
         }
 
         return NextResponse.json({ received: true });
     } catch (error) {
-        console.error("[Genius Webhook] Erreur de traitement:", error);
-        return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 });
+        console.error('[Genius Webhook] Erreur de traitement:', error);
+        return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
     }
 }

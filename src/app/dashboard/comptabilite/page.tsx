@@ -64,6 +64,8 @@ import { TransactionForm } from "@/components/comptabilite/transaction-form";
 import { StatCard } from "@/components/ui/stat-card";
 import { AccountingReportsService } from "@/services/accounting-reports-service";
 import { formatCurrency } from "@/lib/currency-utils";
+import { useAcademicYear } from "@/providers/academic-year-provider";
+import { filterByAcademicYear } from "@/lib/academic-year-utils";
 
 
 
@@ -82,9 +84,13 @@ export default function AccountingPage() {
   const studentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), where('status', '==', 'Actif')) : null, [firestore, schoolId]);
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
 
-  const transactions = useMemo(() =>
-    (transactionsData?.map(d => ({ id: d.id, ...d.data() } as AccountingTransaction & { id: string })) || []).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-    [transactionsData]);
+  const { selectedYear, currentYear } = useAcademicYear();
+
+  const transactions = useMemo(() => {
+    const all = (transactionsData?.map(d => ({ id: d.id, ...d.data() } as AccountingTransaction & { id: string })) || [])
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return filterByAcademicYear(all, selectedYear, currentYear);
+  }, [transactionsData, selectedYear, currentYear]);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);

@@ -16,6 +16,8 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import type { accountingTransaction as AccountingTransaction } from '@/lib/data-types';
 import { getCurrencySymbol } from '@/lib/currency-utils';
+import { useSchoolData } from '@/hooks/use-school-data';
+import { resolveAcademicYearForWrite } from '@/lib/academic-year-utils';
 
 const transactionSchema = z.object({
     description: z.string().min(1, { message: "La description est requise." }),
@@ -42,6 +44,8 @@ export function TransactionForm({ schoolId, transaction: editingTransaction, onS
         Revenu: ['Scolarité', 'Dons', 'Événements'],
         Dépense: ['Salaires', 'Fournitures', 'Maintenance', 'Services Publics', 'Marketing']
     });
+
+    const { schoolData } = useSchoolData();
 
     const [todayDateString, setTodayDateString] = useState('');
     useEffect(() => {
@@ -84,10 +88,15 @@ export function TransactionForm({ schoolId, transaction: editingTransaction, onS
 
     const handleTransactionSubmit = async (values: TransactionFormValues) => {
         setIsSubmitting(true);
+        const formattedDate = format(new Date(values.date), "yyyy-MM-dd");
         const transactionData = {
             ...values,
             schoolId,
-            date: format(new Date(values.date), "yyyy-MM-dd"),
+            date: formattedDate,
+            academicYear: resolveAcademicYearForWrite({
+                schoolCurrentYear: (schoolData as any)?.currentAcademicYear,
+                docDate: formattedDate,
+            }),
         };
 
         const collectionRef = collection(firestore, `ecoles/${schoolId}/comptabilite`);

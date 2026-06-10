@@ -38,6 +38,10 @@ import {
   History,
   Scroll,
   Package,
+  Bell,
+  Link as LinkIcon,
+  Database,
+  ReceiptText,
 } from 'lucide-react';
 import type { UserProfile } from '@/lib/data-types';
 
@@ -142,6 +146,21 @@ export const NAV_LINKS: NavGroup[] = [
       { href: '/dashboard/admin/roles', label: 'Gestion des Rôles', icon: Shield, permission: 'manageSettings' },
     ]
   }
+];
+
+// Sous-liens de la page Paramètres — utilisés à la fois par la sidebar
+// principale (sous Paramètres) et par l'aside in-page (parametres/layout.tsx).
+export const parametresSubLinks = [
+  { href: '/dashboard/parametres', label: 'Général', icon: Settings, permission: 'manageSettings' as PermissionKey },
+  { href: '/dashboard/parametres/fiche-etablissement', label: 'Fiche Établissement', icon: Building, permission: 'manageSettings' as PermissionKey },
+  { href: '/dashboard/parametres/annee-scolaire', label: 'Année Scolaire', icon: CalendarClock, permission: 'manageSettings' as PermissionKey },
+  { href: '/dashboard/parametres/abonnement', label: 'Abonnement', icon: CreditCard, permission: 'manageSettings' as PermissionKey },
+  { href: '/dashboard/parametres/facturation', label: 'Facturation', icon: ReceiptText, permission: 'manageSettings' as PermissionKey },
+  { href: '/dashboard/parametres/configuration-paiements', label: 'Config. Paiements', icon: Wallet, permission: 'manageSettings' as PermissionKey },
+  { href: '/dashboard/parametres/integrations', label: 'Intégrations', icon: LinkIcon, permission: 'manageSettings' as PermissionKey },
+  { href: '/dashboard/parametres/notifications', label: 'Notifications', icon: Bell, permission: 'manageSettings' as PermissionKey },
+  { href: '/dashboard/parametres/audit', label: 'Audit & Sécurité', icon: ShieldAlert, permission: 'manageSettings' as PermissionKey },
+  { href: '/dashboard/parametres/donnees', label: 'Maintenance Données', icon: Database, permission: 'manageSettings' as PermissionKey },
 ];
 
 // Ajout conceptuel des sous-liens. La logique de rendu est dans le layout respectif.

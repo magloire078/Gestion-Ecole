@@ -6,7 +6,8 @@ import { Separator } from '@/components/ui/separator';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Banknote, History, CreditCard, ExternalLink, Zap } from 'lucide-react';
-import { applyPricing, calculateMonthlyUsage, TARIFAIRE } from '@/lib/billing-calculator';
+import { applyPricing, calculateMonthlyUsage } from '@/lib/billing-calculator';
+import { getPlanLimits } from '@/lib/subscription-plans';
 import { useFirestore } from '@/firebase';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -51,7 +52,7 @@ export default function BillingDashboard() {
     }
   }, [schoolId, firestore, subscription, schoolLoading]);
 
-  const planDetails = subscription?.plan ? TARIFAIRE[subscription.plan] : null;
+  const planDetails = getPlanLimits(subscription?.plan);
 
   return (
     <div className="space-y-6">
@@ -89,11 +90,11 @@ export default function BillingDashboard() {
                 <div className="space-y-3">
                   <div className="p-3 border rounded-lg">
                     <p className="text-xs text-muted-foreground">Élèves actifs</p>
-                    <p className="font-semibold">{usage?.studentsCount} / {planDetails?.elevesInclus === Infinity ? '∞' : planDetails?.elevesInclus}</p>
+                    <p className="font-semibold">{usage?.studentsCount} / {!Number.isFinite(planDetails?.maxStudents ?? Infinity) ? '∞' : planDetails?.maxStudents}</p>
                   </div>
                   <div className="p-3 border rounded-lg">
                     <p className="text-xs text-muted-foreground">Cycles actifs</p>
-                    <p className="font-semibold">{usage?.cyclesCount} / {planDetails?.cyclesInclus === Infinity ? '∞' : planDetails?.cyclesInclus}</p>
+                    <p className="font-semibold">{usage?.cyclesCount} / {!Number.isFinite(planDetails?.maxCycles ?? Infinity) ? '∞' : planDetails?.maxCycles}</p>
                   </div>
                 </div>
                 

@@ -4,18 +4,53 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { addMonths } from 'date-fns';
 import type { school as School, student as Student } from './data-types';
 import { formatCurrency } from './currency-utils';
+import { getPlanLimits, type ModuleName } from './subscription-plans';
 
 
 /**
  * Updates a school's subscription after a successful payment and sends confirmation.
+ *
+ * Optional `amountPaid`/`currency` enable anti-fraud validation:
+ * - Essentiel: any amount > 0 is rejected (plan is free).
+ * - Paid plans: amount must be at least 50 % of the floor price
+ *   (pricePerStudent × 1 student × durationMonths) to guard against a
+ *   forged webhook claiming the plan is paid for a token amount.
+ *
+ * Stripe converts XOF → EUR at ~655.957; pass `currency='EUR'` and the
+ * minimum will be converted accordingly.
  */
 export async function processSubscriptionPayment(
     schoolId: string,
     planName: string,
     durationMonths: number,
-    paymentProvider: string
+    paymentProvider: string,
+    amountPaid?: number,
+    currency: 'XOF' | 'EUR' = 'XOF',
 ) {
-    console.log(`[PaymentProcessing] Updating subscription for school: ${schoolId}, plan: ${planName}, duration: ${durationMonths} months`);
+    console.log(`[PaymentProcessing] Updating subscription for school: ${schoolId}, plan: ${planName}, duration: ${durationMonths} months, amount: ${amountPaid ?? 'n/a'} ${currency}`);
+
+    const planLimits = getPlanLimits(planName);
+    if (!planLimits) {
+        throw new Error(`[PaymentProcessing] Plan inconnu: ${planName}`);
+    }
+
+    if (typeof amountPaid === 'number') {
+        if (!Number.isFinite(amountPaid) || amountPaid < 0) {
+            throw new Error(`[PaymentProcessing] Montant invalide: ${amountPaid}`);
+        }
+        if (planLimits.pricePerStudent === 0 && amountPaid > 0) {
+            throw new Error(`[PaymentProcessing] Le plan ${planName} est gratuit, montant inattendu: ${amountPaid}`);
+        }
+        if (planLimits.pricePerStudent > 0) {
+            const XOF_TO_EUR_RATE = 655.957;
+            const floorXof = planLimits.pricePerStudent * Math.max(1, durationMonths);
+            const floorInPaidCurrency = currency === 'EUR' ? floorXof / XOF_TO_EUR_RATE : floorXof;
+            const tolerance = 0.5;
+            if (amountPaid < floorInPaidCurrency * tolerance) {
+                throw new Error(`[PaymentProcessing] Montant payé (${amountPaid} ${currency}) trop bas pour le plan ${planName} sur ${durationMonths} mois (plancher attendu: ${floorInPaidCurrency.toFixed(2)} ${currency}).`);
+            }
+        }
+    }
 
     const schoolRef = getAdminDb().collection('ecoles').doc(schoolId);
     const schoolSnap = await schoolRef.get();
@@ -131,7 +166,20 @@ export async function processTuitionPayment(
 
     const studentData = studentSnap.data() as Student;
     const schoolData = schoolSnap.data() as School;
-    const newAmountDue = Math.max(0, (studentData.amountDue || 0) - amountPaid);
+
+    if (!Number.isFinite(amountPaid) || amountPaid <= 0) {
+        throw new Error(`[PaymentProcessing] Montant invalide: ${amountPaid}`);
+    }
+    const amountDueBefore = studentData.amountDue || 0;
+    if (amountDueBefore <= 0) {
+        console.warn(`[PaymentProcessing] Tentative de paiement pour un solde déjà à 0 (élève ${studentId}). Ignoré.`);
+        return { success: false, reason: 'no_balance_due' };
+    }
+    const cappedAmount = Math.min(amountPaid, amountDueBefore);
+    if (cappedAmount < amountPaid) {
+        console.warn(`[PaymentProcessing] Montant payé (${amountPaid}) > dû (${amountDueBefore}). Plafonné à ${cappedAmount}.`);
+    }
+    const newAmountDue = amountDueBefore - cappedAmount;
     const newStatus = newAmountDue <= 0 ? 'Soldé' : 'Partiel';
 
     const batch = getAdminDb().batch();
@@ -144,17 +192,25 @@ export async function processTuitionPayment(
         updatedAt: FieldValue.serverTimestamp()
     });
 
+    const todayStr = new Date().toISOString().split('T')[0];
+    const academicYear = (schoolData as any)?.currentAcademicYear
+        || (() => {
+            const d = new Date();
+            return d.getMonth() >= 8 ? `${d.getFullYear()}-${d.getFullYear() + 1}` : `${d.getFullYear() - 1}-${d.getFullYear()}`;
+        })();
+
     // 2. Create Accounting Record
     const accountingRef = getAdminDb().collection(`ecoles/${schoolId}/comptabilite`).doc();
     batch.set(accountingRef, {
         schoolId,
         studentId,
-        date: new Date().toISOString().split('T')[0],
+        date: todayStr,
         description: `Paiement scolarité via ${paymentProvider}`,
         category: 'Scolarité',
         type: 'Revenu',
-        amount: amountPaid,
+        amount: cappedAmount,
         reference: reference,
+        academicYear,
         createdAt: FieldValue.serverTimestamp()
     });
 
@@ -163,21 +219,22 @@ export async function processTuitionPayment(
     batch.set(paymentRef, {
         schoolId,
         studentId,
-        date: new Date().toISOString().split('T')[0],
-        amount: amountPaid,
+        date: todayStr,
+        amount: cappedAmount,
         description: `Paiement en ligne via ${paymentProvider}`,
         accountingTransactionId: accountingRef.id,
         payerFirstName: studentData.parent1FirstName || 'Parent',
         payerLastName: studentData.parent1LastName || '',
         method: paymentProvider === 'Stripe' ? 'Carte Bancaire' : 'Paiement Mobile',
         reference: reference,
+        academicYear,
         createdAt: FieldValue.serverTimestamp()
     });
 
     // 4. Update Global Financial Stats
     const statsRef = getAdminDb().doc(`ecoles/${schoolId}/stats/finance`);
     batch.set(statsRef, {
-        totalAmountDue: FieldValue.increment(-amountPaid),
+        totalAmountDue: FieldValue.increment(-cappedAmount),
         lastUpdated: FieldValue.serverTimestamp()
     }, { merge: true });
 
@@ -208,7 +265,7 @@ export async function processTuitionPayment(
                                         <p>Nous confirmons la réception de votre paiement concernant les frais de scolarité de <strong>${studentName}</strong>.</p>
                                         <div style="border: 1px solid #eee; padding: 20px; border-radius: 8px; margin: 20px 0;">
                                             <p style="margin: 5px 0;"><strong>Référence :</strong> ${reference}</p>
-                                            <p style="margin: 5px 0;"><strong>Montant :</strong> ${formatCurrency(amountPaid)}</p>
+                                            <p style="margin: 5px 0;"><strong>Montant :</strong> ${formatCurrency(cappedAmount)}</p>
                                             <p style="margin: 5px 0;"><strong>Date :</strong> ${new Date().toLocaleDateString('fr-FR')}</p>
                                             <p style="margin: 5px 0;"><strong>Établissement :</strong> ${schoolData.name}</p>
                                         </div>
@@ -233,7 +290,7 @@ export async function processTuitionPayment(
                 await getAdminDb().collection(`ecoles/${schoolId}/notifications`).add({
                     userId: parentId,
                     title: "Paiement Reçu",
-                    content: `Le paiement de ${formatCurrency(amountPaid)} pour ${studentName} a été confirmé.`,
+                    content: `Le paiement de ${formatCurrency(cappedAmount)} pour ${studentName} a été confirmé.`,
                     href: `/dashboard/parent/student/${studentId}?tab=paiements`,
                     isRead: false,
                     createdAt: FieldValue.serverTimestamp()

@@ -128,3 +128,37 @@ export function getModulePrice(moduleId: ModuleName): number {
     if (!modData) throw new Error(`Module inconnu: ${moduleId}`);
     return modData.price;
 }
+
+export interface PlanLimits {
+    maxStudents: number;
+    maxCycles: number;
+    storageLimitGB: number;
+    pricePerStudent: number;
+}
+
+export function getPlanLimits(planName: PlanName | string | undefined | null): PlanLimits | null {
+    const plan = SUBSCRIPTION_PLANS.find(p => p.name === planName);
+    if (!plan) return null;
+    return {
+        maxStudents: plan.maxStudents,
+        maxCycles: plan.maxCycles,
+        storageLimitGB: plan.storageLimitGB,
+        pricePerStudent: plan.pricePerStudent ?? 0,
+    };
+}
+
+export function estimateMonthlyRevenue(
+    planName: PlanName | string | undefined | null,
+    studentsCount: number,
+    activeModules: ModuleName[] = []
+): number {
+    const limits = getPlanLimits(planName);
+    if (!limits) return 0;
+    const base = limits.pricePerStudent * studentsCount;
+    if (planName === 'Premium') return base;
+    const modulesRevenue = activeModules.reduce((sum, id) => {
+        const mod = MODULES_CONFIG.find(m => m.id === id);
+        return sum + (mod?.price ?? 0);
+    }, 0);
+    return base + modulesRevenue;
+}

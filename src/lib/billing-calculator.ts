@@ -1,18 +1,14 @@
 
 
-import { collection, getCountFromServer, query, where, type Firestore } from 'firebase/firestore';
+import { collection, doc, getCountFromServer, getDoc, query, where, type Firestore } from 'firebase/firestore';
 import type { school as School, student as Student, cycle as Cycle } from '@/lib/data-types';
 import { SUBSCRIPTION_PLANS } from '@/lib/subscription-plans';
 
 // ====================================================================================
 // CONFIGURATIONS DE FACTURATION CENTRALISÉES
+// Source unique : SUBSCRIPTION_PLANS dans subscription-plans.ts.
+// Utilisez getPlanLimits() pour les limites par plan.
 // ====================================================================================
-
-export const TARIFAIRE = {
-    Essentiel: { prixMensuel: 0, cyclesInclus: 5, elevesInclus: 50, stockageInclus: 1 },
-    Pro: { prixMensuel: 49900, cyclesInclus: 5, elevesInclus: 250, stockageInclus: 10 },
-    Premium: { prixMensuel: 99900, cyclesInclus: Infinity, elevesInclus: Infinity, stockageInclus: Infinity },
-};
 
 export const SUPPLEMENTS = {
     parCycle: 5000,
@@ -54,25 +50,51 @@ interface BillingProjection {
 
 /**
  * Calcule l'utilisation mensuelle actuelle pour une école.
+ *
+ * Méthode "élèves actifs" :
+ *  1. Si la collection `inscriptions_classe` existe pour l'année courante,
+ *     on compte les inscriptions `active` taggées avec ce schoolYear.
+ *     C'est la source de vérité métier — un élève qui n'a pas été
+ *     réinscrit pour l'année courante ne doit pas être facturé.
+ *  2. Sinon (école pas encore passée par le wizard de bascule), on retombe
+ *     sur l'ancien calcul `eleves where status == 'Actif'`.
  */
 export async function calculateMonthlyUsage(firestore: Firestore, schoolId: string): Promise<MonthlyUsage> {
-    const studentsQuery = query(collection(firestore, `ecoles/${schoolId}/eleves`), where('status', '==', 'Actif'));
-    const cyclesQuery = query(collection(firestore, `ecoles/${schoolId}/cycles`), where('isActive', '==', true));
-
-    // Pour le stockage, c'est généralement plus complexe et nécessite des intégrations backend.
-    // Pour le moment, nous allons utiliser une valeur statique.
-    const storageUsed = 0.5; // Exemple : 0.5 Go
+    const storageUsed = 0.5;
 
     try {
-        const [studentsSnap, cyclesSnap] = await Promise.all([
-            getCountFromServer(studentsQuery),
-            getCountFromServer(cyclesQuery)
-        ]);
+        const schoolSnap = await getDoc(doc(firestore, `ecoles/${schoolId}`));
+        const currentYear = schoolSnap.data()?.currentAcademicYear as string | undefined;
 
+        const cyclesQuery = query(collection(firestore, `ecoles/${schoolId}/cycles`), where('isActive', '==', true));
+        const cyclesPromise = getCountFromServer(cyclesQuery);
+
+        let studentsCount = 0;
+        if (currentYear) {
+            const enrollmentsQuery = query(
+                collection(firestore, `ecoles/${schoolId}/inscriptions_classe`),
+                where('academicYear', '==', currentYear),
+                where('status', '==', 'active'),
+            );
+            const enrollmentsSnap = await getCountFromServer(enrollmentsQuery);
+            studentsCount = enrollmentsSnap.data().count;
+        }
+
+        if (studentsCount === 0) {
+            // Fallback (école pré-bascule, ou aucune inscription pour l'année).
+            const fallbackQuery = query(
+                collection(firestore, `ecoles/${schoolId}/eleves`),
+                where('status', '==', 'Actif'),
+            );
+            const fallbackSnap = await getCountFromServer(fallbackQuery);
+            studentsCount = fallbackSnap.data().count;
+        }
+
+        const cyclesSnap = await cyclesPromise;
         return {
-            studentsCount: studentsSnap.data().count,
+            studentsCount,
             cyclesCount: cyclesSnap.data().count,
-            storageUsed: storageUsed,
+            storageUsed,
         };
     } catch (error) {
         console.error("Erreur lors du calcul de l'utilisation:", error);

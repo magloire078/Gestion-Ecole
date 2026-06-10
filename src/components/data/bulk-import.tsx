@@ -1,23 +1,37 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Upload, FileDown, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, FileDown, CheckCircle, AlertCircle, Loader2, Archive } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useFirestore } from '@/firebase';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, getDoc, doc } from 'firebase/firestore';
+import { useAcademicYear } from '@/providers/academic-year-provider';
+import { doc, getDoc } from 'firebase/firestore';
 import type { class_type, student } from '@/lib/data-types';
+import { getPlanLimits } from '@/lib/subscription-plans';
+import { resolveAcademicYearForWrite } from '@/lib/academic-year-utils';
+import { ENTITY_DESCRIPTORS, getDescriptor, type ImportContext } from './import-entities';
+import { validateRow } from './import-schemas';
+import { parseSqlInserts, type SqlInsertBatch } from './sql-parser';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 
 interface BulkImportProps {
     existingClasses?: (class_type & { id: string })[];
@@ -25,114 +39,159 @@ interface BulkImportProps {
     currentAcademicYear?: string;
 }
 
-// Types de données supportés pour l'import
-type ImportType = 'students' | 'teachers' | 'grades';
-
-// Modèles de colonnes attendues
-const TEMPLATES = {
-    students: [
-        { header: 'firstName', required: true, desc: 'Prénom de l\'élève' },
-        { header: 'lastName', required: true, desc: 'Nom de l\'élève' },
-        { header: 'dateOfBirth', required: true, desc: 'Date de naissance (JJ/MM/AAAA)' },
-        { header: 'placeOfBirth', required: false, desc: 'Lieu de naissance' },
-        { header: 'gender', required: true, desc: 'Genre (M/F)' },
-        { header: 'className', required: true, desc: 'Classe (ex: 6ème A)' },
-        { header: 'matricule', required: false, desc: 'Matricule (optionnel)' },
-        { header: 'email', required: false, desc: 'Email (optionnel)' },
-        { header: 'parentEmail', required: false, desc: 'Email du parent (pour liaison)' },
-        { header: 'parent1FirstName', required: false, desc: 'Prénom du Père' },
-        { header: 'parent1LastName', required: false, desc: 'Nom du Père' },
-        { header: 'parent1Contact', required: false, desc: 'Contact du Père' },
-    ],
-    teachers: [
-        { header: 'firstName', required: true, desc: 'Prénom' },
-        { header: 'lastName', required: true, desc: 'Nom' },
-        { header: 'email', required: true, desc: 'Email professionnel' },
-        { header: 'subject', required: false, desc: 'Matière enseignée' },
-        { header: 'phone', required: false, desc: 'Téléphone' }
-    ],
-    grades: [
-        { header: 'studentMatricule', required: true, desc: 'Matricule de l\'élève' },
-        { header: 'subject', required: true, desc: 'Matière' },
-        { header: 'grade', required: true, desc: 'Note (0-20)' },
-        { header: 'coefficient', required: true, desc: 'Coefficient' },
-        { header: 'type', required: true, desc: 'Type (DEVOIR, COMPO, ORAL)' }
-    ]
-};
+/**
+ * Devine l'entité GèreEcole à partir d'un nom de table SQL. Heuristiques
+ * permissives basées sur les noms les plus courants (FR + EN).
+ */
+function guessEntityFromTable(table: string): string | undefined {
+    const t = table.toLowerCase();
+    if (/(eleve|student|inscrit)/.test(t)) return 'students';
+    if (/(prof|teacher|enseignant|staff|personnel)/.test(t)) return 'teachers';
+    if (/(note|grade|mark|bulletin)/.test(t)) return 'grades';
+    if (/(class)/.test(t)) return 'classes';
+    if (/(cycle)/.test(t)) return 'cycles';
+    if (/(niveau|level)/.test(t)) return 'niveaux';
+    if (/(frais|fee|tuition)/.test(t)) return 'fees';
+    if (/(paiement|payment|encaiss)/.test(t)) return 'payments';
+    if (/(compta|account|transaction|ledger)/.test(t)) return 'transactions';
+    return undefined;
+}
 
 export function BulkImport({ existingClasses = [], existingStudents = [], currentAcademicYear }: BulkImportProps) {
     const { toast } = useToast();
     const { schoolId } = useSchoolData();
     const firestore = useFirestore();
+    const { availableYears, currentYear } = useAcademicYear();
 
-    const [importType, setImportType] = useState<ImportType>('students');
+    const [entityId, setEntityId] = useState<string>('students');
     const [fileData, setFileData] = useState<any[]>([]);
     const [headers, setHeaders] = useState<string[]>([]);
     const [isUploading, setIsUploading] = useState(false);
     const [progress, setProgress] = useState({ current: 0, total: 0 });
+    const [targetYear, setTargetYear] = useState<string>(currentAcademicYear || currentYear || '');
+    const [showResults, setShowResults] = useState<{ successCount: number; errorCount: number; errors: string[] } | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Générer et télécharger le modèle
-    const downloadTemplate = () => {
-        const template = TEMPLATES[importType];
-        const ws = XLSX.utils.json_to_sheet([
-            template.reduce((acc, col) => ({ ...acc, [col.header]: col.desc }), {})
-        ]);
+    // SQL dump support
+    const [sqlBatches, setSqlBatches] = useState<SqlInsertBatch[]>([]);
+    const [sqlMapping, setSqlMapping] = useState<Record<string, string>>({}); // tableName -> entityId
+    const [showSqlPicker, setShowSqlPicker] = useState(false);
+
+    const descriptor = useMemo(() => getDescriptor(entityId), [entityId]);
+
+    const yearOptions = useMemo(() => Array.from(new Set([
+        currentAcademicYear,
+        currentYear,
+        targetYear,
+        ...availableYears,
+    ].filter(Boolean) as string[])).sort((a, b) => b.localeCompare(a)),
+    [currentAcademicYear, currentYear, targetYear, availableYears]);
+
+    const downloadTemplate = (format: 'xlsx' | 'json' = 'xlsx') => {
+        if (!descriptor) return;
+        const sampleRow = descriptor.columns.reduce(
+            (acc, col) => ({ ...acc, [col.header]: col.desc }),
+            {} as Record<string, string>,
+        );
+        if (format === 'json') {
+            const blob = new Blob([JSON.stringify([sampleRow], null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `modele_import_${entityId}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            return;
+        }
+        const ws = XLSX.utils.json_to_sheet([sampleRow]);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Template");
-        XLSX.writeFile(wb, `modele_import_${importType}.xlsx`);
+        XLSX.utils.book_append_sheet(wb, ws, 'Template');
+        XLSX.writeFile(wb, `modele_import_${entityId}.xlsx`);
     };
 
-    // Gérer l'upload du fichier
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-            const bstr = evt.target?.result;
-            const wb = XLSX.read(bstr, { type: 'binary' });
-            const wsname = wb.SheetNames[0];
-            const ws = wb.Sheets[wsname];
-            const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
-
-            if (data.length > 0) {
-                setHeaders(data[0] as string[]);
-                // Convertir les lignes en objets
-                const rows = data.slice(1).map((row: any) => {
-                    const obj: any = {};
-                    (data[0] as string[]).forEach((key, index) => {
-                        obj[key.trim()] = row[index]; // Trim keys to avoid issues
-                    });
-                    return obj;
-                });
-                setFileData(rows);
+        const ext = file.name.toLowerCase().split('.').pop() ?? '';
+        try {
+            if (ext === 'sql') {
+                const text = await file.text();
+                const batches = parseSqlInserts(text);
+                if (batches.length === 0) {
+                    toast({ variant: 'destructive', title: 'Dump SQL vide', description: 'Aucune instruction INSERT INTO trouvée.' });
+                    return;
+                }
+                const mapping: Record<string, string> = {};
+                for (const b of batches) {
+                    const guess = guessEntityFromTable(b.table);
+                    if (guess) mapping[b.table] = guess;
+                }
+                setSqlBatches(batches);
+                setSqlMapping(mapping);
+                setShowSqlPicker(true);
+                return;
             }
-        };
-        reader.readAsBinaryString(file);
+            if (ext === 'json') {
+                const text = await file.text();
+                const parsed = JSON.parse(text);
+                if (!Array.isArray(parsed)) throw new Error('Le JSON doit contenir un tableau d\'objets.');
+                const rows = parsed.filter(r => r && typeof r === 'object');
+                const keys = Array.from(new Set(rows.flatMap(r => Object.keys(r))));
+                setHeaders(keys);
+                setFileData(rows);
+                return;
+            }
+            if (ext === 'csv') {
+                const text = await file.text();
+                const result = Papa.parse(text, { header: true, skipEmptyLines: true });
+                const rows = result.data as any[];
+                setHeaders(result.meta.fields ?? Object.keys(rows[0] ?? {}));
+                setFileData(rows);
+                return;
+            }
+            const buffer = await file.arrayBuffer();
+            const wb = XLSX.read(buffer, { type: 'array' });
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            const aoa = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[];
+            if (aoa.length === 0) {
+                setHeaders([]);
+                setFileData([]);
+                return;
+            }
+            const headerRow = (aoa[0] as string[]).map(h => String(h ?? '').trim());
+            setHeaders(headerRow);
+            const rows = aoa.slice(1).map(row => {
+                const obj: any = {};
+                headerRow.forEach((key, idx) => { obj[key] = (row as any)[idx]; });
+                return obj;
+            });
+            setFileData(rows);
+        } catch (err: any) {
+            console.error('[BulkImport] parse error', err);
+            toast({ variant: 'destructive', title: 'Fichier illisible', description: err?.message ?? 'Format non reconnu.' });
+            setHeaders([]);
+            setFileData([]);
+        }
     };
 
-    // Valider les données avant import
-    const validateData = () => {
-        const template = TEMPLATES[importType];
-        const missingColumns = template
-            .filter(t => t.required && !headers.includes(t.header))
-            .map(t => t.header);
-
-        if (missingColumns.length > 0) {
-            return { valid: false, error: `Colonnes manquantes: ${missingColumns.join(', ')}` };
+    const validate = () => {
+        if (!descriptor) return { valid: false, error: 'Aucune entité sélectionnée.' };
+        const missing = descriptor.columns
+            .filter(c => c.required && !headers.includes(c.header))
+            .map(c => c.header);
+        if (missing.length > 0) {
+            return { valid: false, error: `Colonnes obligatoires manquantes : ${missing.join(', ')}` };
         }
         return { valid: true };
     };
 
-    // Exécuter l'import
     const executeImport = async () => {
-        const validation = validateData();
+        if (!descriptor) return;
+        const validation = validate();
         if (!validation.valid) {
-            toast({ variant: "destructive", title: "Erreur de format", description: validation.error });
+            toast({ variant: 'destructive', title: 'Erreur de format', description: validation.error });
             return;
         }
-
         if (!schoolId) return;
 
         setIsUploading(true);
@@ -140,151 +199,61 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
         let errorCount = 0;
         const errors: string[] = [];
 
-        setProgress({ current: 0, total: fileData.length });
+        const nonEmptyRows = fileData.filter(r => r && Object.keys(r).length > 0);
+        setProgress({ current: 0, total: nonEmptyRows.length });
 
-        // Déterminer la collection cible (sauf pour les notes qui sont des sous-collections)
-        let collectionPath = '';
-        if (importType === 'students') collectionPath = `ecoles/${schoolId}/eleves`;
-        else if (importType === 'teachers') collectionPath = `ecoles/${schoolId}/personnel`;
-
-        // Vérification du plafond AVANT l'import d'élèves
-        if (importType === 'students') {
+        if (descriptor.id === 'students') {
             try {
                 const [schoolSnap, statsSnap] = await Promise.all([
                     getDoc(doc(firestore, `ecoles/${schoolId}`)),
-                    getDoc(doc(firestore, `ecoles/${schoolId}/stats/finance`))
+                    getDoc(doc(firestore, `ecoles/${schoolId}/stats/finance`)),
                 ]);
                 if (schoolSnap.exists()) {
-                    let maxStudents: number | undefined = schoolSnap.data()?.subscription?.maxStudents;
-                    const plan = schoolSnap.data()?.subscription?.plan || 'Essentiel';
-
-                    // Fallback for Essentiel plan
-                    if (maxStudents === undefined || maxStudents === null) {
-                        if (plan === 'Essentiel') {
-                            maxStudents = 50;
-                        }
-                    }
-
-                    if (maxStudents) {
-                        const currentCount: number = statsSnap.exists() ? (statsSnap.data()?.studentCount ?? 0) : 0;
-                        const rowsToImport = fileData.filter(r => r && Object.keys(r).length > 0).length;
-                        if (currentCount + rowsToImport > maxStudents) {
+                    const planName = schoolSnap.data()?.subscription?.plan ?? 'Essentiel';
+                    const limits = getPlanLimits(planName);
+                    if (limits && Number.isFinite(limits.maxStudents)) {
+                        const currentCount = statsSnap.exists() ? (statsSnap.data()?.studentCount ?? 0) : 0;
+                        if (currentCount + nonEmptyRows.length > limits.maxStudents) {
                             toast({
                                 variant: 'destructive',
-                                title: "Limite d'élèves atteinte",
-                                description: `Votre plan ${plan} est limité à ${maxStudents} élèves. Vous avez actuellement ${currentCount} élèves et tentez d'en importer ${rowsToImport}. Supprimez des élèves ou mettez à niveau votre abonnement.`,
+                                title: 'Limite d\'élèves atteinte',
+                                description: `Plan ${planName} : ${currentCount + nonEmptyRows.length} > ${limits.maxStudents}.`,
                             });
                             setIsUploading(false);
                             return;
                         }
                     }
                 }
-            } catch (limitErr) {
-                console.error('Erreur vérification limite élèves:', limitErr);
+            } catch (err) {
+                console.error('[BulkImport] check limit error', err);
             }
         }
 
-
         for (let i = 0; i < fileData.length; i++) {
             const row = fileData[i];
-            const rowIndex = i + 2; // +1 pour l'index 0, +1 pour l'en-tête
-
-            // Ignorer les lignes vides
+            const rowIndex = i + 2;
             if (!row || Object.keys(row).length === 0) continue;
 
             try {
-                // Nettoyage et formatage basique
-                const cleanRow: any = {
-                    ...row,
-                    createdAt: serverTimestamp(),
-                    schoolId
+                const rowYear = resolveAcademicYearForWrite({
+                    schoolCurrentYear: typeof row.academicYear === 'string' && row.academicYear.trim()
+                        ? row.academicYear.trim()
+                        : (targetYear || currentAcademicYear),
+                });
+                const validated = validateRow(descriptor.id, row);
+                if (!validated.ok) throw new Error(validated.error);
+                const ctx: ImportContext = {
+                    firestore,
+                    schoolId,
+                    rowYear,
+                    existingClasses,
+                    existingStudents,
                 };
-
-                // Spécificités par type
-                if (importType === 'students') {
-                    if (!cleanRow.firstName || !cleanRow.lastName) throw new Error("Nom ou Prénom manquant");
-
-                    // Gestion de la date de naissance
-                    if (cleanRow.dateOfBirth) {
-                        if (typeof cleanRow.dateOfBirth === 'number') {
-                            // Format Excel (nombre de jours depuis 1900)
-                            const date = new Date(Math.round((cleanRow.dateOfBirth - 25569) * 86400 * 1000));
-                            cleanRow.dateOfBirth = date.toISOString().split('T')[0];
-                        } else if (typeof cleanRow.dateOfBirth === 'string' && cleanRow.dateOfBirth.includes('/')) {
-                            // Format JJ/MM/AAAA
-                            const parts = cleanRow.dateOfBirth.split('/');
-                            if (parts.length === 3) {
-                                cleanRow.dateOfBirth = `${parts[2]}-${parts[1]}-${parts[0]}`;
-                            }
-                        }
-                    }
-
-                    // Assignation de la classe
-                    if (cleanRow.className) {
-                        const targetClass = existingClasses.find(c =>
-                            c.name.toLowerCase().trim() === cleanRow.className.toString().toLowerCase().trim()
-                        );
-                        if (targetClass) {
-                            cleanRow.classId = targetClass.id;
-                            cleanRow.class = targetClass.name;
-                        } else {
-                            throw new Error(`Classe "${cleanRow.className}" introuvable`);
-                        }
-                    }
-
-                    // Année scolaire et valeurs par défaut
-                    if (currentAcademicYear) cleanRow.inscriptionYear = currentAcademicYear;
-                    cleanRow.status = 'Actif';
-                    cleanRow.tuitionStatus = 'Non payé';
-                    cleanRow.amountDue = 0;
-
-                    await addDoc(collection(firestore, collectionPath), cleanRow);
-
-                } else if (importType === 'grades') {
-                    // Validation des champs obligatoires pour les notes
-                    if (!cleanRow.studentMatricule) throw new Error("Matricule manquant");
-                    if (!cleanRow.subject) throw new Error("Matière manquante");
-                    if (cleanRow.grade === undefined || cleanRow.grade === null) throw new Error("Note manquante");
-
-                    const gradeValue = Number(cleanRow.grade);
-                    if (isNaN(gradeValue) || gradeValue < 0 || gradeValue > 20) {
-                        throw new Error(`Note invalide (${cleanRow.grade}). Doit être entre 0 et 20.`);
-                    }
-
-                    // Recherche de l'élève par matricule
-                    // On normalise les matricules (trim et lowercase) pour la comparaison
-                    const cleanMatricule = cleanRow.studentMatricule.toString().trim().toLowerCase();
-                    const student = existingStudents.find(s =>
-                        s.matricule && s.matricule.toString().trim().toLowerCase() === cleanMatricule
-                    );
-
-                    if (!student) {
-                        throw new Error(`Élève avec le matricule "${cleanRow.studentMatricule}" introuvable`);
-                    }
-
-                    // Préparation de la note
-                    const gradeData = {
-                        schoolId,
-                        subject: cleanRow.subject,
-                        grade: gradeValue,
-                        coefficient: Number(cleanRow.coefficient || 1),
-                        type: cleanRow.type || 'Devoir',
-                        date: cleanRow.date ? new Date(cleanRow.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-                        createdAt: serverTimestamp(),
-                    };
-
-                    // Ajout dans la sous-collection de l'élève
-                    await addDoc(collection(firestore, `ecoles/${schoolId}/eleves/${student.id}/notes`), gradeData);
-
-                } else {
-                    // imports génériques (ex: personnel/enseignants)
-                    await addDoc(collection(firestore, collectionPath), cleanRow);
-                }
-
-                successCount++;
+                await descriptor.importRow(validated.data, ctx);
+                successCount += 1;
             } catch (err: any) {
-                console.error("Erreur import ligne:", row, err);
-                errorCount++;
+                console.error('[BulkImport] row error', row, err);
+                errorCount += 1;
                 errors.push(`Ligne ${rowIndex}: ${err.message}`);
             }
             setProgress(prev => ({ ...prev, current: prev.current + 1 }));
@@ -292,80 +261,189 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
 
         setIsUploading(false);
         setFileData([]);
+        setHeaders([]);
         if (fileInputRef.current) fileInputRef.current.value = '';
 
-        // Rapport final
         if (errorCount > 0) {
-            toast({
-                variant: "destructive",
-                title: "Import terminé avec des erreurs",
-                description: `${successCount} succès, ${errorCount} échecs.`,
-            });
-            setShowResults({ successCount, errorCount, errors });
+            toast({ variant: 'destructive', title: 'Import terminé avec des erreurs', description: `${successCount} succès, ${errorCount} échecs.` });
         } else {
-            toast({
-                title: "Import terminé avec succès",
-                description: `${successCount} éléments importés.`,
-            });
-            setShowResults({ successCount, errorCount, errors: [] });
+            toast({ title: 'Import terminé', description: `${successCount} éléments importés sur ${targetYear}.` });
         }
+        setShowResults({ successCount, errorCount, errors });
     };
 
-    const [showResults, setShowResults] = useState<{ successCount: number; errorCount: number; errors: string[] } | null>(null);
+    const isImportingArchive = !!targetYear && targetYear !== currentYear;
+
+    const runSqlImport = async () => {
+        if (!schoolId) return;
+        const eligible = sqlBatches.filter(b => sqlMapping[b.table]);
+        if (eligible.length === 0) {
+            toast({ variant: 'destructive', title: 'Aucune table mappée', description: 'Choisis l\'entité GèreEcole pour au moins une table.' });
+            return;
+        }
+        setIsUploading(true);
+        const totalRows = eligible.reduce((acc, b) => acc + b.rows.length, 0);
+        setProgress({ current: 0, total: totalRows });
+
+        let successCount = 0;
+        let errorCount = 0;
+        const errors: string[] = [];
+        let cursor = 0;
+
+        for (const batch of eligible) {
+            const targetId = sqlMapping[batch.table];
+            const desc = getDescriptor(targetId);
+            if (!desc) continue;
+            for (const row of batch.rows) {
+                cursor += 1;
+                try {
+                    const rowYear = resolveAcademicYearForWrite({
+                        schoolCurrentYear: typeof row.academicYear === 'string' && row.academicYear.trim()
+                            ? row.academicYear.trim()
+                            : (targetYear || currentAcademicYear),
+                    });
+                    const validated = validateRow(desc.id, row);
+                    if (!validated.ok) throw new Error(validated.error);
+                    await desc.importRow(validated.data, {
+                        firestore,
+                        schoolId,
+                        rowYear,
+                        existingClasses,
+                        existingStudents,
+                    });
+                    successCount += 1;
+                } catch (err: any) {
+                    errorCount += 1;
+                    errors.push(`${batch.table} ligne ${cursor}: ${err.message}`);
+                }
+                setProgress({ current: cursor, total: totalRows });
+            }
+        }
+
+        setIsUploading(false);
+        setSqlBatches([]);
+        setSqlMapping({});
+        setShowSqlPicker(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+
+        if (errorCount > 0) {
+            toast({ variant: 'destructive', title: 'Import SQL terminé avec erreurs', description: `${successCount} succès, ${errorCount} échecs.` });
+        } else {
+            toast({ title: 'Import SQL terminé', description: `${successCount} éléments importés sur ${targetYear}.` });
+        }
+        setShowResults({ successCount, errorCount, errors });
+    };
 
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Importation de Masse</CardTitle>
-                <CardDescription>Ajoutez rapidement des élèves ou du personnel via fichier Excel/CSV.</CardDescription>
+                <CardTitle>Importation de masse</CardTitle>
+                <CardDescription>
+                    Importez vos données scolaires depuis Excel (.xlsx, .xls), CSV, JSON ou un dump SQL
+                    (.sql). Les lignes sans colonne <code className="px-1 mx-0.5 rounded bg-muted text-xs">academicYear</code> sont
+                    rattachées à l&apos;<strong>année cible</strong>.
+                </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                <div className="flex flex-col md:flex-row gap-4 items-end">
-                    <div className="space-y-2 w-full md:w-1/3">
+                <div className="grid gap-4 md:grid-cols-3">
+                    <div className="space-y-2">
                         <Label>Type de données</Label>
-                        <Select value={importType} onValueChange={(v: ImportType) => { setImportType(v); setFileData([]); }}>
-                            <SelectTrigger>
-                                <SelectValue />
-                            </SelectTrigger>
+                        <Select value={entityId} onValueChange={v => { setEntityId(v); setFileData([]); setHeaders([]); }}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="students">Élèves</SelectItem>
-                                <SelectItem value="teachers">Enseignants / Personnel</SelectItem>
-                                <SelectItem value="grades">Notes</SelectItem>
+                                {ENTITY_DESCRIPTORS.map(e => (
+                                    <SelectItem key={e.id} value={e.id}>{e.label}</SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>
 
-                    <Button variant="outline" onClick={downloadTemplate}>
-                        <FileDown className="mr-2 h-4 w-4" />
-                        Télécharger le modèle
-                    </Button>
+                    <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                            Année cible
+                            {isImportingArchive && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 text-[10px] font-bold uppercase">
+                                    <Archive className="h-3 w-3" /> Archive
+                                </span>
+                            )}
+                        </Label>
+                        <Select value={targetYear} onValueChange={setTargetYear}>
+                            <SelectTrigger><SelectValue placeholder="Choisir une année" /></SelectTrigger>
+                            <SelectContent>
+                                {yearOptions.map(y => (
+                                    <SelectItem key={y} value={y}>
+                                        {y}{y === currentYear ? ' (courante)' : ''}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>Modèle vide</Label>
+                        <div className="flex gap-2">
+                            <Button variant="outline" className="flex-1" onClick={() => downloadTemplate('xlsx')}>
+                                <FileDown className="mr-2 h-4 w-4" /> Excel
+                            </Button>
+                            <Button variant="outline" className="flex-1" onClick={() => downloadTemplate('json')}>
+                                <FileDown className="mr-2 h-4 w-4" /> JSON
+                            </Button>
+                        </div>
+                    </div>
                 </div>
+
+                {descriptor && (
+                    <Alert>
+                        <AlertTitle className="text-sm">Colonnes attendues — {descriptor.label}</AlertTitle>
+                        <AlertDescription>
+                            <div className="mt-2 flex flex-wrap gap-1">
+                                {descriptor.columns.map(c => (
+                                    <span
+                                        key={c.header}
+                                        className={cn(
+                                            'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-mono',
+                                            c.required ? 'border-primary/30 bg-primary/5 text-primary' : 'border-muted-foreground/20 text-muted-foreground',
+                                        )}
+                                        title={c.desc}
+                                    >
+                                        {c.header}{c.required && <span>*</span>}
+                                    </span>
+                                ))}
+                            </div>
+                        </AlertDescription>
+                    </Alert>
+                )}
 
                 <div className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center space-y-2 bg-muted/20">
                     <Upload className="h-8 w-8 text-muted-foreground" />
                     <Label htmlFor="file-upload" className="cursor-pointer text-primary hover:underline">
-                        Cliquez pour uploader un fichier Excel (.xlsx, .csv)
+                        Cliquez pour uploader un fichier (.xlsx, .csv, .json, .sql)
                     </Label>
                     <Input
                         id="file-upload"
                         type="file"
-                        accept=".xlsx,.xls,.csv"
+                        accept=".xlsx,.xls,.csv,.json,.sql"
                         className="hidden"
                         ref={fileInputRef}
                         onChange={handleFileUpload}
                     />
                     <p className="text-xs text-muted-foreground text-center max-w-sm">
-                        Assurez-vous que les colonnes correspondent exactement au modèle téléchargé.
+                        Une colonne <code className="px-1 rounded bg-muted">academicYear</code> dans le fichier surclasse l&apos;année cible. Le SQL accepte les dumps phpMyAdmin / pg_dump.
                     </p>
                 </div>
 
                 {fileData.length > 0 && (
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                            <h4 className="font-medium text-sm">Aperçu ({fileData.length} lignes)</h4>
-                            <Button onClick={executeImport} disabled={isUploading}>
+                            <div>
+                                <h4 className="font-medium text-sm">Aperçu ({fileData.length} lignes)</h4>
+                                <p className="text-xs text-muted-foreground">
+                                    Cible par défaut : <strong>{targetYear || '—'}</strong>
+                                </p>
+                            </div>
+                            <Button onClick={executeImport} disabled={isUploading || !targetYear}>
                                 {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Lancer l'importation
+                                Lancer l&apos;importation
                             </Button>
                         </div>
                         <div className="rounded-md border max-h-[300px] overflow-auto">
@@ -378,13 +456,13 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
                                 <TableBody>
                                     {fileData.slice(0, 5).map((row, i) => (
                                         <TableRow key={i}>
-                                            {headers.map((h, j) => <TableCell key={j}>{row[h]}</TableCell>)}
+                                            {headers.map((h, j) => <TableCell key={j}>{row[h] != null ? String(row[h]) : ''}</TableCell>)}
                                         </TableRow>
                                     ))}
                                     {fileData.length > 5 && (
                                         <TableRow>
-                                            <TableCell colSpan={headers.length} className="text-center text-muted-foreground">
-                                                ... {fileData.length - 5} autres lignes ...
+                                            <TableCell colSpan={headers.length || 1} className="text-center text-muted-foreground">
+                                                … {fileData.length - 5} autres lignes …
                                             </TableCell>
                                         </TableRow>
                                     )}
@@ -407,23 +485,73 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
                     </div>
                 )}
 
+                <Dialog open={showSqlPicker} onOpenChange={setShowSqlPicker}>
+                    <DialogContent className="sm:max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle>Mappage du dump SQL</DialogTitle>
+                            <DialogDescription>
+                                {sqlBatches.length} table{sqlBatches.length > 1 ? 's' : ''} trouvée{sqlBatches.length > 1 ? 's' : ''}.
+                                Associez chaque table à une entité GèreEcole, ou laissez vide pour l&apos;ignorer.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2">
+                            {sqlBatches.map(batch => (
+                                <div key={batch.table} className="flex items-center justify-between gap-3 rounded-xl border p-3">
+                                    <div className="min-w-0 flex-1">
+                                        <p className="font-mono text-sm font-semibold truncate">{batch.table}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {batch.rows.length} ligne{batch.rows.length > 1 ? 's' : ''} · {batch.columns.length} colonne{batch.columns.length > 1 ? 's' : ''}
+                                        </p>
+                                        <div className="mt-1 flex flex-wrap gap-1">
+                                            {batch.columns.slice(0, 6).map(col => (
+                                                <Badge key={col} variant="outline" className="text-[10px] font-mono">{col}</Badge>
+                                            ))}
+                                            {batch.columns.length > 6 && (
+                                                <Badge variant="outline" className="text-[10px]">+{batch.columns.length - 6}</Badge>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <Select
+                                        value={sqlMapping[batch.table] ?? ''}
+                                        onValueChange={v => setSqlMapping(prev => ({ ...prev, [batch.table]: v === '__none__' ? '' : v }))}
+                                    >
+                                        <SelectTrigger className="w-[200px] shrink-0">
+                                            <SelectValue placeholder="Ignorer" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="__none__">Ignorer</SelectItem>
+                                            {ENTITY_DESCRIPTORS.map(e => (
+                                                <SelectItem key={e.id} value={e.id}>{e.label}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            ))}
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setShowSqlPicker(false)}>Annuler</Button>
+                            <Button onClick={runSqlImport} disabled={isUploading || Object.values(sqlMapping).filter(Boolean).length === 0}>
+                                {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Importer
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
                 {showResults && (
-                    <Alert variant={showResults.errorCount > 0 ? "destructive" : "default"} className={cn(showResults.errorCount === 0 && "bg-emerald-50 border-emerald-200 text-emerald-800")}>
+                    <Alert variant={showResults.errorCount > 0 ? 'destructive' : 'default'} className={cn(showResults.errorCount === 0 && 'bg-emerald-50 border-emerald-200 text-emerald-800')}>
                         <div className="flex items-start gap-3">
                             {showResults.errorCount > 0 ? <AlertCircle className="h-5 w-5 mt-0.5" /> : <CheckCircle className="h-5 w-5 mt-0.5" />}
                             <div className="flex-1">
                                 <AlertTitle className="font-bold">
-                                    {showResults.errorCount > 0 ? "Rapport d'importation (avec erreurs)" : "Importation réussie"}
+                                    {showResults.errorCount > 0 ? 'Rapport d\'importation (avec erreurs)' : 'Importation réussie'}
                                 </AlertTitle>
                                 <AlertDescription className="mt-2 space-y-3">
                                     <p className="text-sm">
                                         Sur un total de <strong>{showResults.successCount + showResults.errorCount}</strong> lignes traitées :
-                                        <br />
-                                        - Succès : <span className="font-bold text-emerald-600">{showResults.successCount}</span>
-                                        <br />
-                                        - Échecs : <span className="font-bold text-destructive">{showResults.errorCount}</span>
+                                        <br />- Succès : <span className="font-bold text-emerald-600">{showResults.successCount}</span>
+                                        <br />- Échecs : <span className="font-bold text-destructive">{showResults.errorCount}</span>
                                     </p>
-
                                     {showResults.errors.length > 0 && (
                                         <div className="mt-4 p-3 bg-destructive/10 rounded-lg border border-destructive/20 max-h-40 overflow-y-auto">
                                             <p className="text-xs font-bold mb-2 uppercase tracking-wider">Détails des erreurs :</p>

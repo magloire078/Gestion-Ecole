@@ -4,8 +4,27 @@ import { createStripeCheckoutSession } from '@/lib/stripe';
 import { createWaveCheckoutSession } from '@/lib/wave';
 import { createPayDunyaCheckout } from '@/lib/paydunya';
 import { getOrangeMoneyPaymentLink } from '@/lib/orange-money';
-import { requestMtnMomoPayment } from '@/lib/mtn-momo';
+import { requestMtnMomoPayment, MTN_CURRENCY } from '@/lib/mtn-momo';
 import { createGeniusPayment } from '@/lib/genius-pay';
+import { buildPaymentReference } from '@/lib/payment-reference';
+import type { PlanName } from '@/lib/subscription-plans';
+
+function resolveBaseUrl(req: Request): string {
+    const env = process.env.NEXT_PUBLIC_BASE_URL?.trim();
+    if (env) return env.replace(/\/$/, '');
+    const forwardedHost = req.headers.get('x-forwarded-host');
+    const forwardedProto = req.headers.get('x-forwarded-proto');
+    const host = forwardedHost || req.headers.get('host');
+    if (host) {
+        const proto = forwardedProto || (host.startsWith('localhost') ? 'http' : 'https');
+        return `${proto}://${host}`;
+    }
+    try {
+        return new URL(req.url).origin;
+    } catch {
+        return 'http://localhost:3000';
+    }
+}
 
 export async function POST(req: Request) {
     try {
@@ -38,13 +57,27 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Paramètres manquants ou invalides (le montant doit être supérieur à 0)." }, { status: 400 });
         }
 
-        const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+        const BASE_URL = resolveBaseUrl(req);
 
-        // Construct reference for webhooks
-        // Format: type__schoolId__studentIdOrDuration__amount
+        if (type === 'subscription' && !planName) {
+            return NextResponse.json({ error: "Nom de plan requis pour un abonnement." }, { status: 400 });
+        }
+        if (type === 'tuition' && !studentId) {
+            return NextResponse.json({ error: "studentId requis pour une scolarité." }, { status: 400 });
+        }
+
         const referenceValue = type === 'tuition'
-            ? `tuition__${schoolId}__${studentId}__${amount}`
-            : `subscription__${schoolId}__${duration}__${amount}`;
+            ? buildPaymentReference({ type: 'tuition', schoolId, studentId, amount })
+            : buildPaymentReference({
+                type: 'subscription',
+                schoolId,
+                planName: planName as PlanName,
+                durationMonths: parseInt(String(duration || '1').replace('m', ''), 10) || 1,
+                amount,
+            });
+
+        const successUrl = `${BASE_URL}/payment/success?type=${type}`;
+        const errorUrl = (psp: string) => `${BASE_URL}/payment/error?type=${type}&provider=${psp}${planName ? `&plan=${encodeURIComponent(planName)}` : ''}`;
 
         switch (provider.toLowerCase()) {
             case 'stripe':
@@ -54,8 +87,8 @@ export async function POST(req: Request) {
                     description: type === 'tuition' ? `Paiement scolarité élève ID: ${studentId}` : `Abonnement école ${schoolId}`,
                     clientReferenceId: referenceValue,
                     customerEmail: userEmail,
-                    successUrl: `${BASE_URL}/payment/success?type=${type}&session_id={CHECKOUT_SESSION_ID}`,
-                    cancelUrl: `${BASE_URL}/payment/error?type=${type}`,
+                    successUrl: `${successUrl}&session_id={CHECKOUT_SESSION_ID}`,
+                    cancelUrl: errorUrl('stripe'),
                 });
                 if (stripeResult.error) return NextResponse.json({ error: stripeResult.error }, { status: 500 });
                 if (!stripeResult.url) return NextResponse.json({ error: "L'URL de paiement Stripe n'a pas été générée." }, { status: 500 });
@@ -65,8 +98,8 @@ export async function POST(req: Request) {
                 const waveUrl = await createWaveCheckoutSession({
                     amount: amount.toString(),
                     currency: 'XOF',
-                    error_url: `${BASE_URL}/payment/error?type=${type}`,
-                    success_url: `${BASE_URL}/payment/success?type=${type}`,
+                    error_url: errorUrl('wave'),
+                    success_url: successUrl,
                     client_reference: referenceValue,
                 });
                 if (!waveUrl) return NextResponse.json({ error: "L'URL de paiement Wave n'a pas été générée." }, { status: 500 });
@@ -81,8 +114,8 @@ export async function POST(req: Request) {
                     payerName: userDisplayName || 'Client GèreEcole',
                     payerEmail: userEmail,
                     payerPhone: phone,
-                    successUrl: `${BASE_URL}/payment/success?type=${type}`,
-                    errorUrl: `${BASE_URL}/payment/error?type=${type}`,
+                    successUrl,
+                    errorUrl: errorUrl('genius'),
                     metadata: {
                         type,
                         schoolId,
@@ -99,8 +132,8 @@ export async function POST(req: Request) {
                     total_amount: amount,
                     description: type === 'tuition' ? `Scolarité ${studentId}` : `Abonnement ${duration} mois`,
                     custom_data: { reference: referenceValue },
-                    return_url: `${BASE_URL}/payment/success?type=${type}`,
-                    cancel_url: `${BASE_URL}/payment/error?type=${type}`,
+                    return_url: successUrl,
+                    cancel_url: errorUrl('paydunya'),
                     callback_url: `${BASE_URL}/api/webhooks/paydunya`,
                 });
                 return NextResponse.json({ url: paydunyaResult.url, error: paydunyaResult.error });
@@ -112,9 +145,9 @@ export async function POST(req: Request) {
                     currency: 'XOF',
                     order_id: `OM_${Date.now()}`,
                     amount: amount,
-                    return_url: `${BASE_URL}/payment/success?type=${type}`,
-                    cancel_url: `${BASE_URL}/payment/error?type=${type}`,
-                    notif_url: `${BASE_URL}/api/webhooks/orange`,
+                    return_url: successUrl,
+                    cancel_url: errorUrl('orangemoney'),
+                    notif_url: `${BASE_URL}/api/webhooks/orangemoney`,
                     lang: 'fr',
                     reference: referenceValue,
                 });
@@ -124,7 +157,7 @@ export async function POST(req: Request) {
             case 'mtn':
                 const mtnResult = await requestMtnMomoPayment({
                     amount: amount.toString(),
-                    currency: 'EUR', // Per sandbox config in mtn-momo.ts
+                    currency: MTN_CURRENCY,
                     externalId: referenceValue,
                     payer: {
                         partyIdType: 'MSISDN',

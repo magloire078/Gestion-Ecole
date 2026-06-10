@@ -7,7 +7,7 @@ import { collection, getDocs, query, where, getCountFromServer, collectionGroup 
 import { StatCard } from '@/components/ui/stat-card';
 import { Building, Users, CreditCard, DollarSign } from 'lucide-react';
 import type { school as School } from '@/lib/data-types';
-import { TARIFAIRE } from '@/lib/billing-calculator';
+import { estimateMonthlyRevenue, type ModuleName } from '@/lib/subscription-plans';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/currency-utils';
@@ -42,16 +42,27 @@ export function SystemStats() {
           getCountFromServer(usersQuery),
         ]);
 
-        let totalRevenue = 0;
-        schoolsSnap.forEach(doc => {
-          const school = doc.data() as School;
-          if (school.subscription && school.subscription.status === 'active') {
-            const plan = school.subscription.plan as keyof typeof TARIFAIRE;
-            if (plan && TARIFAIRE[plan]) {
-              totalRevenue += TARIFAIRE[plan].prixMensuel;
-            }
-          }
+        const activeSchools = schoolsSnap.docs.filter(d => {
+          const s = d.data() as School;
+          return s.subscription?.status === 'active';
         });
+
+        const studentCounts = await Promise.all(
+          activeSchools.map(d =>
+            getCountFromServer(
+              query(collection(firestore, `ecoles/${d.id}/eleves`), where('status', '==', 'Actif'))
+            ).then(snap => snap.data().count).catch(() => 0)
+          )
+        );
+
+        const totalRevenue = activeSchools.reduce((sum, d, i) => {
+          const s = d.data() as School;
+          return sum + estimateMonthlyRevenue(
+            s.subscription?.plan,
+            studentCounts[i],
+            (s.subscription?.activeModules || []) as ModuleName[]
+          );
+        }, 0);
 
         setStats({
           activeSchools: schoolsSnap.size,

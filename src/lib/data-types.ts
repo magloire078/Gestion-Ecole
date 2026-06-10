@@ -32,6 +32,9 @@ export type school = {
     mainLogoUrl: string;
     digitalSignatureUrl?: string;
     email: string;
+    currentAcademicYear?: string;
+    academicPeriods?: academicPeriod[];
+    archivedYears?: string[];
     isSetupComplete?: boolean;
     subscription?: {
         plan?: "Essentiel" | "Pro" | "Premium";
@@ -43,6 +46,27 @@ export type school = {
         activeModules?: ("sante" | "cantine" | "transport" | "internat" | "immobilier" | "activites" | "rh")[];
     };
     id?: string;
+};
+
+export type academicPeriod = {
+    name: string;
+    startDate: string;
+    endDate: string;
+    type?: "trimestre" | "semestre" | "quadrimestre" | "autre";
+    order?: number;
+};
+
+export type academicYearTransition = {
+    schoolId: string;
+    fromYear: string;
+    toYear: string;
+    status: "in_progress" | "completed" | "failed";
+    classesCloned: number;
+    studentsPromoted: number;
+    startedAt: string;
+    completedAt?: string;
+    startedBy: string;
+    notes?: string;
 };
 
 export type parent_profile = {
@@ -413,6 +437,7 @@ export type accountingTransaction = {
     type: "Revenu" | "Dépense";
     amount: number;
     studentId?: string;
+    academicYear?: string;
 };
 
 export type payment = {
@@ -426,6 +451,7 @@ export type payment = {
     payerLastName: string;
     method: "Espèces" | "Chèque" | "Virement Bancaire" | "Paiement Mobile";
     payerContact?: string;
+    academicYear?: string;
     id?: string;
 };
 
@@ -493,6 +519,7 @@ export type fee = {
     amount: string;
     installments: string;
     details?: string;
+    academicYear?: string;
     id?: string;
 };
 

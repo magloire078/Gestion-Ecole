@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BulkImport } from '@/components/data/bulk-import';
+import { BulkExport } from '@/components/data/bulk-export';
 
 interface StudentWithId extends Student { id: string; }
 interface ClassWithId extends Class { id: string; }
@@ -56,6 +57,9 @@ export default function DataIntegrityPage() {
                     <TabsTrigger value="import" className="gap-2">
                         <UploadCloud className="h-4 w-4" />
                         Importation de Masse
+                    </TabsTrigger>
+                    <TabsTrigger value="export" className="gap-2">
+                        Export
                     </TabsTrigger>
                 </TabsList>
 
@@ -192,6 +196,10 @@ export default function DataIntegrityPage() {
 
                 <TabsContent value="import" className="mt-4">
                     <BulkImport existingClasses={classes} existingStudents={students} currentAcademicYear={schoolData?.currentAcademicYear} />
+                </TabsContent>
+
+                <TabsContent value="export" className="mt-4">
+                    <BulkExport />
                 </TabsContent>
             </Tabs>
         </div>

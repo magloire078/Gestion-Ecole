@@ -6,6 +6,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import { Bot, Printer, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { staff as Staff, student as Student, class_type as Class } from '@/lib/data-types';
@@ -385,7 +387,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({
                                         <Button 
                                             variant="ghost" 
                                             size="sm" 
-                                            onClick={() => handleOpenFormDialog ? undefined : handleGenerateComment()} 
+                                            onClick={() => handleGenerateComment()}
                                             disabled={isGeneratingCouncilComment} 
                                             className="no-print h-8 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all font-black text-[10px] px-4"
                                         >

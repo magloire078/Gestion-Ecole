@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import type { UserProfile } from '@/lib/data-types';
-import { NAV_LINKS } from '@/lib/nav-links';
+import { NAV_LINKS, parametresSubLinks } from '@/lib/nav-links';
 import type { Subscription } from '@/hooks/use-subscription';
 import { useFirestore } from '@/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
@@ -22,7 +22,7 @@ interface NavProps {
     userPermissions: Partial<Record<PermissionKey, boolean>>;
     subscription?: Subscription | null;
     isSubscriptionActive?: boolean;
-    isNavCollapsed?: boolean;
+    collapsed?: boolean;
 }
 
 const NavLink = ({ href, icon: Icon, label, collapsed, pathname, hasUnreadMessages }: { href: string; icon: React.ElementType; label: string, collapsed?: boolean, pathname: string, hasUnreadMessages?: boolean }) => {
@@ -132,13 +132,7 @@ export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscriptio
 
         if (module) {
             const isPremium = subscription?.plan === 'Premium';
-            const isFreeTier = subscription?.plan === 'Essentiel';
             const isModuleActive = subscription?.activeModules?.includes(module);
-
-            // Free tier (Essentiel) has access to all modules
-            if (isFreeTier) {
-                return true;
-            }
 
             if (!isPremium && !isModuleActive) {
                 return false;
@@ -221,7 +215,34 @@ export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscriptio
             </Accordion>
             <div className="space-y-1 pt-2 mt-2 border-t">
                 {configLinks.map(link => (
-                    <NavLink key={link.href} {...link} collapsed={false} pathname={pathname} />
+                    <div key={link.href} className="space-y-1">
+                        <NavLink {...link} collapsed={false} pathname={pathname} />
+                        {link.href === '/dashboard/parametres' && pathname.startsWith('/dashboard/parametres') && (
+                            <ul className="ml-9 border-l border-border/60 pl-3 space-y-0.5">
+                                {parametresSubLinks.map(sub => {
+                                    const isActive = pathname === sub.href
+                                        || (sub.href !== '/dashboard/parametres' && pathname.startsWith(sub.href + '/'));
+                                    const SubIcon = sub.icon;
+                                    return (
+                                        <li key={sub.href}>
+                                            <Link
+                                                href={sub.href}
+                                                className={cn(
+                                                    'flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors',
+                                                    isActive
+                                                        ? 'text-primary bg-primary/10'
+                                                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                                                )}
+                                            >
+                                                <SubIcon className="h-3.5 w-3.5 shrink-0" />
+                                                <span className="truncate">{sub.label}</span>
+                                            </Link>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        )}
+                    </div>
                 ))}
             </div>
         </>

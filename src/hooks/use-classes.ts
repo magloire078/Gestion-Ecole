@@ -5,30 +5,37 @@ import { useMemo } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
 import { collection, query, orderBy, where } from 'firebase/firestore';
 import type { class_type as ClassType } from '@/lib/data-types';
+import { useAcademicYear } from '@/providers/academic-year-provider';
 
-export function useClasses(schoolId?: string | null, academicYear?: string) {
+/**
+ * Récupère les classes d'une école.
+ *
+ * Si `academicYear` n'est pas fourni, on utilise l'année actuellement
+ * sélectionnée dans le contexte (par défaut l'année courante de l'école).
+ * Passe explicitement `null` pour ne pas filtrer.
+ */
+export function useClasses(schoolId?: string | null, academicYear?: string | null) {
     const firestore = useFirestore();
+    const { selectedYear } = useAcademicYear();
+    const effectiveYear = academicYear === null
+        ? undefined
+        : (academicYear ?? selectedYear);
 
     const classesQuery = useMemo(() => {
         if (!schoolId || !firestore) return null;
 
-        // Base query
-        let q = query(
-            collection(firestore, `ecoles/${schoolId}/classes`),
-            orderBy('name', 'asc')
-        );
-
-        // Filter by academic year if provided
-        if (academicYear) {
-            q = query(
+        if (effectiveYear) {
+            return query(
                 collection(firestore, `ecoles/${schoolId}/classes`),
-                where('academicYear', '==', academicYear),
-                orderBy('name', 'asc')
+                where('academicYear', '==', effectiveYear),
+                orderBy('name', 'asc'),
             );
         }
-
-        return q;
-    }, [schoolId, firestore, academicYear]);
+        return query(
+            collection(firestore, `ecoles/${schoolId}/classes`),
+            orderBy('name', 'asc'),
+        );
+    }, [schoolId, firestore, effectiveYear]);
 
     const { data, loading, error } = useCollection(classesQuery);
 
