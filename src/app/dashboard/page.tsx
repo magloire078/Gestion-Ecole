@@ -178,13 +178,13 @@ const RegularDashboard = () => {
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
+          <FinanceOverview schoolId={schoolId} academicYear={effectiveAcademicYear} />
           <RecentActivity schoolId={schoolId} />
         </div>
         <div className="lg:col-span-1 space-y-6">
-          <ActionItems />
-          <FinanceOverview schoolId={schoolId} academicYear={effectiveAcademicYear} />
-          <CalendarNotes />
           <QuickActions />
+          <ActionItems />
+          <CalendarNotes />
         </div>
       </div>
     </div>
