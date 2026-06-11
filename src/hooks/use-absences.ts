@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { AbsencesService, type AbsenceEntry } from '@/services/absences-service';
+import { useAcademicYear } from '@/providers/academic-year-provider';
+import { filterByAcademicYear } from '@/lib/academic-year-utils';
 
 /**
  * Hook to fetch absences across all students
@@ -9,13 +11,14 @@ import { AbsencesService, type AbsenceEntry } from '@/services/absences-service'
  * @param fromDate - Filter absences from this date (YYYY-MM-DD format)
  */
 export function useAbsences(schoolId?: string | null, fromDate?: string) {
-    const [absences, setAbsences] = useState<AbsenceEntry[]>([]);
+    const [rawAbsences, setRawAbsences] = useState<AbsenceEntry[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<Error | null>(null);
+    const { selectedYear, currentYear } = useAcademicYear();
 
     useEffect(() => {
         if (!schoolId || !fromDate) {
-            setAbsences([]);
+            setRawAbsences([]);
             setLoading(false);
             return;
         }
@@ -26,7 +29,7 @@ export function useAbsences(schoolId?: string | null, fromDate?: string) {
 
             try {
                 const fetchedAbsences = await AbsencesService.getAllAbsences(schoolId, fromDate);
-                setAbsences(fetchedAbsences);
+                setRawAbsences(fetchedAbsences);
             } catch (err) {
                 console.error('Error fetching absences:', err);
                 setError(err as Error);
@@ -37,6 +40,11 @@ export function useAbsences(schoolId?: string | null, fromDate?: string) {
 
         fetchAbsences();
     }, [schoolId, fromDate]);
+
+    const absences = useMemo(
+        () => filterByAcademicYear(rawAbsences, selectedYear, currentYear),
+        [rawAbsences, selectedYear, currentYear],
+    );
 
     return { absences, loading, error };
 }

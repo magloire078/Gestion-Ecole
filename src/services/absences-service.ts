@@ -1,7 +1,8 @@
 'use client';
 
-import { doc, addDoc, deleteDoc, collection, query, where, collectionGroup, getDocs, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, addDoc, deleteDoc, collection, query, where, collectionGroup, getDocs, serverTimestamp } from "firebase/firestore";
 import { firebaseFirestore as db } from '@/firebase/config';
+import { resolveAcademicYearForWrite } from '@/lib/academic-year-utils';
 
 interface AbsenceData {
     date: string;
@@ -13,6 +14,7 @@ interface AbsenceData {
     studentName: string;
     classId?: string;
     recordedBy: string;
+    academicYear?: string;
 }
 
 interface AbsenceEntry extends AbsenceData {
@@ -30,12 +32,18 @@ export const AbsencesService = {
      */
     createAbsence: async (schoolId: string, studentId: string, data: Omit<AbsenceData, 'schoolId' | 'studentId' | 'recordedBy'>, recordedBy: string) => {
         try {
+            const schoolSnap = await getDoc(doc(db, `ecoles/${schoolId}`));
+            const academicYear = data.academicYear ?? resolveAcademicYearForWrite({
+                schoolCurrentYear: schoolSnap.data()?.currentAcademicYear,
+                docDate: data.date,
+            });
             const absenceCollectionRef = collection(db, `ecoles/${schoolId}/eleves/${studentId}/absences`);
             const absenceData = {
                 ...data,
                 schoolId,
                 studentId,
                 recordedBy,
+                academicYear,
                 createdAt: serverTimestamp(),
             };
             const docRef = await addDoc(absenceCollectionRef, absenceData);

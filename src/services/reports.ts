@@ -19,7 +19,11 @@ export interface MonthlyReportData {
 export class ReportService {
     constructor(private firestore: Firestore) { }
 
-    async getMonthlyFinanceData(schoolId: string, date: Date): Promise<MonthlyReportData> {
+    async getMonthlyFinanceData(
+        schoolId: string,
+        date: Date,
+        academicYear?: string,
+    ): Promise<MonthlyReportData> {
         const start = startOfMonth(date);
         const end = endOfMonth(date);
 
@@ -31,7 +35,15 @@ export class ReportService {
         );
 
         const snapshot = await getDocs(q);
-        const transactions = snapshot.docs.map(doc => doc.data() as AccountingTransaction);
+        const allTransactions = snapshot.docs.map(doc => doc.data() as AccountingTransaction);
+
+        // Si une année est fournie, on filtre :
+        // - les docs taggués (academicYear === year) → toujours visibles
+        // - les docs legacy (sans tag) → visibles uniquement si c'est la
+        //   période courante (sinon ils seraient mélangés à une archive).
+        const transactions = academicYear
+            ? allTransactions.filter(t => !t.academicYear || t.academicYear === academicYear)
+            : allTransactions;
 
         const revenueMap = new Map<string, number>();
         const expenseMap = new Map<string, number>();
@@ -48,9 +60,17 @@ export class ReportService {
             }
         });
 
-        // Get tuition data for recovery rate
+        // Taux de recouvrement : élèves actifs de l'année cible si possible.
         const studentsRef = collection(this.firestore, `ecoles/${schoolId}/eleves`);
-        const studentsSnapshot = await getDocs(query(studentsRef, where('status', '==', 'Actif')));
+        const studentsQuery = academicYear
+            ? query(studentsRef, where('status', '==', 'Actif'), where('inscriptionYear', '==', academicYear))
+            : query(studentsRef, where('status', '==', 'Actif'));
+        let studentsSnapshot = await getDocs(studentsQuery);
+        // Fallback : si aucun élève ne porte inscriptionYear (école pré-bascule),
+        // on retombe sur tous les actifs pour ne pas afficher 0 %.
+        if (academicYear && studentsSnapshot.empty) {
+            studentsSnapshot = await getDocs(query(studentsRef, where('status', '==', 'Actif')));
+        }
         const students = studentsSnapshot.docs.map(doc => doc.data() as Student);
 
         const totalExpected = students.reduce((sum, s) => sum + (s.tuitionFee || 0), 0);

@@ -1,7 +1,8 @@
 'use client';
 
-import { addDoc, collection, query, where, collectionGroup, orderBy, getDocs, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, addDoc, collection, query, where, collectionGroup, orderBy, getDocs, serverTimestamp } from "firebase/firestore";
 import { firebaseFirestore as db } from '@/firebase/config';
+import { resolveAcademicYearForWrite } from '@/lib/academic-year-utils';
 
 interface IncidentData {
     type: 'Avertissement Oral' | 'Avertissement Écrit' | 'Retenue' | 'Mise à pied' | 'Exclusion temporaire' | 'Exclusion définitive';
@@ -16,6 +17,7 @@ interface IncidentData {
     reportedByName: string;
     date: string;
     followUpNotes?: string;
+    academicYear?: string;
 }
 
 interface IncidentEntry extends IncidentData {
@@ -38,15 +40,22 @@ export const DisciplineService = {
         reportedBy: { uid: string; displayName?: string }
     ) => {
         try {
+            const schoolSnap = await getDoc(doc(db, `ecoles/${schoolId}`));
+            const now = new Date().toISOString();
+            const academicYear = (data as any).academicYear ?? resolveAcademicYearForWrite({
+                schoolCurrentYear: schoolSnap.data()?.currentAcademicYear,
+                docDate: now,
+            });
             const incidentCollectionRef = collection(db, `ecoles/${schoolId}/eleves/${studentId}/incidents_disciplinaires`);
             const incidentData = {
                 ...data,
                 schoolId,
                 studentId,
-                date: new Date().toISOString(),
+                date: now,
                 reportedById: reportedBy.uid,
                 reportedByName: reportedBy.displayName || 'Système',
                 followUpNotes: data.followUpNotes || '',
+                academicYear,
             };
             const docRef = await addDoc(incidentCollectionRef, incidentData);
             return docRef.id;

@@ -65,7 +65,7 @@ async function backfillRootCollection(
 
 async function backfillStudentSubcollection(
     schoolId: string,
-    subcollection: 'notes' | 'paiements',
+    subcollection: 'notes' | 'paiements' | 'absences' | 'incidents_disciplinaires',
     currentYear: string,
     stats: Stats,
 ): Promise<void> {
@@ -107,11 +107,15 @@ async function backfillSchool(schoolId: string): Promise<void> {
     totals.frais_scolarite = init();
     totals.notes = init();
     totals.paiements = init();
+    totals.absences = init();
+    totals.incidents_disciplinaires = init();
 
     await backfillRootCollection(schoolId, 'comptabilite', currentYear, totals.comptabilite);
     await backfillRootCollection(schoolId, 'frais_scolarite', currentYear, totals.frais_scolarite);
     await backfillStudentSubcollection(schoolId, 'notes', currentYear, totals.notes);
     await backfillStudentSubcollection(schoolId, 'paiements', currentYear, totals.paiements);
+    await backfillStudentSubcollection(schoolId, 'absences', currentYear, totals.absences);
+    await backfillStudentSubcollection(schoolId, 'incidents_disciplinaires', currentYear, totals.incidents_disciplinaires);
 
     for (const [key, stats] of Object.entries(totals)) {
         console.log(`  ${key.padEnd(18)} scanned=${stats.scanned} updated=${stats.updated} skipped=${stats.skipped}`);

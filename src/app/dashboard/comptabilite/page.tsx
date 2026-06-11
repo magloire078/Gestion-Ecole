@@ -143,9 +143,9 @@ export default function AccountingPage() {
       const reportService = new ReportService(firestore);
       const mailService = new MailService(firestore);
 
-      // Get data for last month
+      // Get data for last month, scopé à l'année sélectionnée
       const lastMonth = subMonths(new Date(), 1);
-      const reportData = await reportService.getMonthlyFinanceData(schoolId, lastMonth);
+      const reportData = await reportService.getMonthlyFinanceData(schoolId, lastMonth, selectedYear);
 
       const result = await mailService.sendMonthlyFinanceReport(user.email, schoolName, reportData, schoolId);
 

@@ -1,20 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { DisciplineService, type IncidentEntry } from '@/services/discipline-service';
+import { useAcademicYear } from '@/providers/academic-year-provider';
+import { filterByAcademicYear } from '@/lib/academic-year-utils';
 
 /**
  * Hook to fetch discipline incidents across all students
  * @param schoolId - The school ID
  */
 export function useDisciplineIncidents(schoolId?: string | null) {
-    const [incidents, setIncidents] = useState<IncidentEntry[]>([]);
+    const [rawIncidents, setRawIncidents] = useState<IncidentEntry[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<Error | null>(null);
+    const { selectedYear, currentYear } = useAcademicYear();
 
     useEffect(() => {
         if (!schoolId) {
-            setIncidents([]);
+            setRawIncidents([]);
             setLoading(false);
             return;
         }
@@ -25,7 +28,7 @@ export function useDisciplineIncidents(schoolId?: string | null) {
 
             try {
                 const fetchedIncidents = await DisciplineService.getAllIncidents(schoolId);
-                setIncidents(fetchedIncidents);
+                setRawIncidents(fetchedIncidents);
             } catch (err) {
                 console.error('Error fetching incidents:', err);
                 setError(err as Error);
@@ -36,6 +39,11 @@ export function useDisciplineIncidents(schoolId?: string | null) {
 
         fetchIncidents();
     }, [schoolId]);
+
+    const incidents = useMemo(
+        () => filterByAcademicYear(rawIncidents, selectedYear, currentYear),
+        [rawIncidents, selectedYear, currentYear],
+    );
 
     return { incidents, loading, error };
 }

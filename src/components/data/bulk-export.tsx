@@ -12,12 +12,14 @@
  */
 import { useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
+import JSZip from 'jszip';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Download, FileJson, FileSpreadsheet, Loader2 } from 'lucide-react';
+import { Download, FileJson, FileSpreadsheet, Loader2, Package } from 'lucide-react';
 import {
     collection,
     collectionGroup,
@@ -156,6 +158,54 @@ const EXPORT_ENTITIES: ExportEntity[] = [
             return all;
         },
     },
+    {
+        id: 'absences',
+        label: 'Absences',
+        async fetch(firestore, schoolId, year) {
+            const studentsSnap = await getDocs(collection(firestore, `ecoles/${schoolId}/eleves`));
+            const students = plainDocs(studentsSnap);
+            const all: Record<string, any>[] = [];
+            for (const s of students) {
+                const absSnap = await getDocs(collection(firestore, `ecoles/${schoolId}/eleves/${s.id}/absences`));
+                absSnap.docs.forEach(doc => {
+                    const data = doc.data();
+                    if (year && data.academicYear && data.academicYear !== year) return;
+                    all.push({
+                        id: doc.id,
+                        studentId: s.id,
+                        studentMatricule: s.matricule ?? '',
+                        studentName: `${s.firstName ?? ''} ${s.lastName ?? ''}`.trim(),
+                        ...data,
+                    });
+                });
+            }
+            return all;
+        },
+    },
+    {
+        id: 'incidents',
+        label: 'Incidents disciplinaires',
+        async fetch(firestore, schoolId, year) {
+            const studentsSnap = await getDocs(collection(firestore, `ecoles/${schoolId}/eleves`));
+            const students = plainDocs(studentsSnap);
+            const all: Record<string, any>[] = [];
+            for (const s of students) {
+                const incSnap = await getDocs(collection(firestore, `ecoles/${schoolId}/eleves/${s.id}/incidents_disciplinaires`));
+                incSnap.docs.forEach(doc => {
+                    const data = doc.data();
+                    if (year && data.academicYear && data.academicYear !== year) return;
+                    all.push({
+                        id: doc.id,
+                        studentId: s.id,
+                        studentMatricule: s.matricule ?? '',
+                        studentName: `${s.firstName ?? ''} ${s.lastName ?? ''}`.trim(),
+                        ...data,
+                    });
+                });
+            }
+            return all;
+        },
+    },
 ];
 
 function toCsv(rows: Record<string, any>[]): string {
@@ -192,6 +242,7 @@ export function BulkExport() {
     const [yearScope, setYearScope] = useState<'current' | 'all' | string>('current');
     const [format, setFormat] = useState<ExportFormat>('xlsx');
     const [running, setRunning] = useState(false);
+    const [exportAll, setExportAll] = useState(false);
 
     const yearOptions = useMemo(() => Array.from(new Set([
         currentYear,
@@ -201,20 +252,63 @@ export function BulkExport() {
 
     const handleExport = async () => {
         if (!schoolId) return;
-        const desc = EXPORT_ENTITIES.find(e => e.id === entityId);
-        if (!desc) return;
+
+        const targetYear = yearScope === 'all' ? null
+            : yearScope === 'current' ? (currentYear || null)
+            : yearScope;
+        const slugBase = `${(schoolData?.name ?? 'ecole').toString().replace(/\W+/g, '_').toLowerCase()}_${targetYear ?? 'toutes_annees'}`;
 
         setRunning(true);
         try {
-            const targetYear = yearScope === 'all' ? null
-                : yearScope === 'current' ? (currentYear || null)
-                : yearScope;
+            // ------- Mode "Tout exporter" (multi-entités) -------
+            if (exportAll) {
+                const datasets: { entity: ExportEntity; rows: Record<string, any>[] }[] = [];
+                for (const entity of EXPORT_ENTITIES) {
+                    const rows = await entity.fetch(firestore, schoolId, targetYear);
+                    if (rows.length > 0) datasets.push({ entity, rows });
+                }
+                if (datasets.length === 0) {
+                    toast({ title: 'Export vide', description: 'Aucune donnée correspondant aux filtres.' });
+                    return;
+                }
+
+                if (format === 'xlsx') {
+                    const wb = XLSX.utils.book_new();
+                    for (const { entity, rows } of datasets) {
+                        const ws = XLSX.utils.json_to_sheet(rows);
+                        XLSX.utils.book_append_sheet(wb, ws, entity.label.slice(0, 31));
+                    }
+                    XLSX.writeFile(wb, `${slugBase}_complet.xlsx`);
+                } else {
+                    const zip = new JSZip();
+                    for (const { entity, rows } of datasets) {
+                        if (format === 'json') {
+                            zip.file(`${entity.id}.json`, JSON.stringify(rows, null, 2));
+                        } else {
+                            zip.file(`${entity.id}.csv`, '﻿' + toCsv(rows));
+                        }
+                    }
+                    const blob = await zip.generateAsync({ type: 'blob' });
+                    download(`${slugBase}_complet.zip`, 'application/zip', blob);
+                }
+
+                const total = datasets.reduce((sum, d) => sum + d.rows.length, 0);
+                toast({
+                    title: 'Export complet généré',
+                    description: `${datasets.length} entité(s), ${total} ligne(s) au total.`,
+                });
+                return;
+            }
+
+            // ------- Mode mono-entité (comportement précédent) -------
+            const desc = EXPORT_ENTITIES.find(e => e.id === entityId);
+            if (!desc) return;
             const rows = await desc.fetch(firestore, schoolId, targetYear);
             if (rows.length === 0) {
                 toast({ title: 'Export vide', description: 'Aucune donnée correspondant aux filtres.' });
                 return;
             }
-            const slug = `${(schoolData?.name ?? 'ecole').toString().replace(/\W+/g, '_').toLowerCase()}_${desc.id}_${targetYear ?? 'toutes_annees'}`;
+            const slug = `${slugBase}_${desc.id}`;
             if (format === 'json') {
                 download(`${slug}.json`, 'application/json', JSON.stringify(rows, null, 2));
             } else if (format === 'csv') {
@@ -246,10 +340,20 @@ export function BulkExport() {
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+                <div className="flex items-center justify-between rounded-2xl border bg-muted/30 p-4">
+                    <div className="space-y-0.5">
+                        <Label className="text-sm font-semibold">Tout exporter</Label>
+                        <p className="text-xs text-muted-foreground">
+                            Bundle multi-entités : XLSX multi-feuilles ou archive ZIP (CSV / JSON).
+                        </p>
+                    </div>
+                    <Switch checked={exportAll} onCheckedChange={setExportAll} />
+                </div>
+
                 <div className="grid gap-4 md:grid-cols-3">
                     <div className="space-y-2">
                         <Label>Type de données</Label>
-                        <Select value={entityId} onValueChange={setEntityId}>
+                        <Select value={entityId} onValueChange={setEntityId} disabled={exportAll}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
                                 {EXPORT_ENTITIES.map(e => (
@@ -278,9 +382,9 @@ export function BulkExport() {
                         <Select value={format} onValueChange={v => setFormat(v as ExportFormat)}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="xlsx">Excel (.xlsx)</SelectItem>
-                                <SelectItem value="csv">CSV (.csv)</SelectItem>
-                                <SelectItem value="json">JSON (.json)</SelectItem>
+                                <SelectItem value="xlsx">{exportAll ? 'Excel multi-feuilles (.xlsx)' : 'Excel (.xlsx)'}</SelectItem>
+                                <SelectItem value="csv">{exportAll ? 'ZIP de CSV (.zip)' : 'CSV (.csv)'}</SelectItem>
+                                <SelectItem value="json">{exportAll ? 'ZIP de JSON (.zip)' : 'JSON (.json)'}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -289,9 +393,11 @@ export function BulkExport() {
                 <div className="flex justify-end">
                     <Button onClick={handleExport} disabled={running || !schoolId}>
                         {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (
-                            format === 'json' ? <FileJson className="mr-2 h-4 w-4" /> : <FileSpreadsheet className="mr-2 h-4 w-4" />
+                            exportAll ? <Package className="mr-2 h-4 w-4" />
+                            : format === 'json' ? <FileJson className="mr-2 h-4 w-4" />
+                            : <FileSpreadsheet className="mr-2 h-4 w-4" />
                         )}
-                        Télécharger
+                        {exportAll ? 'Tout télécharger' : 'Télécharger'}
                     </Button>
                 </div>
             </CardContent>
