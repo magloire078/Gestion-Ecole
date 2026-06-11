@@ -18,6 +18,7 @@ import { ClassesGridView } from '@/components/classes/classes-grid-view';
 import { ClassesListView } from '@/components/classes/classes-list-view';
 import { ClassForm } from './class-form'; // Import the new component
 import { cn } from '@/lib/utils';
+import { useDebounce } from '@/hooks/use-debounce';
 
 interface ClassesListProps {
     academicYear?: string;
@@ -31,6 +32,7 @@ export function ClassesList({ academicYear }: ClassesListProps) {
 
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [searchQuery, setSearchQuery] = useState('');
+    const debouncedSearchQuery = useDebounce(searchQuery, 150);
     const [selectedCycle, setSelectedCycle] = useState('all');
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingClass, setEditingClass] = useState<(ClassType & { id: string }) | null>(null);
@@ -101,9 +103,9 @@ export function ClassesList({ academicYear }: ClassesListProps) {
                 </CardHeader>
                 <CardContent>
                     {viewMode === 'grid' ? (
-                        <ClassesGridView cycleId={selectedCycle} searchQuery={searchQuery} onEdit={handleOpenForm} />
+                        <ClassesGridView cycleId={selectedCycle} searchQuery={debouncedSearchQuery} onEdit={handleOpenForm} />
                     ) : (
-                        <ClassesListView cycleId={selectedCycle} searchQuery={searchQuery} onEdit={handleOpenForm} />
+                        <ClassesListView cycleId={selectedCycle} searchQuery={debouncedSearchQuery} onEdit={handleOpenForm} />
                     )}
                 </CardContent>
             </Card>

@@ -259,6 +259,16 @@ service cloud.firestore {
       match /emploi_du_temps/{entryId} { allow read, write: if hasPermission(schoolId, 'manageSchedule'); }
       match /frais_scolarite/{feeId} { allow read, write: if hasPermission(schoolId, 'manageBilling'); }
       
+      match /inscriptions_classe/{assignmentId} {
+        allow read: if isSchoolMember(schoolId) || (isSignedIn() && isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(resource.data.studentId))));
+        allow write: if hasPermission(schoolId, 'manageClasses');
+      }
+
+      match /academic_year_transitions/{transitionId} {
+        allow read: if isSchoolMember(schoolId);
+        allow write: if hasPermission(schoolId, 'manageClasses');
+      }
+      
       // Absences au niveau école (pour compatibilité)
       match /absences/{absenceId} {
         allow create, update, delete: if hasPermission(schoolId, 'manageAttendance');

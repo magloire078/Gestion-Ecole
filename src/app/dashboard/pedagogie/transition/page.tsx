@@ -11,7 +11,7 @@ import { useStudents } from "@/hooks/use-students";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Check, X, ArrowRight, Save, RotateCcw, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { class_type as Class, student as Student, student_enrollment } from "@/lib/data-types";
+import type { class_type as Class, student as Student, student_enrollment, fee as Fee } from "@/lib/data-types";
 import { StudentReportsService } from '@/services/student-reports-service';
 
 export default function TransitionPage() {
@@ -29,6 +29,10 @@ export default function TransitionPage() {
     const classesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
     const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
     const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
+
+    const feesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/frais_scolarite`)) : null, [firestore, schoolId]);
+    const { data: feesData } = useCollection(feesQuery);
+    const fees: Fee[] = useMemo(() => feesData?.map(d => ({ id: d.id, ...d.data() } as Fee)) || [], [feesData]);
 
     // Local state to track decisions
     const [decisions, setDecisions] = useState<Record<string, { status: student_enrollment['status'], targetClassId: string }>>({});
@@ -61,7 +65,27 @@ export default function TransitionPage() {
 
                 // Pour les promus ou redoublants
                 const targetClass = classes.find(c => c.id === decision.targetClassId);
-                const tuitionFee = 50000; // TODO: fetch from target class fees based on Niveau
+                
+                // Fetch fee based on target class grade and year
+                let tuitionFee = 50000;
+                if (targetClass?.grade) {
+                    const matchedFee = fees.find(f => 
+                        f.grade.toLowerCase() === targetClass.grade!.toLowerCase() && 
+                        f.academicYear === targetYear
+                    ) || fees.find(f => 
+                        f.grade.toLowerCase() === targetClass.grade!.toLowerCase() && 
+                        (!f.academicYear || f.academicYear === schoolData?.currentAcademicYear)
+                    ) || fees.find(f => 
+                        f.grade.toLowerCase() === targetClass.grade!.toLowerCase()
+                    );
+                    
+                    if (matchedFee && matchedFee.amount) {
+                        const parsedAmount = parseFloat(matchedFee.amount);
+                        if (!isNaN(parsedAmount)) {
+                            tuitionFee = parsedAmount;
+                        }
+                    }
+                }
 
                 const studentRef = doc(firestore, `ecoles/${schoolId}/eleves/${student.id}`);
                 

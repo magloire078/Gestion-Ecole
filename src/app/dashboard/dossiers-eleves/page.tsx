@@ -63,6 +63,7 @@ import { StudentsGrid } from '@/components/dossiers/students-grid';
 import { StudentsStatsCards } from '@/components/dossiers/stats-cards';
 import { StudentService } from "@/services/student-services";
 import { useStudents } from "@/hooks/use-students";
+import { useDebounce } from "@/hooks/use-debounce";
 
 
 export default function StudentsPage() {
@@ -106,14 +107,15 @@ export default function StudentsPage() {
   const cycles: Cycle[] = useMemo(() => cyclesData?.map(d => ({ id: d.id, ...d.data() } as unknown as Cycle)) || [], [cyclesData]);
 
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm, 150);
   const [selectedClass, setSelectedClass] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('active');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
   const { activeStudents, archivedStudents, filteredActiveStudents } = useMemo(() => {
     const filteredBySearch = allStudents.filter(student =>
-      `${student.firstName} ${student.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.matricule?.toLowerCase().includes(searchTerm.toLowerCase())
+      `${student.firstName} ${student.lastName}`.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      student.matricule?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
     );
 
     const filteredByClass = selectedClass === 'all'
@@ -128,12 +130,12 @@ export default function StudentsPage() {
       archivedStudents: archived,
       filteredActiveStudents: active,
     }
-  }, [allStudents, searchTerm, selectedClass]);
+  }, [allStudents, debouncedSearchTerm, selectedClass]);
 
   const studentsToShow = selectedStatus === 'active' ? filteredActiveStudents : archivedStudents;
 
   const stats = useMemo(() => {
-    const listToUse = searchTerm || selectedClass !== 'all' ? filteredActiveStudents : activeStudents;
+    const listToUse = debouncedSearchTerm || selectedClass !== 'all' ? filteredActiveStudents : activeStudents;
     const boys = listToUse.filter(s => s.gender === 'Masculin').length;
     const girls = listToUse.filter(s => s.gender === 'Féminin').length;
     return {
@@ -143,7 +145,7 @@ export default function StudentsPage() {
       classes: classes.length,
       cycles: cycles.length
     }
-  }, [activeStudents, filteredActiveStudents, classes, cycles, searchTerm, selectedClass]);
+  }, [activeStudents, filteredActiveStudents, classes, cycles, debouncedSearchTerm, selectedClass]);
 
 
   // Edit Student State
