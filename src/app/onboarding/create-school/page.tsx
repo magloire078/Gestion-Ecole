@@ -170,6 +170,7 @@ export default function CreateSchoolPage() {
           duration: 5000,
         });
 
+        await reloadUser();
         router.push('/onboarding/setup-structure');
       }
     } catch (error: any) {

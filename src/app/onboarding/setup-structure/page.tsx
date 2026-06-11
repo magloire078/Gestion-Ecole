@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { applySchoolTemplate } from '@/services/structure-creation';
 import { useFirestore } from '@/firebase';
+import { useUser } from '@/hooks/use-user';
 import { getTemplateForCountry, getTemplateDisplayName } from '@/lib/templates';
 import { getCountryByCode, DEFAULT_COUNTRY, type CountryCode } from '@/lib/countries-data';
 import { Loader2, SkipForward, Library, GraduationCap } from 'lucide-react';
@@ -17,9 +18,17 @@ import { LoadingScreen } from '@/components/ui/loading-screen';
 export default function SetupStructurePage() {
     const router = useRouter();
     const { schoolId, loading: schoolLoading, loadingTimeout, reloadUser, schoolData } = useSchoolData();
+    const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
     const { toast } = useToast();
     const [isProcessing, setIsProcessing] = useState(false);
+
+    useEffect(() => {
+        if (user && !schoolId && !schoolLoading && !userLoading) {
+            console.log("[SetupStructurePage] School ID missing from session, reloading user...");
+            reloadUser();
+        }
+    }, [user, schoolId, schoolLoading, userLoading, reloadUser]);
 
     const countryCode = (schoolData?.country as CountryCode) || DEFAULT_COUNTRY;
     const countryConfig = getCountryByCode(countryCode);
