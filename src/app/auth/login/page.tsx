@@ -82,13 +82,15 @@ export default function LoginPage() {
         description: "Bienvenue sur votre espace GèreEcole."
       });
       router.push('/dashboard');
-    } catch (error) {
-      const authError = error as AuthError;
+    } catch (error: any) {
+      console.error("Login error:", error);
       let errorMessage = 'Email ou mot de passe incorrect.';
-      if (authError.code === 'auth/user-not-found') {
+      if (error.code === 'auth/user-not-found') {
         errorMessage = 'Aucun compte trouvé avec cet email.';
-      } else if (authError.code === 'auth/wrong-password' || authError.code === 'auth/invalid-credential') {
+      } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         errorMessage = 'Mot de passe incorrect.';
+      } else if (error.message) {
+        errorMessage = `${error.message} (${error.code || 'unknown'})`;
       }
       setError(errorMessage);
     } finally {
