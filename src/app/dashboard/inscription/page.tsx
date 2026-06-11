@@ -336,12 +336,16 @@ export default function RegistrationPage() {
 
               <div className="flex justify-between pt-4">
                 {step > 1 ? (
-                  <Button type="button" variant="outline" onClick={handlePrevStep} disabled={isSubmitting}>
+                  <Button type="button" variant="outline" onClick={handlePrevStep} disabled={isSubmitting} className="rounded-xl transition-all hover:scale-105 active:scale-95">
                     <span className="flex items-center gap-2"><ArrowLeft className="mr-2 h-4 w-4" /> Précédent</span>
                   </Button>
-                ) : <div />}
+                ) : (
+                  <Button type="button" variant="ghost" onClick={() => router.push('/dashboard/dossiers-eleves')} disabled={isSubmitting} className="text-slate-500 hover:text-slate-700 rounded-xl transition-all hover:scale-105 active:scale-95">
+                    <span className="flex items-center gap-2"><X className="mr-2 h-4 w-4" /> Annuler</span>
+                  </Button>
+                )}
                 {step < 3 ? (
-                  <Button type="button" onClick={handleNextStep}>
+                  <Button type="button" onClick={handleNextStep} className="rounded-xl transition-all hover:scale-105 active:scale-95">
                     <span className="flex items-center gap-2">Suivant <ArrowRight className="ml-2 h-4 w-4" /></span>
                   </Button>
                 ) : (
