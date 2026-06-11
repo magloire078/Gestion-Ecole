@@ -181,11 +181,11 @@ export default function GradeEntryPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingGrade, setEditingGrade] = useState<GradeEntry | null>(null);
   const [gradeToDelete, setGradeToDelete] = useState<GradeEntry | null>(null);
-  const [todayDateString, setTodayDateString] = useState('');
-
-  useEffect(() => {
-    setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
-  }, []);
+  // `Date()` au moment du premier rendu ; nullable côté SSR pour éviter
+  // un mismatch d'hydratation (la date locale n'est connue que côté client).
+  const [todayDateString, setTodayDateString] = useState(() =>
+    typeof window === 'undefined' ? '' : format(new Date(), 'yyyy-MM-dd'),
+  );
 
   const form = useForm<GradeFormValues>({
     resolver: zodResolver(gradeSchema),

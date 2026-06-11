@@ -54,6 +54,9 @@ export function UserNav({ collapsed = false }: UserNavProps) {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    // Pattern volontaire pour différer le rendu post-hydratation
+    // (évite les mismatches d'avatar/menu côté SSR).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsClient(true);
   }, []);
 
@@ -86,18 +89,17 @@ export function UserNav({ collapsed = false }: UserNavProps) {
 
   const hasPhoto = !!user?.photoURL;
 
-  const UserMenuContent = () => {
-    const getPlanBadgeClasses = (plan?: SubscriptionPlan) => {
-      switch (plan) {
-        case 'Essentiel': return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800';
-        case 'Pro': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800';
-        case 'Premium': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800';
-        default: return 'bg-gray-100 text-gray-800';
-      }
-    };
+  const getPlanBadgeClasses = (plan?: SubscriptionPlan) => {
+    switch (plan) {
+      case 'Essentiel': return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800';
+      case 'Pro': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800';
+      case 'Premium': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
 
-    return (
-      <>
+  const menuContent = (
+    <>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <div className="flex items-center justify-between">
@@ -191,8 +193,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
           {user.isParent ? "Quitter le portail" : "Se déconnecter"}
         </DropdownMenuItem>
       </>
-    );
-  };
+  );
 
   return (
     <motion.div
@@ -213,7 +214,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-64 glass-card" align="end" forceMount>
-          <UserMenuContent />
+          {menuContent}
         </DropdownMenuContent>
       </DropdownMenu>
     </motion.div>

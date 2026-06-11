@@ -20,6 +20,20 @@ interface SchoolInfo {
     currentAcademicYear?: string;
 }
 
+const InfoRow = ({ icon: Icon, label, value, isLink, href }: { icon: React.ElementType; label: string; value?: string | number | null; isLink?: boolean; href?: string }) => (
+    <div className="flex items-start text-sm">
+        <Icon className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground flex-shrink-0" />
+        <div className="flex-1">
+            <span className="text-muted-foreground">{label}:</span>
+            {isLink ? (
+                <a href={href} className="font-semibold ml-1 text-primary hover:underline">{value || 'N/A'}</a>
+            ) : (
+                <span className="font-semibold ml-1">{value || 'N/A'}</span>
+            )}
+        </div>
+    </div>
+);
+
 interface TeacherInfoSheetProps {
     teacher: Teacher & { id: string };
     school: SchoolInfo;
@@ -34,20 +48,6 @@ export const TeacherInfoSheet: React.FC<TeacherInfoSheetProps> = ({ teacher, sch
             handlePrint(printRef.current.innerHTML);
         }
     };
-
-    const InfoRow = ({ icon: Icon, label, value, isLink, href }: { icon: React.ElementType, label: string, value?: string | number | null, isLink?: boolean, href?: string }) => (
-        <div className="flex items-start text-sm">
-            <Icon className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground flex-shrink-0" />
-            <div className="flex-1">
-                <span className="text-muted-foreground">{label}:</span>
-                {isLink ? (
-                    <a href={href} className="font-semibold ml-1 text-primary hover:underline">{value || 'N/A'}</a>
-                ) : (
-                    <span className="font-semibold ml-1">{value || 'N/A'}</span>
-                )}
-            </div>
-        </div>
-    );
 
     const teacherFullName = `${teacher.firstName} ${teacher.lastName}`;
     const fallback = teacherFullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();

@@ -80,6 +80,7 @@ function TuitionPaymentPageContent() {
         });
 
         if (url) {
+            // eslint-disable-next-line react-hooks/immutability -- redirection externe volontaire vers la page PSP
             window.location.href = url;
         } else {
             setError(serviceError);

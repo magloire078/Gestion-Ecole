@@ -447,6 +447,7 @@ export default function SettingsPage() {
                               <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-primary/5 rounded-[2rem] blur opacity-25 group-hover:opacity-100 transition duration-1000"></div>
                               <div className="relative h-40 w-full rounded-[2rem] border-2 border-dashed border-primary/20 bg-primary/5 backdrop-blur-sm flex items-center justify-center overflow-hidden p-6">
                                 {field.value ? (
+                                  // eslint-disable-next-line @next/next/no-img-element -- signature uploaded by user, no static optimization needed
                                   <img
                                     src={field.value}
                                     alt="Signature"

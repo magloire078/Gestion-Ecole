@@ -15,6 +15,28 @@ interface SchoolViewDetailsProps {
     school: School & { id: string };
 }
 
+const InfoSection = ({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) => (
+    <div className="space-y-3">
+        <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-white/10">
+            <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-white/5 text-blue-600 dark:text-blue-400">
+                <Icon className="h-4 w-4" />
+            </div>
+            <h4 className="font-black text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400">{title}</h4>
+        </div>
+        <div className="grid gap-3 pt-1">{children}</div>
+    </div>
+);
+
+const InfoItem = ({ label, value, icon: Icon }: { label: string; value: string | React.ReactNode; icon?: any }) => (
+    <div className="flex flex-col gap-1">
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{label}</span>
+        <div className="flex items-center gap-2 group">
+            {Icon && <Icon className="h-3.5 w-3.5 text-slate-300 group-hover:text-blue-500 transition-colors" />}
+            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{value || 'Non renseigné'}</span>
+        </div>
+    </div>
+);
+
 export function SchoolViewDetails({ school }: SchoolViewDetailsProps) {
     const firestore = useFirestore();
     const [stats, setStats] = useState({
@@ -62,32 +84,6 @@ export function SchoolViewDetails({ school }: SchoolViewDetailsProps) {
         if (isNaN(date.getTime())) return 'Date invalide';
         return format(date, 'PPP', { locale: fr });
     };
-
-
-
-    const InfoSection = ({ title, icon: Icon, children }: { title: string, icon: any, children: React.ReactNode }) => (
-        <div className="space-y-3">
-            <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-white/10">
-                <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-white/5 text-blue-600 dark:text-blue-400">
-                    <Icon className="h-4 w-4" />
-                </div>
-                <h4 className="font-black text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400">{title}</h4>
-            </div>
-            <div className="grid gap-3 pt-1">
-                {children}
-            </div>
-        </div>
-    );
-
-    const InfoItem = ({ label, value, icon: Icon }: { label: string, value: string | React.ReactNode, icon?: any }) => (
-        <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{label}</span>
-            <div className="flex items-center gap-2 group">
-                {Icon && <Icon className="h-3.5 w-3.5 text-slate-300 group-hover:text-blue-500 transition-colors" />}
-                <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{value || 'Non renseigné'}</span>
-            </div>
-        </div>
-    );
 
     return (
         <div className="grid gap-6 py-4">

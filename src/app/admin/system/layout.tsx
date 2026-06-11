@@ -48,16 +48,14 @@ export default function SystemAdminLayout({
     children: React.ReactNode;
 }) {
     const pathname = usePathname();
-    const [activeTheme, setActiveTheme] = useState(themes[0]);
+    // Lazy initializer : on lit localStorage à la première render uniquement,
+    // ce qui évite le double-render lié à un setState dans un useEffect d'init.
+    const [activeTheme, setActiveTheme] = useState(() => {
+        if (typeof window === 'undefined') return themes[0];
+        const savedThemeId = window.localStorage.getItem('admin-theme');
+        return themes.find(t => t.id === savedThemeId) ?? themes[0];
+    });
     const [showThemePicker, setShowThemePicker] = useState(false);
-
-    useEffect(() => {
-        const savedThemeId = localStorage.getItem('admin-theme');
-        if (savedThemeId) {
-            const theme = themes.find(t => t.id === savedThemeId);
-            if (theme) setActiveTheme(theme);
-        }
-    }, []);
 
     const changeTheme = (theme: typeof themes[0]) => {
         setActiveTheme(theme);

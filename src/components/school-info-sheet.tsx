@@ -15,6 +15,16 @@ interface SchoolInfoSheetProps {
     school: School;
 }
 
+const InfoRow = ({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value?: string | number | null }) => (
+    <div className="flex items-start text-sm">
+        <Icon className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground flex-shrink-0" />
+        <div className="flex-1">
+            <span className="text-muted-foreground">{label}:</span>
+            <span className="font-semibold ml-1">{value || 'N/A'}</span>
+        </div>
+    </div>
+);
+
 export const SchoolInfoSheet: React.FC<SchoolInfoSheetProps> = ({ school }) => {
     const printRef = useRef<HTMLDivElement>(null);
 
@@ -45,16 +55,6 @@ export const SchoolInfoSheet: React.FC<SchoolInfoSheetProps> = ({ school }) => {
             }
         }
     };
-
-    const InfoRow = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value?: string | number | null }) => (
-        <div className="flex items-start text-sm">
-            <Icon className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground flex-shrink-0" />
-            <div className="flex-1">
-                <span className="text-muted-foreground">{label}:</span>
-                <span className="font-semibold ml-1">{value || 'N/A'}</span>
-            </div>
-        </div>
-    );
 
     const directorFullName = `${school.directorFirstName || ''} ${school.directorLastName || ''}`.trim();
     const currentYear = (school as any).currentAcademicYear || `${new Date().getFullYear() - 1}-${new Date().getFullYear()}`;

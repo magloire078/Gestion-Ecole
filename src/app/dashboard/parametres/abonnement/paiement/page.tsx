@@ -274,6 +274,7 @@ function PaymentPageContent() {
         });
 
         if (url) {
+            // eslint-disable-next-line react-hooks/immutability -- redirection externe volontaire vers la page PSP
             window.location.href = url;
             return;
         }
