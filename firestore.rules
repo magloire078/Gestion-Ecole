@@ -161,6 +161,28 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
+    // Conversations privées 1-1 entre super-admin et école (directeur).
+    // - Le doc d'index est lu/écrit par le super-admin OU un membre de l'école
+    //   concernée.
+    // - Les messages héritent du même contrôle d'accès.
+    match /school_conversations/{schoolId} {
+      allow read: if isSuperAdmin() || isSchoolMember(schoolId);
+      allow create, update: if isSuperAdmin() || isSchoolMember(schoolId);
+      allow delete: if isSuperAdmin();
+
+      match /messages/{messageId} {
+        allow read: if isSuperAdmin() || isSchoolMember(schoolId);
+        allow create: if isSignedIn()
+                      && (isSuperAdmin() || isSchoolMember(schoolId))
+                      && request.resource.data.senderId == request.auth.uid
+                      && (
+                          (isSuperAdmin() && request.resource.data.senderRole == 'admin') ||
+                          (isSchoolMember(schoolId) && request.resource.data.senderRole == 'director')
+                      );
+        allow update, delete: if isSuperAdmin();
+      }
+    }
+
     // =================================
     //         USER DATA
     // =================================
