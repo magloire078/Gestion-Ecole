@@ -105,6 +105,30 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "school_conversations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "emailRelanceSent",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "lastMessageAt",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "platform_announcements",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "publishAt",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

@@ -9,6 +9,7 @@
  * multiple times.
  */
 import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { logger } from 'firebase-functions/v2';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
@@ -202,6 +203,157 @@ export const subscriptionLifecycle = onSchedule(
             remindersSent,
             expired,
         });
+    },
+);
+
+/* =========================================================================
+ * Messagerie 1-1 super-admin <-> directeur — notifications & relance email
+ * ========================================================================= */
+
+interface ConversationMessage {
+    senderId: string;
+    senderName?: string;
+    senderRole: 'admin' | 'director';
+    text: string;
+}
+
+async function findSuperAdminUids(): Promise<string[]> {
+    const snap = await db.collection('users').where('isSuperAdmin', '==', true).get();
+    return snap.docs.map(d => d.id);
+}
+
+/**
+ * Quand un message arrive dans school_conversations/{schoolId}/messages,
+ * dépose une notification in-app à l'autre rôle.
+ *
+ * - Message du directeur -> notifications aux super-admins (collection
+ *   `notifications` racine, `userId` = uid super-admin).
+ * - Message de l'admin -> notification dans
+ *   `ecoles/{schoolId}/notifications` pour les directeurs/admins école.
+ */
+export const onConversationMessageCreated = onDocumentCreated(
+    'school_conversations/{schoolId}/messages/{messageId}',
+    async event => {
+        const snap = event.data;
+        if (!snap) return;
+        const message = snap.data() as ConversationMessage;
+        const { schoolId } = event.params as { schoolId: string };
+
+        const schoolSnap = await db.doc(`ecoles/${schoolId}`).get();
+        const schoolName = (schoolSnap.data() as SchoolShape | undefined)?.name ?? 'votre école';
+
+        try {
+            if (message.senderRole === 'director') {
+                const adminUids = await findSuperAdminUids();
+                await Promise.all(adminUids.map(uid => db.collection('notifications').add({
+                    userId: uid,
+                    title: `Message de ${schoolName}`,
+                    content: message.text.slice(0, 140),
+                    href: '/admin/system/messages',
+                    isRead: false,
+                    createdAt: FieldValue.serverTimestamp(),
+                })));
+            } else {
+                const directorIds = await findDirectorUids(schoolId);
+                await Promise.all(directorIds.map(uid => db.collection(`ecoles/${schoolId}/notifications`).add({
+                    userId: uid,
+                    title: 'Nouveau message - équipe GèreEcole',
+                    content: message.text.slice(0, 140),
+                    href: '/dashboard/support/messages',
+                    isRead: false,
+                    createdAt: FieldValue.serverTimestamp(),
+                })));
+            }
+
+            // Marque le message comme nécessitant un email de relance si
+            // jamais lu sous 24h (consommé par dispatchUnreadConversationEmails).
+            await db.doc(`school_conversations/${schoolId}`).set({
+                lastMessageAt: FieldValue.serverTimestamp(),
+                lastMessageRole: message.senderRole,
+                emailRelanceSent: false,
+            }, { merge: true });
+        } catch (err) {
+            logger.error('[onConversationMessageCreated] erreur', { schoolId, err });
+        }
+    },
+);
+
+/**
+ * Toutes les heures, parcourt les conversations où il reste des messages
+ * non lus depuis plus de 24h et envoie un email de relance au rôle inactif.
+ * Un seul email par cycle "nouveau message", tracé par `emailRelanceSent`.
+ */
+export const dispatchUnreadConversationEmails = onSchedule(
+    {
+        schedule: 'every 60 minutes',
+        timeZone: 'Africa/Abidjan',
+        timeoutSeconds: 300,
+    },
+    async () => {
+        const cutoff = Timestamp.fromMillis(Date.now() - 24 * 60 * 60 * 1000);
+        const snap = await db.collection('school_conversations')
+            .where('emailRelanceSent', '==', false)
+            .where('lastMessageAt', '<=', cutoff)
+            .get();
+
+        let sent = 0;
+        for (const doc of snap.docs) {
+            const data = doc.data() as {
+                schoolName?: string;
+                lastMessageRole?: 'admin' | 'director';
+                unreadByAdmin?: number;
+                unreadByDirector?: number;
+            };
+            const schoolId = doc.id;
+
+            try {
+                if (data.lastMessageRole === 'admin' && (data.unreadByDirector ?? 0) > 0) {
+                    const schoolSnap = await db.doc(`ecoles/${schoolId}`).get();
+                    const school = schoolSnap.data() as SchoolShape | undefined;
+                    if (school?.directorEmail) {
+                        await db.collection('mail').add({
+                            to: school.directorEmail,
+                            message: {
+                                subject: `Nouveau message de l'équipe GèreEcole`,
+                                html: baseTemplate(
+                                    'Vous avez un message non lu',
+                                    `<p>L'équipe GèreEcole vous a envoyé un message il y a plus de 24h sur la messagerie support de <strong>${school.name ?? 'votre école'}</strong>.</p>
+                                     <p>Connectez-vous pour le consulter.</p>`,
+                                    'Ouvrir la messagerie',
+                                ).replace('/dashboard/parametres/abonnement', '/dashboard/support/messages'),
+                            },
+                            delivery: { startTime: FieldValue.serverTimestamp(), state: 'PENDING' },
+                        });
+                        sent += 1;
+                    }
+                } else if (data.lastMessageRole === 'director' && (data.unreadByAdmin ?? 0) > 0) {
+                    const adminSnap = await db.collection('users').where('isSuperAdmin', '==', true).get();
+                    const emails = adminSnap.docs.map(d => (d.data() as { email?: string }).email).filter(Boolean) as string[];
+                    if (emails.length > 0) {
+                        await db.collection('mail').add({
+                            to: emails,
+                            message: {
+                                subject: `Message non lu d'un directeur (${data.schoolName ?? schoolId})`,
+                                html: baseTemplate(
+                                    'Message en attente',
+                                    `<p>Un directeur a envoyé un message il y a plus de 24h, sans réponse.</p>
+                                     <p><strong>École :</strong> ${data.schoolName ?? schoolId}</p>`,
+                                    'Ouvrir la messagerie admin',
+                                ).replace('/dashboard/parametres/abonnement', '/admin/system/messages'),
+                            },
+                            delivery: { startTime: FieldValue.serverTimestamp(), state: 'PENDING' },
+                        });
+                        sent += 1;
+                    }
+                }
+
+                await doc.ref.update({ emailRelanceSent: true });
+            } catch (err) {
+                logger.error('[dispatchUnreadConversationEmails] erreur', { schoolId, err });
+            }
+        }
+
+        logger.info('[dispatchUnreadConversationEmails] terminé', { scanned: snap.size, sent });
     },
 );
 

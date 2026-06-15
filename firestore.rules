@@ -161,6 +161,17 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
+    // Annonces plateforme : lecture par tout utilisateur signé (pour
+    // affichage du bandeau), création/suppression par super-admin
+    // uniquement, update limité au tableau `dismissedBy` (auto-masquage).
+    match /platform_announcements/{announcementId} {
+      allow read: if isSignedIn();
+      allow create, delete: if isSuperAdmin();
+      allow update: if isSuperAdmin() ||
+        (isSignedIn()
+         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['dismissedBy']));
+    }
+
     // Conversations privées 1-1 entre super-admin et école (directeur).
     // - Le doc d'index est lu/écrit par le super-admin OU un membre de l'école
     //   concernée.
