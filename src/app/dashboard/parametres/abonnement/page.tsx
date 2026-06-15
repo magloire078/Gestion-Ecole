@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSubscription } from "@/hooks/use-subscription";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from 'next/link';
 import { cn } from "@/lib/utils";
@@ -18,23 +18,52 @@ import { Label } from "@/components/ui/label";
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { motion } from 'framer-motion';
+import { doc } from "firebase/firestore";
 
-import { SUBSCRIPTION_PLANS, MODULES_CONFIG, PlanName, ModuleName } from "@/lib/subscription-plans";
+import { SUBSCRIPTION_PLANS, MODULES_CONFIG, PlanName, ModuleName, getPlanLimits } from "@/lib/subscription-plans";
 import { formatCurrency } from "@/lib/currency-utils";
+import { useFirestore, useDoc } from "@/firebase";
 
 export default function SubscriptionPage() {
     const router = useRouter();
-    const { schoolName, loading: schoolLoading, schoolData } = useSchoolData();
+    const { schoolId, schoolName, loading: schoolLoading, schoolData } = useSchoolData();
     const { subscription, updateSubscription, loading: subscriptionLoading, isExpired, daysLeft } = useSubscription();
     const { toast } = useToast();
+    const firestore = useFirestore();
     const isLoading = schoolLoading || subscriptionLoading;
     const [error, setError] = useState<string | null>(null);
     const [isUpdating, setIsUpdating] = useState(false);
+
+    // Effectif courant pour bloquer les downgrades dépassant la limite.
+    const statsRef = useMemo(
+        () => (schoolId ? doc(firestore, `ecoles/${schoolId}/stats/finance`) : null),
+        [firestore, schoolId],
+    );
+    const { data: statsData } = useDoc(statsRef);
+    const currentStudentCount = (statsData?.studentCount as number | undefined) ?? 0;
+
+    const downgradeBlockReason = (planName: PlanName): string | null => {
+        const limits = getPlanLimits(planName);
+        if (!limits || !Number.isFinite(limits.maxStudents)) return null;
+        if (currentStudentCount > limits.maxStudents) {
+            return `Plan limité à ${limits.maxStudents} élèves alors que vous en avez ${currentStudentCount}. Réduisez les effectifs avant de basculer.`;
+        }
+        return null;
+    };
 
     const handleChoosePlan = (planName: PlanName, price: number) => {
         setError(null);
         if (!schoolName) {
             setError("Le nom de l'école n&apos;est pas encore chargé. Veuillez patienter un instant.");
+            return;
+        }
+        const blockReason = downgradeBlockReason(planName);
+        if (blockReason) {
+            toast({
+                variant: 'destructive',
+                title: 'Downgrade impossible',
+                description: blockReason,
+            });
             return;
         }
 
@@ -148,6 +177,7 @@ export default function SubscriptionPage() {
             >
                 {SUBSCRIPTION_PLANS.map(plan => {
                     const current = isCurrentPlan(plan.name);
+                    const blockReason = !current ? downgradeBlockReason(plan.name as PlanName) : null;
                     return (
                         <motion.div key={plan.name} variants={itemVariants}>
                             <Card className={cn("flex flex-col h-full transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl", current && "border-2 border-primary shadow-2xl scale-[1.02]")}>
@@ -200,15 +230,24 @@ export default function SubscriptionPage() {
                                             {isExpired ? "Réactiver ce Plan" : daysLeft < 30 ? "Renouveler ce Plan" : "Votre Plan Actuel"}
                                         </Button>
                                     ) : (
-                                        <Button
-                                            className="w-full"
-                                            variant={plan.variant}
-                                            onClick={() => handleChoosePlan(plan.name, plan.price)}
-                                            disabled={isLoading}
-                                        >
-                                            {plan.name !== 'Essentiel' && <Zap className="mr-2 h-4 w-4" />}
-                                            Choisir le Plan {plan.name}
-                                        </Button>
+                                        <div className="w-full space-y-2">
+                                            <Button
+                                                className="w-full"
+                                                variant={plan.variant}
+                                                onClick={() => handleChoosePlan(plan.name, plan.price)}
+                                                disabled={isLoading || !!blockReason}
+                                                title={blockReason ?? undefined}
+                                            >
+                                                {plan.name !== 'Essentiel' && <Zap className="mr-2 h-4 w-4" />}
+                                                Choisir le Plan {plan.name}
+                                            </Button>
+                                            {blockReason && (
+                                                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2 leading-tight">
+                                                    <AlertCircle className="inline h-3 w-3 mr-1" />
+                                                    {blockReason}
+                                                </p>
+                                            )}
+                                        </div>
                                     )}
                                 </CardFooter>
                             </Card>

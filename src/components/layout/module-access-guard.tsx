@@ -5,10 +5,11 @@ import type { ReactNode } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Lock, AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Lock, AlertTriangle, Clock } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { useSubscription } from '@/hooks/use-subscription';
-import { canAccessModule, isSubscriptionEffectivelyActive } from '@/lib/subscription-guards';
+import { canAccessModule, isSubscriptionEffectivelyActive, isInPastDueGrace } from '@/lib/subscription-guards';
 import type { ModuleName } from '@/lib/subscription-plans';
 
 interface Props {
@@ -58,6 +59,8 @@ export function ModuleAccessGuard({ module, moduleLabel, children }: Props) {
         );
     }
 
+    const inGrace = isInPastDueGrace(subscription);
+
     if (!canAccessModule(subscription, module)) {
         return (
             <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-8">
@@ -80,6 +83,25 @@ export function ModuleAccessGuard({ module, moduleLabel, children }: Props) {
                         </Button>
                     </CardFooter>
                 </Card>
+            </div>
+        );
+    }
+
+    if (inGrace) {
+        return (
+            <div className="space-y-4">
+                <Alert className="border-amber-200 bg-amber-50 text-amber-900">
+                    <Clock className="h-4 w-4 text-amber-600" />
+                    <AlertTitle>Paiement en attente</AlertTitle>
+                    <AlertDescription>
+                        Votre échéance est dépassée. Vous gardez l&apos;accès temporairement.
+                        Régularisez le paiement pour éviter la suspension.{' '}
+                        <Link href="/dashboard/parametres/abonnement" className="font-bold underline">
+                            Renouveler maintenant
+                        </Link>
+                    </AlertDescription>
+                </Alert>
+                {children}
             </div>
         );
     }

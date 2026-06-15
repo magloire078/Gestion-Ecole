@@ -22,12 +22,15 @@ if (getApps().length === 0) {
 
 const db = getFirestore();
 
-type ReminderKey = 'd7' | 'd3' | 'd1' | 'expired';
+type ReminderKey = 'd7' | 'd3' | 'd1' | 'past_due' | 'expired';
+
+const PAST_DUE_GRACE_DAYS = 7;
 
 interface SubscriptionShape {
     plan?: string;
     status?: 'active' | 'trialing' | 'past_due' | 'canceled' | 'expired';
     endDate?: string;
+    pastDueSince?: string;
     remindersSent?: Partial<Record<ReminderKey, string>>;
 }
 
@@ -41,20 +44,43 @@ function todayKey(): string {
     return format(new Date(), 'yyyy-MM-dd');
 }
 
-function pickReminderBucket(daysLeft: number): ReminderKey | null {
-    if (daysLeft < 0) return 'expired';
+/**
+ * Détermine le rappel à envoyer en fonction du nombre de jours restants
+ * et du statut courant. La transition active/trialing -> past_due se
+ * déclenche le premier jour après l'échéance. Après PAST_DUE_GRACE_DAYS,
+ * le statut bascule en expired.
+ */
+function pickReminderBucket(
+    daysLeft: number,
+    status?: SubscriptionShape['status'],
+    pastDueSince?: string,
+): ReminderKey | null {
+    if (status === 'past_due') {
+        const since = pastDueSince ? new Date(pastDueSince) : null;
+        if (since && !Number.isNaN(since.getTime())) {
+            const inGrace = differenceInCalendarDays(new Date(), since);
+            if (inGrace >= PAST_DUE_GRACE_DAYS) return 'expired';
+        } else if (daysLeft <= -PAST_DUE_GRACE_DAYS) {
+            return 'expired';
+        }
+        return null; // déjà notifié en past_due, on attend la fin de la grâce
+    }
+    if (daysLeft < 0) {
+        // active/trialing arrivant à échéance => grâce past_due
+        return 'past_due';
+    }
     if (daysLeft === 1) return 'd1';
     if (daysLeft === 3) return 'd3';
     if (daysLeft === 7) return 'd7';
     return null;
 }
 
-function renderEmail(school: SchoolShape, daysLeft: number, endDate: Date): { subject: string; html: string } {
+function renderEmail(school: SchoolShape, daysLeft: number, endDate: Date, bucket: ReminderKey): { subject: string; html: string } {
     const planName = school.subscription?.plan ?? 'votre plan';
     const schoolName = school.name ?? 'votre établissement';
     const dateLabel = format(endDate, 'd MMMM yyyy', { locale: fr });
 
-    if (daysLeft < 0) {
+    if (bucket === 'expired') {
         return {
             subject: `Abonnement expiré - ${schoolName}`,
             html: baseTemplate(
@@ -62,6 +88,18 @@ function renderEmail(school: SchoolShape, daysLeft: number, endDate: Date): { su
                 `<p>L'abonnement <strong>${planName}</strong> pour <strong>${schoolName}</strong> est arrivé à expiration le <strong>${dateLabel}</strong>.</p>
                  <p>Pour continuer à utiliser GèreEcole sans interruption, renouvelez dès maintenant depuis votre tableau de bord.</p>`,
                 'Renouveler l\'abonnement',
+            ),
+        };
+    }
+
+    if (bucket === 'past_due') {
+        return {
+            subject: `Paiement en attente - ${schoolName}`,
+            html: baseTemplate(
+                'Paiement en attente — période de grâce',
+                `<p>L'échéance de votre abonnement <strong>${planName}</strong> pour <strong>${schoolName}</strong> est dépassée (${dateLabel}).</p>
+                 <p>Vous bénéficiez d'une période de grâce de <strong>${PAST_DUE_GRACE_DAYS} jours</strong> pour régulariser votre paiement avant la suspension de l'accès.</p>`,
+                'Régulariser le paiement',
             ),
         };
     }
@@ -111,7 +149,7 @@ async function sendNotice(
     daysLeft: number,
     endDate: Date,
 ): Promise<void> {
-    const { subject, html } = renderEmail(school, daysLeft, endDate);
+    const { subject, html } = renderEmail(school, daysLeft, endDate, bucket);
 
     if (school.directorEmail) {
         await db.collection('mail').add({
@@ -122,12 +160,18 @@ async function sendNotice(
     }
 
     const directorIds = await findDirectorUids(schoolId);
-    const notifTitle = bucket === 'expired'
-        ? 'Abonnement expiré'
-        : `Renouvellement dans ${daysLeft} jour${daysLeft > 1 ? 's' : ''}`;
-    const notifContent = bucket === 'expired'
-        ? `L'abonnement de ${school.name ?? 'votre école'} a expiré. Renouvelez pour réactiver l'accès.`
-        : `L'abonnement de ${school.name ?? 'votre école'} expire le ${format(endDate, 'd MMM yyyy', { locale: fr })}.`;
+    let notifTitle: string;
+    let notifContent: string;
+    if (bucket === 'expired') {
+        notifTitle = 'Abonnement expiré';
+        notifContent = `L'abonnement de ${school.name ?? 'votre école'} a expiré. Renouvelez pour réactiver l'accès.`;
+    } else if (bucket === 'past_due') {
+        notifTitle = 'Paiement en attente';
+        notifContent = `L'échéance de ${school.name ?? 'votre école'} est dépassée. ${PAST_DUE_GRACE_DAYS} jours pour régulariser.`;
+    } else {
+        notifTitle = `Renouvellement dans ${daysLeft} jour${daysLeft > 1 ? 's' : ''}`;
+        notifContent = `L'abonnement de ${school.name ?? 'votre école'} expire le ${format(endDate, 'd MMM yyyy', { locale: fr })}.`;
+    }
 
     for (const uid of directorIds) {
         await db.collection(`ecoles/${schoolId}/notifications`).add({
@@ -157,6 +201,8 @@ export const subscriptionLifecycle = onSchedule(
         let processed = 0;
         let remindersSent = 0;
         let expired = 0;
+        let pastDue = 0;
+        const bucketStats: Record<string, number> = {};
 
         for (const doc of schoolsSnap.docs) {
             const school = doc.data() as SchoolShape;
@@ -170,8 +216,13 @@ export const subscriptionLifecycle = onSchedule(
             }
 
             const daysLeft = differenceInCalendarDays(endDate, now);
-            const bucket = pickReminderBucket(daysLeft);
+            const bucket = pickReminderBucket(daysLeft, sub.status, sub.pastDueSince);
             if (!bucket) continue;
+
+            bucketStats[bucket] = (bucketStats[bucket] ?? 0) + 1;
+            if (bucket === 'd1') {
+                logger.info(`[subscriptionLifecycle] J-1 déclenché pour ${doc.id}`, { schoolName: school.name });
+            }
 
             const remindersSentMap = sub.remindersSent ?? {};
             if (remindersSentMap[bucket] === today) continue; // déjà envoyé aujourd'hui
@@ -183,6 +234,11 @@ export const subscriptionLifecycle = onSchedule(
                     [`subscription.remindersSent.${bucket}`]: today,
                     updatedAt: FieldValue.serverTimestamp(),
                 };
+                if (bucket === 'past_due' && sub.status !== 'past_due') {
+                    update['subscription.status'] = 'past_due';
+                    update['subscription.pastDueSince'] = now.toISOString();
+                    pastDue += 1;
+                }
                 if (bucket === 'expired' && sub.status !== 'expired') {
                     update['subscription.status'] = 'expired';
                     expired += 1;
@@ -201,7 +257,9 @@ export const subscriptionLifecycle = onSchedule(
             scanned: schoolsSnap.size,
             processed,
             remindersSent,
+            pastDue,
             expired,
+            bucketStats,
         });
     },
 );
@@ -358,6 +416,6 @@ export const dispatchUnreadConversationEmails = onSchedule(
 );
 
 // Export pour les tests (non utilisé par Firebase).
-export const __internals = { pickReminderBucket, todayKey };
+export const __internals = { pickReminderBucket, todayKey, PAST_DUE_GRACE_DAYS };
 // Suppress unused warnings for Timestamp import (kept for downstream typing).
 export type _Timestamp = Timestamp;

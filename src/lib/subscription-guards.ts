@@ -14,18 +14,39 @@ export interface SubscriptionGuardInput {
     status?: string;
     endDate?: string;
     activeModules?: ModuleName[];
+    /** ISO date à laquelle le passage en past_due a eu lieu. */
+    pastDueSince?: string;
 }
 
+/** Période de grâce après expiration durant laquelle l'accès reste actif. */
+export const PAST_DUE_GRACE_DAYS = 7;
+
 /**
- * Un abonnement est "effectivement actif" si son statut est `active` ou
- * `trialing` ET que sa date de fin n'est pas dans le passé.
+ * Un abonnement est "effectivement actif" si :
+ * - son statut est `active` ou `trialing` ET sa date de fin est dans le futur, OU
+ * - son statut est `past_due` ET on est encore dans la fenêtre de grâce
+ *   (PAST_DUE_GRACE_DAYS jours après `pastDueSince` ou `endDate` si manquant).
  */
 export function isSubscriptionEffectivelyActive(sub?: SubscriptionGuardInput | null): boolean {
     if (!sub) return false;
+    if (sub.status === 'past_due') {
+        const since = sub.pastDueSince ? new Date(sub.pastDueSince) : (sub.endDate ? new Date(sub.endDate) : null);
+        if (!since || Number.isNaN(since.getTime())) return false;
+        const graceMs = PAST_DUE_GRACE_DAYS * 24 * 60 * 60 * 1000;
+        return Date.now() - since.getTime() < graceMs;
+    }
     const statusOk = sub.status === 'active' || sub.status === 'trialing';
     if (!statusOk) return false;
     if (!sub.endDate) return false;
     return new Date(sub.endDate).getTime() > Date.now();
+}
+
+/**
+ * Indique s'il faut afficher un avertissement de paiement en attente
+ * (échéance dépassée mais accès encore accordé).
+ */
+export function isInPastDueGrace(sub?: SubscriptionGuardInput | null): boolean {
+    return !!sub && sub.status === 'past_due' && isSubscriptionEffectivelyActive(sub);
 }
 
 /**

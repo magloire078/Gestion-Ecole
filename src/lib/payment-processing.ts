@@ -61,6 +61,16 @@ export async function processSubscriptionPayment(
     }
 
     const schoolData = schoolSnap.data() as School;
+
+    // Refuse les downgrades qui violeraient la limite d'élèves du nouveau plan.
+    if (Number.isFinite(planLimits.maxStudents)) {
+        const statsSnap = await getAdminDb().doc(`ecoles/${schoolId}/stats/finance`).get();
+        const currentCount = (statsSnap.exists ? (statsSnap.data()?.studentCount as number | undefined) : 0) ?? 0;
+        if (currentCount > planLimits.maxStudents) {
+            throw new Error(`[PaymentProcessing] Downgrade refusé : ${currentCount} élèves inscrits > limite ${planLimits.maxStudents} du plan ${planName}. Réduisez les effectifs avant de changer de plan.`);
+        }
+    }
+
     const subEndDate = schoolData.subscription?.endDate ? new Date(schoolData.subscription.endDate) : new Date();
     const startDate = subEndDate < new Date() ? new Date() : subEndDate;
     const newEndDate = addMonths(startDate, durationMonths);
@@ -70,6 +80,7 @@ export async function processSubscriptionPayment(
         'subscription.plan': planName,
         'subscription.status': 'active',
         'subscription.endDate': endDateStr,
+        'subscription.pastDueSince': FieldValue.delete(),
         'updatedAt': FieldValue.serverTimestamp(),
     });
 
