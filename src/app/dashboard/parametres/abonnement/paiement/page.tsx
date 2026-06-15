@@ -287,6 +287,15 @@ function PaymentPageContent() {
 
     const isLoading = userLoading || schoolLoading || settingsLoading;
 
+    const availableProviders = useMemo(() => {
+        if (!settingsData || !settingsData.paymentProviders) return PROVIDERS;
+        return PROVIDERS.filter(p => {
+            // 'orangemoney' is stored as 'orangeMoney' in settings
+            const key = p.id === 'orangemoney' ? 'orangeMoney' : p.id;
+            return settingsData.paymentProviders[key] !== false;
+        });
+    }, [settingsData]);
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center pt-20">
@@ -319,15 +328,6 @@ function PaymentPageContent() {
             </div>
         );
     }
-
-    const availableProviders = useMemo(() => {
-        if (!settingsData || !settingsData.paymentProviders) return PROVIDERS;
-        return PROVIDERS.filter(p => {
-            // 'orangemoney' is stored as 'orangeMoney' in settings
-            const key = p.id === 'orangemoney' ? 'orangeMoney' : p.id;
-            return settingsData.paymentProviders[key] !== false;
-        });
-    }, [settingsData]);
 
     const aggregators = availableProviders.filter(p => p.category === 'aggregator');
     const cards = availableProviders.filter(p => p.category === 'card');
