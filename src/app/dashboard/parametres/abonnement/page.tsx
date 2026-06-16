@@ -78,9 +78,19 @@ export default function SubscriptionPage() {
             return;
         }
 
+        // Pour les plans facturés par élève, le « price » catalogue est 0.
+        // On calcule un montant mensuel réel : pricePerStudent × effectif courant
+        // (minimum 1 élève pour permettre l'achat sur une école vide).
+        const limits = getPlanLimits(planName);
+        let monthlyPrice = price;
+        if (limits && limits.pricePerStudent > 0) {
+            const billableStudents = Math.max(1, currentStudentCount);
+            monthlyPrice = limits.pricePerStudent * billableStudents;
+        }
+
         const transactionDetails = new URLSearchParams({
             plan: planName,
-            price: price.toString(),
+            price: monthlyPrice.toString(),
             description: `Abonnement ${planName} pour ${schoolName}`,
         }).toString();
 
