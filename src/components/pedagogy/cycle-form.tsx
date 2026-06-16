@@ -56,7 +56,7 @@ export function CycleForm({ schoolId, cycle, cyclesCount, onSave, countryCode = 
       setValue('code', selectedCycleTemplate.code);
       setValue('order', selectedCycleTemplate.order);
     }
-  }, [watchedCycleName, cycle, setValue]);
+  }, [watchedCycleName, cycle, setValue, templateCycles]);
 
   const handleFormSubmit = async (values: CycleFormValues) => {
     if (!schoolId) {

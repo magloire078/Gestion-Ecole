@@ -65,6 +65,9 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
       orderBy('timestamp', 'desc'),
       limit(5)
     );
+    // refreshLogs : trigger volontaire pour reconstruire la query après
+    // une mutation (check-in/out), même si la valeur n'est pas lue dedans.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firestore, schoolId, todayStart, todayEnd, refreshLogs]);
 
 

@@ -148,6 +148,8 @@ export default function StaffProfileClient() {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
 
+    // refreshKey : trigger volontaire après mutation pour force-resubscribe.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const staffRef = useMemo(() => (schoolId && staffId) ? doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`) as DocumentReference<Staff, DocumentData> : null, [firestore, schoolId, staffId, refreshKey]);
     const { data: staffData, loading: staffLoading } = useDoc<Staff>(staffRef);
     const staffMember = useMemo(() => staffData ? { ...staffData, id: staffId } as Staff & { id: string } : null, [staffData, staffId]);

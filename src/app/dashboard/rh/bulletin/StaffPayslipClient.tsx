@@ -33,6 +33,8 @@ function StaffPayslipContent({ staffId }: { staffId: string }) {
 
     const { data: staffData, loading: staffLoading } = useDoc<Staff>(staffRef);
 
+    const staffMember = useMemo(() => staffData ? { ...staffData, id: staffId } as Staff : null, [staffData, staffId]);
+
     useEffect(() => {
         if (!staffMember || !schoolData) return;
 
@@ -50,9 +52,7 @@ function StaffPayslipContent({ staffId }: { staffId: string }) {
 
         generateDetails();
 
-    }, [staffData, schoolData]);
-
-    const staffMember = useMemo(() => staffData ? { ...staffData, id: staffId } as Staff : null, [staffData, staffId]);
+    }, [schoolData, staffMember]);
 
     const isLoading = schoolLoading || staffLoading || detailsLoading;
 

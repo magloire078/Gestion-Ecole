@@ -81,6 +81,9 @@ export const FullAuditLog = () => {
       fetchLogs(firstPageQuery);
       setIsFirstPage(true);
     }
+    // fetchLogs est une closure stable sur ce render — l'ajouter aux deps
+    // créerait une boucle puisqu'elle setState à chaque appel.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [baseQuery]);
 
   useEffect(() => {
@@ -114,7 +117,7 @@ export const FullAuditLog = () => {
       }
     };
     fetchData();
-  }, [firestore]);
+  }, [firestore, user?.profile?.isSuperAdmin]);
 
   const formatTarget = (target: string) => {
     if (!target) return 'N/A';

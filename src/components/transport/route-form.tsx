@@ -12,7 +12,7 @@ import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import type { route as Route, bus as Bus } from '@/lib/data-types';
 import { useToast } from '@/hooks/use-toast';
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { DialogFooter } from '../ui/dialog';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { Separator } from '../ui/separator';
@@ -51,7 +51,7 @@ export function RouteForm({ schoolId, buses, route, onSave }: RouteFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const defaultValues: RouteFormValues = {
+  const defaultValues = useMemo<RouteFormValues>(() => ({
     name: '',
     busId: '',
     status: 'on_time',
@@ -59,7 +59,7 @@ export function RouteForm({ schoolId, buses, route, onSave }: RouteFormProps) {
       morning: { startTime: '07:00', stops: [] },
       evening: { startTime: '17:00', stops: [] }
     }
-  };
+  }), []);
 
   const form = useForm<RouteFormValues>({
     resolver: zodResolver(routeFormSchema),

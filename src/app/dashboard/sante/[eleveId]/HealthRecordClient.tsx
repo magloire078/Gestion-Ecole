@@ -58,13 +58,16 @@ function HealthRecordContent({ eleveId, schoolId }: { eleveId: string, schoolId:
     const studentRef = useMemo(() => doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`) as DocumentReference<Student>, [firestore, schoolId, eleveId]);
     const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
 
-    const dossierRef = useMemo(() => doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}/dossier_medical/${eleveId}`) as DocumentReference<DossierMedical>, [firestore, schoolId, eleveId, refreshKey]);
+    const dossierRef = useMemo(() => doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}/dossier_medical/${eleveId}`) as DocumentReference<DossierMedical>    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshKey est un trigger volontaire après mutation
+, [firestore, schoolId, eleveId, refreshKey]);
     const { data: dossierData, loading: dossierLoading } = useDoc<DossierMedical>(dossierRef);
 
-    const vaccinsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/dossier_medical/${eleveId}/vaccins`)), [firestore, schoolId, eleveId, refreshKey]);
+    const vaccinsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/dossier_medical/${eleveId}/vaccins`))    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshKey est un trigger volontaire après mutation
+, [firestore, schoolId, eleveId, refreshKey]);
     const { data: vaccinsData, loading: vaccinsLoading } = useCollection(vaccinsQuery);
 
-    const consultationsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/dossier_medical/${eleveId}/consultations`)), [firestore, schoolId, eleveId, refreshKey]);
+    const consultationsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/dossier_medical/${eleveId}/consultations`))    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshKey est un trigger volontaire après mutation
+, [firestore, schoolId, eleveId, refreshKey]);
     const { data: consultationsData, loading: consultationsLoading } = useCollection(consultationsQuery);
 
     const student = studentData as Student | null;

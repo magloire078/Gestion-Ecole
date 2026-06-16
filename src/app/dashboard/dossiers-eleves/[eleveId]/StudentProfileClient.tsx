@@ -65,6 +65,9 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
     // --- Data Fetching ---
+    // refreshTrigger : trigger volontaire après mutation (paiement, upload
+    // photo, édition) pour reconstruire la référence et force une re-subscription.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const studentRef = useMemo(() => doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`) as DocumentReference<Student, DocumentData>, [firestore, schoolId, eleveId, refreshTrigger]);
     const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
     const student = useMemo(() => studentData ? { ...studentData, id: eleveId } as Student & { id: string } : null, [studentData, eleveId]);

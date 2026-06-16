@@ -49,6 +49,10 @@ export function DailyMenu({ schoolId, date: initialDate }: { schoolId: string, d
   
   useEffect(() => {
     loadMenuForDate(selectedDate);
+    // loadMenuForDate dépend de schoolId / setStates locaux — l'ajouter
+    // créerait une boucle. Les deps source `selectedDate` + `schoolId`
+    // couvrent le besoin réel.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, schoolId]);
   
   const handleMenuSave = () => {

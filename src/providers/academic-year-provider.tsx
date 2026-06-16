@@ -53,12 +53,18 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
     const { schoolId, schoolData } = useSchoolData();
 
     const currentYear = schoolData?.currentAcademicYear || defaultCurrentYear();
-    const archivedYears = (schoolData?.archivedYears as string[] | undefined) ?? [];
+    // Stable reference pour éviter de relancer useMemo à chaque render
+    // (`?? []` créait un nouveau tableau à chaque fois).
+    const archivedYearsRaw = schoolData?.archivedYears as string[] | undefined;
+    const archivedYearsKey = archivedYearsRaw?.join('|') ?? '';
 
     const availableYears = useMemo(() => {
-        const set = new Set<string>([currentYear, ...archivedYears].filter(Boolean));
-        return Array.from(set).sort((a, b) => b.localeCompare(a)); // plus récente d'abord
-    }, [currentYear, archivedYears]);
+        const archived = archivedYearsRaw ?? [];
+        const set = new Set<string>([currentYear, ...archived].filter(Boolean));
+        return Array.from(set).sort((a, b) => b.localeCompare(a));
+    // archivedYearsKey est la clé stable du tableau, archivedYearsRaw juste source
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentYear, archivedYearsKey]);
 
     const [selectedYear, setSelectedYear] = useState<string>(currentYear);
 
