@@ -2,7 +2,7 @@
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Zap, AlertCircle, Building, Users, Utensils, Bus, Bed, HeartPulse, Trophy, Briefcase, LandPlot, Loader2, Calendar } from "lucide-react";
+import { CheckCircle, Zap, AlertCircle, Building, Users, Utensils, Bus, Bed, HeartPulse, Trophy, Briefcase, LandPlot, Loader2, Calendar, Ban } from "lucide-react";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSubscription } from "@/hooks/use-subscription";
@@ -10,6 +10,17 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { useState, useMemo } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import Link from 'next/link';
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -74,6 +85,41 @@ export default function SubscriptionPage() {
         }).toString();
 
         router.push(`/dashboard/parametres/abonnement/paiement?${transactionDetails}`);
+    };
+
+    const handleCancelSubscription = async () => {
+        if (!subscription || isUpdating) return;
+        setIsUpdating(true);
+        try {
+            await updateSubscription({
+                ...subscription,
+                status: 'canceled',
+            } as any);
+            toast({
+                title: 'Abonnement résilié',
+                description: `Vous gardez l'accès jusqu'au ${subscription.endDate ? format(new Date(subscription.endDate), 'd MMMM yyyy', { locale: fr }) : 'terme'}, sans renouvellement automatique.`,
+            });
+        } catch (e) {
+            toast({ variant: 'destructive', title: 'Erreur', description: "Impossible d'annuler l'abonnement." });
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const handleReactivateSubscription = async () => {
+        if (!subscription || isUpdating) return;
+        setIsUpdating(true);
+        try {
+            await updateSubscription({
+                ...subscription,
+                status: 'active',
+            } as any);
+            toast({ title: 'Abonnement réactivé', description: 'Le renouvellement automatique est rétabli.' });
+        } catch (e) {
+            toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de réactiver l'abonnement." });
+        } finally {
+            setIsUpdating(false);
+        }
     };
 
     const handleModuleToggle = async (moduleId: ModuleName, checked: boolean) => {
@@ -162,9 +208,48 @@ export default function SubscriptionPage() {
                         </div>
                         <Badge variant={subscription.status === 'active' ? 'secondary' : 'destructive'} className="capitalize">{subscription.status}</Badge>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="space-y-3">
                         <p className="text-sm">Votre abonnement est valide jusqu'au <strong className="font-semibold">{format(new Date(subscription.endDate), 'd MMMM yyyy', { locale: fr })}</strong>.</p>
                         <p className="text-xs text-muted-foreground">Il vous reste {formatDistanceToNow(new Date(subscription.endDate), { locale: fr })}.</p>
+
+                        {subscription.status === 'canceled' ? (
+                            <Alert className="border-amber-200 bg-amber-50 text-amber-900">
+                                <Ban className="h-4 w-4 text-amber-600" />
+                                <AlertTitle>Résilié — accès jusqu'à la fin de période</AlertTitle>
+                                <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                    <span>Aucun renouvellement automatique. Vous pouvez réactiver à tout moment avant l'expiration.</span>
+                                    <Button size="sm" variant="outline" onClick={handleReactivateSubscription} disabled={isUpdating}>
+                                        {isUpdating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle className="h-3 w-3 mr-1" />}
+                                        Réactiver
+                                    </Button>
+                                </AlertDescription>
+                            </Alert>
+                        ) : (subscription.status === 'active' || subscription.status === 'trialing') && subscription.plan !== 'Essentiel' && (
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive">
+                                        <Ban className="h-3 w-3 mr-1" /> Résilier mon abonnement
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Résilier l'abonnement {subscription.plan} ?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Vous garderez l'accès complet jusqu'au{' '}
+                                            <strong>{format(new Date(subscription.endDate), 'd MMMM yyyy', { locale: fr })}</strong>.
+                                            Aucun renouvellement automatique ne sera effectué après cette date.
+                                            Vous pourrez réactiver à tout moment avant l'expiration.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Garder mon abonnement</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleCancelSubscription} className="bg-destructive hover:bg-destructive/90">
+                                            Confirmer la résiliation
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        )}
                     </CardContent>
                 </Card>
             )}

@@ -35,6 +35,12 @@ export function isSubscriptionEffectivelyActive(sub?: SubscriptionGuardInput | n
         const graceMs = PAST_DUE_GRACE_DAYS * 24 * 60 * 60 * 1000;
         return Date.now() - since.getTime() < graceMs;
     }
+    // Un abonnement résilié garde l'accès jusqu'à la fin de la période
+    // payée (endDate). Au-delà, le subscriptionLifecycle le bascule en
+    // expired et l'accès est coupé.
+    if (sub.status === 'canceled') {
+        return !!sub.endDate && new Date(sub.endDate).getTime() > Date.now();
+    }
     const statusOk = sub.status === 'active' || sub.status === 'trialing';
     if (!statusOk) return false;
     if (!sub.endDate) return false;

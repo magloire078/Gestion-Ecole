@@ -9,7 +9,7 @@
  * multiple times.
  */
 import { onSchedule } from 'firebase-functions/v2/scheduler';
-import { onDocumentCreated } from 'firebase-functions/v2/firestore';
+import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { logger } from 'firebase-functions/v2';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
@@ -415,7 +415,159 @@ export const dispatchUnreadConversationEmails = onSchedule(
     },
 );
 
+/* =========================================================================
+ * Module C — Campagnes email/WhatsApp en masse
+ * ========================================================================= */
+
+interface CampaignTarget {
+    type: 'all' | 'plan' | 'status' | 'school';
+    values?: string[];
+}
+
+interface CampaignDoc {
+    name?: string;
+    channel: 'email' | 'whatsapp';
+    subject?: string;
+    body: string;
+    target: CampaignTarget;
+    status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed';
+}
+
+function renderTpl(tpl: string, vars: Record<string, string | number>): string {
+    return tpl.replace(/\{\{\s*(\w+)\s*\}\}/g, (m, key) => {
+        const v = vars[key as string];
+        return v === undefined || v === null ? m : String(v);
+    });
+}
+
+function matchesCampaignTarget(target: CampaignTarget, school: { id: string; plan?: string; status?: string }): boolean {
+    switch (target.type) {
+        case 'all': return true;
+        case 'plan': return !!school.plan && (target.values ?? []).includes(school.plan);
+        case 'status': return !!school.status && (target.values ?? []).includes(school.status);
+        case 'school': return (target.values ?? []).includes(school.id);
+        default: return false;
+    }
+}
+
+/**
+ * Quand une campagne passe en `sending`, parcourt les écoles cibles
+ * et dépose un email (ou un message WhatsApp via la file `whatsapp_outbox`)
+ * par destinataire. Marque ensuite la campagne `sent` ou `failed`.
+ */
+export const processCampaign = onDocumentUpdated('campaigns/{campaignId}', async event => {
+    const before = event.data?.before.data() as CampaignDoc | undefined;
+    const after = event.data?.after.data() as CampaignDoc | undefined;
+    if (!after) return;
+    // On ne traite que la transition vers `sending`.
+    if (before?.status === 'sending' || after.status !== 'sending') return;
+
+    const campaignId = event.params.campaignId as string;
+    const ref = db.doc(`campaigns/${campaignId}`);
+    const startedAt = FieldValue.serverTimestamp();
+
+    try {
+        const schoolsSnap = await db.collection('ecoles').get();
+        const matching = schoolsSnap.docs.filter(d => {
+            const data = d.data() as SchoolShape;
+            return matchesCampaignTarget(after.target, {
+                id: d.id,
+                plan: data.subscription?.plan,
+                status: data.subscription?.status,
+            });
+        });
+
+        let queued = 0;
+        let failed = 0;
+
+        for (const schoolDoc of matching) {
+            const school = schoolDoc.data() as SchoolShape & { directorFirstName?: string; directorLastName?: string };
+            const sub = school.subscription;
+            const endDate = sub?.endDate ? new Date(sub.endDate) : null;
+            const daysLeft = endDate && !Number.isNaN(endDate.getTime())
+                ? differenceInCalendarDays(endDate, new Date())
+                : 0;
+            const vars = {
+                schoolName: school.name ?? 'votre école',
+                directorName: `${school.directorFirstName ?? ''} ${school.directorLastName ?? ''}`.trim() || 'Directeur',
+                plan: sub?.plan ?? '—',
+                daysLeft: String(daysLeft),
+                endDate: endDate ? format(endDate, 'd MMMM yyyy', { locale: fr }) : '—',
+            } as Record<string, string>;
+
+            const renderedBody = renderTpl(after.body, vars);
+            const renderedSubject = after.subject ? renderTpl(after.subject, vars) : undefined;
+
+            try {
+                if (after.channel === 'email') {
+                    if (!school.directorEmail) { failed += 1; continue; }
+                    await db.collection('mail').add({
+                        to: school.directorEmail,
+                        message: {
+                            subject: renderedSubject ?? `Communication GèreEcole`,
+                            html: `<div style="font-family: sans-serif; line-height: 1.6; white-space: pre-wrap;">${renderedBody.replace(/\n/g, '<br/>')}</div>`,
+                            text: renderedBody,
+                        },
+                        delivery: { startTime: FieldValue.serverTimestamp(), state: 'PENDING' },
+                        campaignId,
+                        schoolId: schoolDoc.id,
+                    });
+                } else {
+                    // WhatsApp : on enfile dans une outbox que l'intégration
+                    // existante (webhook + provider) consommera.
+                    await db.collection('whatsapp_outbox').add({
+                        schoolId: schoolDoc.id,
+                        body: renderedBody,
+                        campaignId,
+                        status: 'pending',
+                        createdAt: FieldValue.serverTimestamp(),
+                    });
+                }
+                queued += 1;
+            } catch (err) {
+                logger.error('[processCampaign] envoi échoué', { campaignId, schoolId: schoolDoc.id, err });
+                failed += 1;
+            }
+        }
+
+        await ref.update({
+            status: failed === matching.length && matching.length > 0 ? 'failed' : 'sent',
+            stats: {
+                targetCount: matching.length,
+                queued,
+                failed,
+                startedAt,
+                completedAt: FieldValue.serverTimestamp(),
+            },
+        });
+
+        logger.info('[processCampaign] terminé', { campaignId, targetCount: matching.length, queued, failed });
+    } catch (err) {
+        logger.error('[processCampaign] erreur fatale', { campaignId, err });
+        await ref.update({ status: 'failed' });
+    }
+});
+
+/**
+ * Toutes les 10 minutes, déclenche les campagnes programmées dont
+ * `scheduledAt` est passé. On passe simplement le statut à `sending`
+ * pour réutiliser le pipeline `processCampaign` ci-dessus.
+ */
+export const triggerScheduledCampaigns = onSchedule(
+    { schedule: 'every 10 minutes', timeZone: 'Africa/Abidjan' },
+    async () => {
+        const nowIso = new Date().toISOString();
+        const snap = await db.collection('campaigns')
+            .where('status', '==', 'scheduled')
+            .where('scheduledAt', '<=', nowIso)
+            .get();
+        if (snap.empty) return;
+        await Promise.all(snap.docs.map(d => d.ref.update({ status: 'sending' })));
+        logger.info('[triggerScheduledCampaigns] déclenchées', { count: snap.size });
+    },
+);
+
 // Export pour les tests (non utilisé par Firebase).
-export const __internals = { pickReminderBucket, todayKey, PAST_DUE_GRACE_DAYS };
+export const __internals = { pickReminderBucket, todayKey, PAST_DUE_GRACE_DAYS, renderTpl, matchesCampaignTarget };
 // Suppress unused warnings for Timestamp import (kept for downstream typing).
 export type _Timestamp = Timestamp;

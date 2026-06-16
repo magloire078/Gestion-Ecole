@@ -161,6 +161,18 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
+    // Campagnes email/WhatsApp en masse — super-admin uniquement.
+    match /campaigns/{campaignId} {
+      allow read, write: if isSuperAdmin();
+    }
+
+    // File d'envoi WhatsApp alimentée par les campagnes ou les rappels
+    // d'abonnement. Lecture/écriture super-admin uniquement ; les
+    // intégrations serveur passent par firebase-admin (hors règles).
+    match /whatsapp_outbox/{docId} {
+      allow read, write: if isSuperAdmin();
+    }
+
     // Annonces plateforme : lecture par tout utilisateur signé (pour
     // affichage du bandeau), création/suppression par super-admin
     // uniquement, update limité au tableau `dismissedBy` (auto-masquage).
