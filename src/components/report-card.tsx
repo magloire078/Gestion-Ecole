@@ -291,6 +291,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({
                                     className="h-32 w-32 border-4 border-white rounded-3xl overflow-hidden shadow-2xl shadow-slate-900/20 bg-white flex items-center justify-center flex-shrink-0"
                                 >
                                     {student.photoURL ? (
+                                        // eslint-disable-next-line @next/next/no-img-element -- rendu print/PDF du bulletin
                                         <img
                                             src={student.photoURL}
                                             alt={student.name}

@@ -21,15 +21,16 @@ export default function SupportPage() {
     const [isFormOpen, setIsFormOpen] = useState(false);
 
     // Query for tickets created BY CURRENT USER only
+    const uid = user?.uid;
     const ticketsQuery = useMemo(() =>
-        user?.uid && schoolId ?
+        uid && schoolId ?
             query(
                 collection(firestore, 'support_tickets'),
                 where('schoolId', '==', schoolId),
-                where('userId', '==', user.uid),
+                where('userId', '==', uid),
                 orderBy('submittedAt', 'desc')
             ) : null,
-        [firestore, schoolId, user?.uid]);
+        [firestore, schoolId, uid]);
 
     const { data: ticketsData, loading: ticketsLoading } = useCollection(ticketsQuery);
 

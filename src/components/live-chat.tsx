@@ -23,16 +23,18 @@ export function LiveChat() {
     const scrollRef = useRef<HTMLDivElement>(null);
     const firestore = useFirestore();
 
-    // Récupérer ou générer un visitorId unique
-    const visitorId = useMemo(() => {
+    // Récupérer ou générer un visitorId unique (lazy useState, pas useMemo :
+    // Math.random et crypto.randomUUID sont des appels impures qui doivent
+    // passer par un state initializer et non un effet de mémoïsation).
+    const [visitorId] = useState(() => {
         if (typeof window === 'undefined') return 'server';
         let id = localStorage.getItem('gere_ecole_visitor_id');
         if (!id) {
-            id = Math.random().toString(36).substring(2, 15);
+            id = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).substring(2, 15));
             localStorage.setItem('gere_ecole_visitor_id', id);
         }
         return id;
-    }, []);
+    });
 
     const { data: systemSettings } = useDoc<SystemSetting>(
         doc(firestore, 'system_settings/default')

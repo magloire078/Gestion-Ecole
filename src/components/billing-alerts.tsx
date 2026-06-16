@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
 import { collection, query, where, getCountFromServer } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -24,21 +24,16 @@ export function BillingAlerts({ schoolId, studentCount, cycleCount }: BillingAle
     const firestore = useFirestore();
     const { subscription, loading: subscriptionLoading } = useSubscription();
 
-    const [dueStudentsCount, setDueStudentsCount] = useState(0);
-    const [loading, setLoading] = useState(true);
-
     const dueStudentsQuery = useMemo(() =>
         query(collection(firestore, `ecoles/${schoolId}/eleves`), where('amountDue', '>', 0))
         , [firestore, schoolId]);
 
     const { data: dueStudentsData, loading: studentsLoading } = useCollection(dueStudentsQuery);
 
-    useEffect(() => {
-        setLoading(subscriptionLoading || studentsLoading);
-        if (!studentsLoading) {
-            setDueStudentsCount(dueStudentsData?.length || 0);
-        }
-    }, [subscriptionLoading, studentsLoading, dueStudentsData]);
+    // Valeurs dérivées en render (pas besoin de state) — équivalent à un
+    // useEffect qui ne ferait que mirroir des props.
+    const loading = subscriptionLoading || studentsLoading;
+    const dueStudentsCount = studentsLoading ? 0 : (dueStudentsData?.length ?? 0);
 
     const planDetails = getPlanLimits(subscription?.plan);
 

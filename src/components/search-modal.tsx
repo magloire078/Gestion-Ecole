@@ -73,6 +73,8 @@ export function SearchModal({ isOpen, onClose }: {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100);
     } else {
+      // Reset de la requête à la fermeture — pattern legit (side-effect modal).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQueryValue('');
     }
   }, [isOpen]);

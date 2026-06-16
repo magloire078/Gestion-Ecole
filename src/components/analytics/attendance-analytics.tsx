@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,11 +14,10 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))'];
 export function AttendanceAnalytics({ schoolId }: { schoolId: string }) {
   const firestore = useFirestore();
 
-  // Get today's date on the client to avoid hydration mismatch
-  const [todayString, setTodayString] = useState('');
-  useEffect(() => {
-    setTodayString(format(new Date(), 'yyyy-MM-dd'));
-  }, []);
+  // Get today's date on the client to avoid hydration mismatch (lazy init).
+  const [todayString] = useState(() =>
+    typeof window === 'undefined' ? '' : format(new Date(), 'yyyy-MM-dd'),
+  );
 
   // Query for absences in the last 30 days for efficiency
   const thirtyDaysAgo = useMemo(() => format(subDays(new Date(), 30), 'yyyy-MM-dd'), []);

@@ -18,6 +18,9 @@ export function AnimatedHighlight({
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        // Différé volontaire après hydratation pour éviter un mismatch SSR
+        // (framer-motion calcule des styles au mount).
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
     }, []);
 

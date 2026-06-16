@@ -53,6 +53,8 @@ function TuitionPaymentPageContent() {
 
     useEffect(() => {
         if (student?.amountDue) {
+            // Sync montant par défaut sur la dette courante — pattern legit.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setAmountToPay(student.amountDue);
         }
     }, [student]);

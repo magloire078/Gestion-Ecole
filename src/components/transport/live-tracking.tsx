@@ -60,6 +60,8 @@ export function LiveTransportTracking({ schoolId }: { schoolId: string }) {
 
   useEffect(() => {
     if (routes.length > 0 && !selectedRouteId) {
+      // Default selection au chargement initial — pattern legit.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedRouteId(routes[0].id);
     }
   }, [routes, selectedRouteId]);

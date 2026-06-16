@@ -30,7 +30,9 @@ export function AdminChatPanel() {
     const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
     const [replyText, setReplyText] = useState('');
     const audioRef = useRef<HTMLAudioElement | null>(null);
-    const [previousChatCount, setPreviousChatCount] = useState(0);
+    // useRef plutôt que useState : on suit la valeur précédente sans
+    // déclencher de re-rendu (et donc sans set-state-in-effect).
+    const previousChatCountRef = useRef(0);
 
     const chatQuery = useMemo(() =>
         query(collection(firestore, 'visitor_chats'), orderBy('lastMessageAt', 'desc')),
@@ -92,26 +94,28 @@ export function AdminChatPanel() {
     useEffect(() => {
         if (loading || !chats.length) return;
 
+        const previousChatCount = previousChatCountRef.current;
+
         // Compare current top chat with previous state to detect new messages
         const topChat = chats[0];
         if (topChat && topChat.status === 'active') {
             const lastMsg = topChat.messages?.[topChat.messages.length - 1];
-            
+
             // Check if there's a new user message
             if (lastMsg?.role === 'user') {
                 // If it's a completely new chat OR the message count increased
                 if (previousChatCount !== 0) {
                     const prevChat = chatsData?.find(d => d.id === topChat.id);
                     const prevMessages = prevChat?.data()?.messages || [];
-                    
+
                     if (chats.length > previousChatCount || topChat.messages?.length! > prevMessages.length) {
                         playSound();
                     }
                 }
             }
         }
-        setPreviousChatCount(chats.length);
-    }, [chats, loading, previousChatCount, chatsData]);
+        previousChatCountRef.current = chats.length;
+    }, [chats, loading, chatsData]);
 
     const selectedChat = chats.find(c => c.id === selectedChatId);
 

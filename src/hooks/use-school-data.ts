@@ -50,7 +50,10 @@ export function useSchoolData() {
         }
 
         if (!authSchoolId || !firestore) {
+            // Reset état + titre quand aucune école active n'est sélectionnée.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setSchoolData(null);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setLoading(false);
             document.title = DEFAULT_TITLE;
             return;

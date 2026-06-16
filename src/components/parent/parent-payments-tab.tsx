@@ -26,10 +26,11 @@ export function ParentPaymentsTab({ student }: ParentPaymentsTabProps) {
     const { schoolId, schoolData } = useSchoolData();
     const firestore = useFirestore();
 
+    const studentId = student?.id;
     const paymentsQuery = useMemo(() => {
-        if (!schoolId || !student?.id) return null;
-        return query(collection(firestore, `ecoles/${schoolId}/eleves/${student.id}/paiements`), orderBy('date', 'desc'));
-    }, [firestore, schoolId, student?.id]);
+        if (!schoolId || !studentId) return null;
+        return query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/paiements`), orderBy('date', 'desc'));
+    }, [firestore, schoolId, studentId]);
 
     const { data: paymentHistoryData, loading: paymentsLoading } = useCollection(paymentsQuery);
     const paymentHistory: (Payment & { id: string })[] = useMemo(() => paymentHistoryData?.map(d => ({ id: d.id, ...d.data() } as Payment & { id: string })) || [], [paymentHistoryData]);

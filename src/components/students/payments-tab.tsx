@@ -47,10 +47,11 @@ export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTab
     const [receiptToView, setReceiptToView] = useState<ReceiptData | null>(null);
     const [isReceiptOpen, setIsReceiptOpen] = useState(false);
 
+    const studentId = student?.id;
     const paymentsQuery = useMemo(() => {
-        if (!schoolId || !student?.id) return null;
-        return query(collection(firestore, `ecoles/${schoolId}/eleves/${student.id}/paiements`), orderBy('date', 'desc'));
-    }, [firestore, schoolId, student?.id]);
+        if (!schoolId || !studentId) return null;
+        return query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/paiements`), orderBy('date', 'desc'));
+    }, [firestore, schoolId, studentId]);
 
     const { data: paymentHistoryData, loading: paymentsLoading } = useCollection(paymentsQuery);
 

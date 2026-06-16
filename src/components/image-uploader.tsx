@@ -130,6 +130,7 @@ export function ImageUploader({
         <>
           {currentImageUrl ? (
             <>
+              {/* eslint-disable-next-line @next/next/no-img-element -- preview blob URL avant upload */}
               <img
                 src={currentImageUrl}
                 alt="Profil"

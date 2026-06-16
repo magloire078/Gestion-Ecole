@@ -304,7 +304,8 @@ export function LandingPageV2() {
                       selectedCountry === country.code && "border-primary/60 bg-primary/10 shadow-[0_0_15px_rgba(45,156,219,0.3)] ring-1 ring-primary/30"
                     )}>
                       <div className="relative w-10 h-7 rounded overflow-hidden shadow-sm group-hover:shadow-md transition-shadow mb-2 border border-white/10">
-                        <img 
+                        {/* eslint-disable-next-line @next/next/no-img-element -- drapeau servi par CDN externe (flagcdn) */}
+                        <img
                           src={`https://flagcdn.com/w80/${country.code.toLowerCase()}.png`}
                           alt={country.name}
                           className="w-full h-full object-cover"

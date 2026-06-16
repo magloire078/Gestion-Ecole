@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { student as Student } from '@/lib/data-types';
+import { SafeImage } from '@/components/ui/safe-image';
 import { useRouter } from 'next/navigation';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { differenceInYears, addYears, differenceInMonths } from 'date-fns';
@@ -70,9 +71,11 @@ const StudentCard = ({ student, onEdit, onArchive, onRestore, actionType }: Stud
                     <div className="flex items-center gap-4">
                         <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full border bg-muted flex items-center justify-center">
                             {student.photoURL ? (
-                                <img
+                                <SafeImage
                                     src={student.photoURL}
                                     alt={studentFullName}
+                                    width={48}
+                                    height={48}
                                     className="h-full w-full object-cover"
                                 />
                             ) : (

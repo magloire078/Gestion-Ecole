@@ -9,15 +9,17 @@ import type { notification as Notification } from '@/lib/data-types';
 export function useNotifications() {
   const { user } = useUser();
   const firestore = useFirestore();
+  const uid = user?.uid;
+  const schoolId = user?.schoolId;
 
   const notificationsQuery = useMemo(() => {
-    if (!user?.uid || !user?.schoolId || !firestore) return null;
+    if (!uid || !schoolId || !firestore) return null;
     return query(
-      collection(firestore, `ecoles/${user.schoolId}/notifications`),
-      where('userId', '==', user.uid),
+      collection(firestore, `ecoles/${schoolId}/notifications`),
+      where('userId', '==', uid),
       orderBy('createdAt', 'desc')
     );
-  }, [user?.uid, user?.schoolId, firestore]);
+  }, [uid, schoolId, firestore]);
 
   const { data: notificationsData, loading } = useCollection(notificationsQuery, { name: 'notifications' });
 

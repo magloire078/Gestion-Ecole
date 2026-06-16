@@ -28,6 +28,7 @@ import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from 'next/navigation';
 import { differenceInYears, addYears, differenceInMonths } from "date-fns";
+import { SafeImage } from "@/components/ui/safe-image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -112,9 +113,11 @@ export const StudentsTable = ({ students, isLoading, canManageUsers, actionType,
                                         <div className="flex items-center gap-3">
                                             <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border bg-muted flex items-center justify-center print:hidden">
                                                 {student.photoURL ? (
-                                                    <img
+                                                    <SafeImage
                                                         src={student.photoURL}
                                                         alt={`${student.firstName} ${student.lastName}`}
+                                                        width={40}
+                                                        height={40}
                                                         className="h-full w-full object-cover"
                                                     />
                                                 ) : (

@@ -36,10 +36,10 @@ const StatCard = ({ title, value, icon: Icon, loading }: StatCardProps) => (
 export function CantineDashboard({ schoolId }: { schoolId: string }) {
     const firestore = useFirestore();
 
-    const [todayString, setTodayString] = useState('');
-    useEffect(() => {
-        setTodayString(format(new Date(), 'yyyy-MM-dd'));
-    }, []);
+    // Lazy init côté client — évite un mismatch d'hydratation SSR.
+    const [todayString] = useState(() =>
+        typeof window === 'undefined' ? '' : format(new Date(), 'yyyy-MM-dd'),
+    );
 
     const reservationsQuery = useMemo(() =>
         todayString ? query(collection(firestore, `ecoles/${schoolId}/cantine_reservations`), where('date', '==', todayString)) : null,

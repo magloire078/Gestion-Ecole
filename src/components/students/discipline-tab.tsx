@@ -26,13 +26,14 @@ export function DisciplineTab({ schoolId, student }: DisciplineTabProps) {
     const canManageDiscipline = !!user?.profile?.permissions?.manageDiscipline;
     const [isFormOpen, setIsFormOpen] = useState(false);
 
+    const studentId = student?.id;
     const incidentsQuery = useMemo(() => {
-        if (!schoolId || !student?.id) return null;
+        if (!schoolId || !studentId) return null;
         return query(
-            collection(firestore, `ecoles/${schoolId}/eleves/${student.id}/incidents_disciplinaires`),
+            collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/incidents_disciplinaires`),
             orderBy('date', 'desc')
         );
-    }, [firestore, schoolId, student?.id]);
+    }, [firestore, schoolId, studentId]);
 
     const { data: incidentsData, loading: incidentsLoading } = useCollection(incidentsQuery);
 

@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { User } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 interface SafeImageProps {
@@ -30,13 +30,14 @@ export function SafeImage({
   style,
   ...props
 }: SafeImageProps) {
+  // "Adjusting state on prop change" pattern : on suit `src` pour
+  // remettre `error` à false dès qu'il change, sans effet.
+  const [prevSrc, setPrevSrc] = useState(src);
   const [error, setError] = useState(false);
-
-  useEffect(() => {
-    if (src) {
-      setError(false);
-    }
-  }, [src]);
+  if (prevSrc !== src) {
+    setPrevSrc(src);
+    if (src) setError(false);
+  }
 
   const handleError = () => {
     setError(true);

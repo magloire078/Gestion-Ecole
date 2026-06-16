@@ -58,7 +58,8 @@ export default function CreateSchoolPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isFirestoreReady, setIsFirestoreReady] = useState(false);
+  // Dérivé directement : un effect+state ferait double rendu inutile.
+  const isFirestoreReady = !!firestore;
   const [selectedCountry, setSelectedCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
 
   const countryConfig = getCountryByCode(selectedCountry);
@@ -78,13 +79,6 @@ export default function CreateSchoolPage() {
     mode: 'onChange',
   });
   const { setValue, watch } = form;
-
-  // Vérifier que Firestore est prêt
-  useEffect(() => {
-    if (firestore) {
-      setIsFirestoreReady(true);
-    }
-  }, [firestore]);
 
   // Mettre à jour l'email si l'utilisateur est connecté
   useEffect(() => {

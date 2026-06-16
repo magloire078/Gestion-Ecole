@@ -77,6 +77,7 @@ export const StudentInfoSheet: React.FC<StudentInfoSheetProps> = ({ student, sch
             <header className="flex justify-between items-center pb-4 border-b-2 border-primary mb-6">
               <div className="flex items-center gap-4">
                 {school.mainLogoUrl && (
+                  /* eslint-disable-next-line @next/next/no-img-element -- fiche imprimable */
                   <img
                     src={school.mainLogoUrl}
                     alt={school.name}
@@ -100,6 +101,7 @@ export const StudentInfoSheet: React.FC<StudentInfoSheetProps> = ({ student, sch
             <div className="flex flex-col sm:flex-row items-center gap-6 mb-8 p-4 border rounded-lg bg-muted/50">
               <div className="h-28 w-28 border-2 border-primary rounded-lg overflow-hidden bg-white flex items-center justify-center flex-shrink-0">
                 {student.photoURL ? (
+                  /* eslint-disable-next-line @next/next/no-img-element -- fiche imprimable */
                   <img
                     src={student.photoURL}
                     alt={studentFullName}
@@ -165,6 +167,7 @@ export const StudentInfoSheet: React.FC<StudentInfoSheetProps> = ({ student, sch
                 <div className="font-bold border-b pb-1">Le Directeur</div>
                 <div className="h-16 w-32 flex items-center justify-center">
                   {school.digitalSignatureUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element -- signature digitale imprimable */
                     <img
                       src={school.digitalSignatureUrl}
                       alt="Signature du Directeur"

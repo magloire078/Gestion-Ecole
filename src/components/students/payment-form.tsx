@@ -41,6 +41,8 @@ export function PaymentForm({ onSubmit, initialData, isSaving, onCancel }: Payme
 
     useEffect(() => {
         reset(initialData);
+        // Reset de la pièce jointe à chaque changement d'initialData — legit.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSelectedFile(null);
     }, [initialData, reset]);
 
