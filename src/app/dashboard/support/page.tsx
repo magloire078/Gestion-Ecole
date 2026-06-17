@@ -5,12 +5,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, MessageCircle } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { SupportTicketForm } from '@/components/support/ticket-form';
 import { SupportTicketList } from '@/components/support/ticket-list';
+import Link from 'next/link';
 import type { support_ticket as SupportTicket } from '@/lib/data-types';
 
 export default function SupportPage() {
@@ -50,12 +51,20 @@ export default function SupportPage() {
                         <h1 className="text-2xl font-bold">Support Technique</h1>
                         <p className="text-muted-foreground">Suivez vos demandes d'assistance.</p>
                     </div>
-                    <DialogTrigger asChild>
-                        <Button>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Nouveau Ticket
+                    <div className="flex items-center gap-2">
+                        <Button asChild variant="outline">
+                            <Link href="/dashboard/support/messages">
+                                <MessageCircle className="mr-2 h-4 w-4" />
+                                Messagerie support
+                            </Link>
                         </Button>
-                    </DialogTrigger>
+                        <DialogTrigger asChild>
+                            <Button>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Nouveau Ticket
+                            </Button>
+                        </DialogTrigger>
+                    </div>
                 </div>
 
                 <Tabs defaultValue="open">

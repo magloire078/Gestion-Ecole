@@ -94,30 +94,40 @@ function BillingDashboardContent() {
   const router = useRouter();
   const [usage, setUsage] = useState<{ studentsCount: number; cyclesCount: number; storageUsed: number } | null>(null);
   const [projection, setProjection] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [billingError, setBillingError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (schoolId && firestore && subscription) {
-      const getBillingData = async () => {
-        setLoading(true);
-        try {
-          const currentUsage = await calculateMonthlyUsage(firestore, schoolId);
-          setUsage(currentUsage);
-          const billingProjection = await applyPricing(subscription, currentUsage);
-          setProjection(billingProjection);
-        } catch (error) {
-          console.error("Failed to calculate billing data:", error);
-        } finally {
-          setLoading(false);
-        }
-      };
-      getBillingData();
-    } else if (!schoolLoading) {
-      setLoading(false);
-    }
-  }, [schoolId, firestore, subscription, schoolLoading]);
+    if (!schoolId || !firestore || !subscription?.plan) return;
+    let cancelled = false;
+    const run = async () => {
+      setBillingLoading(true);
+      setBillingError(null);
+      try {
+        const currentUsage = await calculateMonthlyUsage(firestore, schoolId);
+        if (cancelled) return;
+        setUsage(currentUsage);
+        const billingProjection = await applyPricing(subscription, currentUsage);
+        if (cancelled) return;
+        setProjection(billingProjection);
+      } catch (error: any) {
+        if (cancelled) return;
+        console.error("Failed to calculate billing data:", error);
+        setBillingError(error?.message ?? 'Erreur de calcul de la facturation.');
+      } finally {
+        if (!cancelled) setBillingLoading(false);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+  }, [schoolId, firestore, subscription]);
 
   const planDetails = getPlanLimits(subscription?.plan);
+  // Source de vérité unique pour le skeleton : on attend à la fois la
+  // résolution du contexte école ET, si l'abonnement existe, le calcul
+  // de la facturation. Évite le flash de carte vide entre les deux.
+  const showSkeleton = schoolLoading || (!!subscription?.plan && billingLoading);
+  const hasSubscription = !!subscription?.plan;
 
   return (
     <div className="space-y-6">
@@ -127,11 +137,23 @@ function BillingDashboardContent() {
           <CardDescription className="text-xs font-black uppercase tracking-widest text-slate-400">Aperçu de votre facturation mensuelle et de votre consommation.</CardDescription>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {showSkeleton ? (
             <div className="space-y-4">
               <Skeleton className="h-8 w-1/4 rounded-xl" />
               <Skeleton className="h-6 w-1/2 rounded-xl" />
               <Skeleton className="h-24 w-full rounded-xl" />
+            </div>
+          ) : !hasSubscription ? (
+            <div className="py-8 text-center space-y-4">
+              <p className="text-slate-600">Aucun abonnement actif pour cet établissement.</p>
+              <Button onClick={() => router.push('/dashboard/parametres/abonnement')} className="rounded-xl">
+                <CreditCard className="mr-2 h-4 w-4" /> Choisir un plan
+              </Button>
+            </div>
+          ) : billingError ? (
+            <div className="py-8 text-center space-y-2">
+              <p className="text-rose-600 font-semibold">Erreur de calcul de la facturation</p>
+              <p className="text-xs text-slate-500">{billingError}</p>
             </div>
           ) : projection ? (
             <div className="grid gap-6 md:grid-cols-2">
@@ -175,7 +197,7 @@ function BillingDashboardContent() {
                       }).toString();
                       router.push(`/dashboard/parametres/abonnement/paiement?${params}`);
                     }}
-                    disabled={loading || !projection || (projection.total ?? 0) === 0}
+                    disabled={showSkeleton || !projection || (projection.total ?? 0) === 0}
                   >
                     <Zap className="mr-2 h-4 w-4" />
                     Payer maintenant ({formatCurrency(projection?.total ?? 0)})
@@ -214,7 +236,7 @@ function BillingDashboardContent() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading ? (
+              {showSkeleton ? (
                 <TableRow>
                   <TableCell colSpan={4}><Skeleton className="h-8 w-full rounded-xl" /></TableCell>
                 </TableRow>

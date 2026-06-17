@@ -2,14 +2,25 @@
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Zap, AlertCircle, Building, Users, Utensils, Bus, Bed, HeartPulse, Trophy, Briefcase, LandPlot, Loader2, Calendar } from "lucide-react";
+import { CheckCircle, Zap, AlertCircle, Building, Users, Utensils, Bus, Bed, HeartPulse, Trophy, Briefcase, LandPlot, Loader2, Calendar, Ban } from "lucide-react";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSubscription } from "@/hooks/use-subscription";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import Link from 'next/link';
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -18,18 +29,38 @@ import { Label } from "@/components/ui/label";
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { motion } from 'framer-motion';
+import { doc } from "firebase/firestore";
 
-import { SUBSCRIPTION_PLANS, MODULES_CONFIG, PlanName, ModuleName } from "@/lib/subscription-plans";
+import { SUBSCRIPTION_PLANS, MODULES_CONFIG, PlanName, ModuleName, getPlanLimits } from "@/lib/subscription-plans";
 import { formatCurrency } from "@/lib/currency-utils";
+import { useFirestore, useDoc } from "@/firebase";
 
 export default function SubscriptionPage() {
     const router = useRouter();
-    const { schoolName, loading: schoolLoading, schoolData } = useSchoolData();
+    const { schoolId, schoolName, loading: schoolLoading, schoolData } = useSchoolData();
     const { subscription, updateSubscription, loading: subscriptionLoading, isExpired, daysLeft } = useSubscription();
     const { toast } = useToast();
+    const firestore = useFirestore();
     const isLoading = schoolLoading || subscriptionLoading;
     const [error, setError] = useState<string | null>(null);
     const [isUpdating, setIsUpdating] = useState(false);
+
+    // Effectif courant pour bloquer les downgrades dépassant la limite.
+    const statsRef = useMemo(
+        () => (schoolId ? doc(firestore, `ecoles/${schoolId}/stats/finance`) : null),
+        [firestore, schoolId],
+    );
+    const { data: statsData } = useDoc(statsRef);
+    const currentStudentCount = (statsData?.studentCount as number | undefined) ?? 0;
+
+    const downgradeBlockReason = (planName: PlanName): string | null => {
+        const limits = getPlanLimits(planName);
+        if (!limits || !Number.isFinite(limits.maxStudents)) return null;
+        if (currentStudentCount > limits.maxStudents) {
+            return `Plan limité à ${limits.maxStudents} élèves alors que vous en avez ${currentStudentCount}. Réduisez les effectifs avant de basculer.`;
+        }
+        return null;
+    };
 
     const handleChoosePlan = (planName: PlanName, price: number) => {
         setError(null);
@@ -37,14 +68,68 @@ export default function SubscriptionPage() {
             setError("Le nom de l'école n&apos;est pas encore chargé. Veuillez patienter un instant.");
             return;
         }
+        const blockReason = downgradeBlockReason(planName);
+        if (blockReason) {
+            toast({
+                variant: 'destructive',
+                title: 'Downgrade impossible',
+                description: blockReason,
+            });
+            return;
+        }
+
+        // Pour les plans facturés par élève, le « price » catalogue est 0.
+        // On calcule un montant mensuel réel : pricePerStudent × effectif courant
+        // (minimum 1 élève pour permettre l'achat sur une école vide).
+        const limits = getPlanLimits(planName);
+        let monthlyPrice = price;
+        if (limits && limits.pricePerStudent > 0) {
+            const billableStudents = Math.max(1, currentStudentCount);
+            monthlyPrice = limits.pricePerStudent * billableStudents;
+        }
 
         const transactionDetails = new URLSearchParams({
             plan: planName,
-            price: price.toString(),
+            price: monthlyPrice.toString(),
             description: `Abonnement ${planName} pour ${schoolName}`,
         }).toString();
 
         router.push(`/dashboard/parametres/abonnement/paiement?${transactionDetails}`);
+    };
+
+    const handleCancelSubscription = async () => {
+        if (!subscription || isUpdating) return;
+        setIsUpdating(true);
+        try {
+            await updateSubscription({
+                ...subscription,
+                status: 'canceled',
+            } as any);
+            toast({
+                title: 'Abonnement résilié',
+                description: `Vous gardez l'accès jusqu'au ${subscription.endDate ? format(new Date(subscription.endDate), 'd MMMM yyyy', { locale: fr }) : 'terme'}, sans renouvellement automatique.`,
+            });
+        } catch (e) {
+            toast({ variant: 'destructive', title: 'Erreur', description: "Impossible d'annuler l'abonnement." });
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const handleReactivateSubscription = async () => {
+        if (!subscription || isUpdating) return;
+        setIsUpdating(true);
+        try {
+            await updateSubscription({
+                ...subscription,
+                status: 'active',
+            } as any);
+            toast({ title: 'Abonnement réactivé', description: 'Le renouvellement automatique est rétabli.' });
+        } catch (e) {
+            toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de réactiver l'abonnement." });
+        } finally {
+            setIsUpdating(false);
+        }
     };
 
     const handleModuleToggle = async (moduleId: ModuleName, checked: boolean) => {
@@ -133,9 +218,48 @@ export default function SubscriptionPage() {
                         </div>
                         <Badge variant={subscription.status === 'active' ? 'secondary' : 'destructive'} className="capitalize">{subscription.status}</Badge>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="space-y-3">
                         <p className="text-sm">Votre abonnement est valide jusqu'au <strong className="font-semibold">{format(new Date(subscription.endDate), 'd MMMM yyyy', { locale: fr })}</strong>.</p>
                         <p className="text-xs text-muted-foreground">Il vous reste {formatDistanceToNow(new Date(subscription.endDate), { locale: fr })}.</p>
+
+                        {subscription.status === 'canceled' ? (
+                            <Alert className="border-amber-200 bg-amber-50 text-amber-900">
+                                <Ban className="h-4 w-4 text-amber-600" />
+                                <AlertTitle>Résilié — accès jusqu'à la fin de période</AlertTitle>
+                                <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                    <span>Aucun renouvellement automatique. Vous pouvez réactiver à tout moment avant l'expiration.</span>
+                                    <Button size="sm" variant="outline" onClick={handleReactivateSubscription} disabled={isUpdating}>
+                                        {isUpdating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle className="h-3 w-3 mr-1" />}
+                                        Réactiver
+                                    </Button>
+                                </AlertDescription>
+                            </Alert>
+                        ) : (subscription.status === 'active' || subscription.status === 'trialing') && subscription.plan !== 'Essentiel' && (
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive">
+                                        <Ban className="h-3 w-3 mr-1" /> Résilier mon abonnement
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Résilier l'abonnement {subscription.plan} ?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Vous garderez l'accès complet jusqu'au{' '}
+                                            <strong>{format(new Date(subscription.endDate), 'd MMMM yyyy', { locale: fr })}</strong>.
+                                            Aucun renouvellement automatique ne sera effectué après cette date.
+                                            Vous pourrez réactiver à tout moment avant l'expiration.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Garder mon abonnement</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleCancelSubscription} className="bg-destructive hover:bg-destructive/90">
+                                            Confirmer la résiliation
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        )}
                     </CardContent>
                 </Card>
             )}
@@ -148,6 +272,7 @@ export default function SubscriptionPage() {
             >
                 {SUBSCRIPTION_PLANS.map(plan => {
                     const current = isCurrentPlan(plan.name);
+                    const blockReason = !current ? downgradeBlockReason(plan.name as PlanName) : null;
                     return (
                         <motion.div key={plan.name} variants={itemVariants}>
                             <Card className={cn("flex flex-col h-full transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl", current && "border-2 border-primary shadow-2xl scale-[1.02]")}>
@@ -200,15 +325,24 @@ export default function SubscriptionPage() {
                                             {isExpired ? "Réactiver ce Plan" : daysLeft < 30 ? "Renouveler ce Plan" : "Votre Plan Actuel"}
                                         </Button>
                                     ) : (
-                                        <Button
-                                            className="w-full"
-                                            variant={plan.variant}
-                                            onClick={() => handleChoosePlan(plan.name, plan.price)}
-                                            disabled={isLoading}
-                                        >
-                                            {plan.name !== 'Essentiel' && <Zap className="mr-2 h-4 w-4" />}
-                                            Choisir le Plan {plan.name}
-                                        </Button>
+                                        <div className="w-full space-y-2">
+                                            <Button
+                                                className="w-full"
+                                                variant={plan.variant}
+                                                onClick={() => handleChoosePlan(plan.name, plan.price)}
+                                                disabled={isLoading || !!blockReason}
+                                                title={blockReason ?? undefined}
+                                            >
+                                                {plan.name !== 'Essentiel' && <Zap className="mr-2 h-4 w-4" />}
+                                                Choisir le Plan {plan.name}
+                                            </Button>
+                                            {blockReason && (
+                                                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2 leading-tight">
+                                                    <AlertCircle className="inline h-3 w-3 mr-1" />
+                                                    {blockReason}
+                                                </p>
+                                            )}
+                                        </div>
                                     )}
                                 </CardFooter>
                             </Card>
