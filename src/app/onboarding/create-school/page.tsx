@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/use-user';
 import { useFirestore } from '@/firebase';
 import { SchoolCreationService } from '@/services/school-creation';
+import { MailService } from '@/services/mail-service';
 import { ImageUploader } from '@/components/image-uploader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, ArrowLeft, Upload, Building, MapPin, Phone, Mail, Globe } from 'lucide-react';
@@ -169,6 +170,15 @@ export default function CreateSchoolPage() {
           description: "Étape suivante : configuration de la structure.",
           duration: 5000,
         });
+
+        // Email de bienvenue (non bloquant : si l'envoi échoue, on n'arrête
+        // pas l'onboarding — l'utilisateur a déjà son école).
+        const directorEmail = user.email || values.email || '';
+        if (directorEmail) {
+          new MailService(firestore)
+            .sendWelcomeEmail(directorEmail, firstName, values.name)
+            .catch(err => console.error('[Onboarding] sendWelcomeEmail failed:', err));
+        }
 
         await reloadUser();
         router.push('/onboarding/setup-structure');
