@@ -78,6 +78,46 @@ const getImageHintForGrade = (grade: string): string => {
   return 'school students';
 };
 
+const getGradientForGrade = (grade: string): string => {
+  const lowerCaseGrade = grade.toLowerCase();
+  if (
+    lowerCaseGrade.includes('maternelle') ||
+    lowerCaseGrade.includes('section') ||
+    lowerCaseGrade.includes('petite') ||
+    lowerCaseGrade.includes('moyenne') ||
+    lowerCaseGrade.includes('grande')
+  ) {
+    return 'from-amber-400 to-orange-500';
+  }
+  if (
+    lowerCaseGrade.includes('primaire') ||
+    lowerCaseGrade.includes('cp') ||
+    lowerCaseGrade.includes('ce') ||
+    lowerCaseGrade.includes('cm')
+  ) {
+    return 'from-emerald-400 to-teal-600';
+  }
+  if (
+    lowerCaseGrade.includes('lycée') ||
+    lowerCaseGrade.includes('collège') ||
+    lowerCaseGrade.includes('secondaire') ||
+    lowerCaseGrade.includes('seconde') ||
+    lowerCaseGrade.includes('première') ||
+    lowerCaseGrade.includes('terminale') ||
+    /^\d+/.test(lowerCaseGrade)
+  ) {
+    return 'from-blue-500 to-indigo-600';
+  }
+  if (
+    lowerCaseGrade.includes('bts') ||
+    lowerCaseGrade.includes('licence') ||
+    lowerCaseGrade.includes('supérieur')
+  ) {
+    return 'from-indigo-600 via-purple-600 to-pink-600';
+  }
+  return 'from-slate-400 to-slate-600';
+};
+
 
 export default function FeesPage() {
   const firestore = useFirestore();
@@ -288,14 +328,15 @@ export default function FeesPage() {
               fees.map((fee: Fee) => (
                 <Card key={fee.id} className="flex flex-col overflow-hidden">
                   <CardHeader className="p-0 relative">
-                    <SafeImage
-                      src={`https://picsum.photos/seed/${fee.id}/400/200`}
-                      alt={`Image pour ${fee.grade}`}
-                      width={400}
-                      height={200}
-                      className="h-28 w-full object-cover"
-                      data-ai-hint={getImageHintForGrade(fee.grade)}
-                    />
+                    <div className={cn(
+                      "h-28 w-full bg-gradient-to-br flex items-center justify-center relative overflow-hidden",
+                      getGradientForGrade(fee.grade)
+                    )}>
+                      {/* Decorative layout background label */}
+                      <span className="text-white/15 font-black text-6xl tracking-tighter select-none font-outfit uppercase">
+                        {fee.grade.substring(0, 3)}
+                      </span>
+                    </div>
                     {canManageBilling && (
                       <div className="absolute top-2 right-2">
                         <DropdownMenu>
