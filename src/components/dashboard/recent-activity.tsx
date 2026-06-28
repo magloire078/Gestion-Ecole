@@ -198,15 +198,16 @@ export function RecentActivity({ schoolId: propSchoolId }: RecentActivityProps) 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.1 }}
+            className="h-full"
         >
-            <Card className="glass-card h-full overflow-hidden relative">
+            <Card className="glass-card h-full overflow-hidden relative flex flex-col">
                 <div className="absolute top-0 left-0 w-32 h-32 bg-primary/5 rounded-full -ml-16 -mt-16 blur-3xl" />
                 <CardHeader>
                     <CardTitle className="text-xl font-bold">Activité Récente</CardTitle>
                     <CardDescription>Derniers événements dans votre établissement.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <div className="space-y-6 relative z-10">
+                <CardContent className="flex-1">
+                    <div className="space-y-4 relative z-10">
                         {loading ? (
                             [...Array(5)].map((_, i) => (
                                 <div key={i} className="flex items-center gap-4">
@@ -223,7 +224,7 @@ export function RecentActivity({ schoolId: propSchoolId }: RecentActivityProps) 
                                 {/* Vertical line for timeline with glow */}
                                 <div className="absolute left-[1.25rem] top-2 bottom-2 w-0.5 bg-gradient-to-b from-primary/40 via-primary/10 to-transparent shadow-[0_0_15px_rgba(var(--primary),0.3)]" />
 
-                                <div className="space-y-6">
+                                <div className="space-y-4">
                                     {recentItems.map((item, index) => (
                                         <motion.div
                                             key={item.id + item.type}

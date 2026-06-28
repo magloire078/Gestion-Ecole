@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, onSnapshot, serverTimestamp, updateDoc as firestoreUpdateDoc, FirestoreError, DocumentData } from 'firebase/firestore';
+import { doc, onSnapshot, serverTimestamp, updateDoc as firestoreUpdateDoc, FirestoreError, DocumentData, getDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { Subscription } from '@/hooks/use-school-data';
 
@@ -66,6 +66,28 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
 
         setLoading(true);
         const schoolDocRef = doc(firestore, 'ecoles', authSchoolId);
+        
+        // Define a fallback function to fetch data once if the snapshot fails
+        const fetchOnceFallback = async () => {
+            try {
+                const docSnap = await getDoc(schoolDocRef);
+                if (docSnap.exists()) {
+                    const data = { id: docSnap.id, ...docSnap.data() } as SchoolData;
+                    setSchoolData(data);
+                    document.title = data.name ? `${data.name} - Gestion Scolaire` : DEFAULT_TITLE;
+                } else {
+                    setSchoolData(null);
+                    setError("Données de l'école non trouvées (via fallback).");
+                }
+            } catch (fallbackErr: any) {
+                console.error("Error fetching school data (fallback):", fallbackErr);
+                setSchoolData(null);
+                setError(fallbackErr.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
         const unsubscribe = onSnapshot(schoolDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = { id: docSnap.id, ...docSnap.data() } as SchoolData;
@@ -77,10 +99,8 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
             }
             setLoading(false);
         }, (err: FirestoreError) => {
-            console.error("Error fetching school data:", err);
-            setSchoolData(null);
-            setError(err.message);
-            setLoading(false);
+            console.error("Error fetching school data via snapshot, trying fallback getDoc:", err);
+            fetchOnceFallback();
         });
 
         return () => unsubscribe();

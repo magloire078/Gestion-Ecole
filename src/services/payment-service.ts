@@ -35,7 +35,7 @@ function resolveApiEndpoint(path: string): string {
  * NEXT_PUBLIC_BASE_URL when running inside Capacitor.
  */
 export async function createCheckoutLink(provider: PaymentProvider, data: PaymentProviderData) {
-    const endpoint = resolveApiEndpoint('/api/payments/create-link');
+    const endpoint = resolveApiEndpoint('/api/gateway/create-link');
 
     try {
         const response = await fetch(endpoint, {

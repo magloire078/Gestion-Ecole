@@ -27,7 +27,7 @@ export default function PaiePage() {
   const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
   const firestore = useFirestore();
   const { user, loading: userLoading } = useUser();
-  const canManageBilling = !!user?.profile?.permissions?.manageBilling;
+  const canManageBilling = !!user?.profile?.permissions?.manageBilling || user?.profile?.role === 'directeur' || user?.profile?.isSuperAdmin;
   const { toast } = useToast();
 
   const [isPayslipOpen, setIsPayslipOpen] = useState(false);

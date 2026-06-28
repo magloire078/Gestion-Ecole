@@ -26,7 +26,7 @@ const studentSchema = z.object({
   firstName: z.string().min(1, { message: "Le prénom est requis." }),
   lastName: z.string().min(1, { message: "Le nom est requis." }),
   classId: z.string().min(1, { message: "La classe est requise." }),
-  dateOfBirth: z.string().min(1, { message: "La date de naissance est requise." }),
+  dateOfBirth: z.string().optional().or(z.literal('')),
   tuitionFee: z.coerce.number().min(0, "Les frais de scolarité doivent être positifs."),
   discountAmount: z.coerce.number().min(0, "La remise doit être un nombre positif."),
   discountReason: z.string().optional(),
@@ -168,7 +168,7 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
                 <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Prénom</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
               </div>
-              <FormField control={form.control} name="dateOfBirth" render={({ field }) => (<FormItem><FormLabel>Date de naissance</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="dateOfBirth" render={({ field }) => (<FormItem><FormLabel>Date de naissance (optionnel)</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
               <FormField
                 control={form.control}
                 name="classId"

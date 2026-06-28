@@ -73,7 +73,7 @@ export default function AccountingPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { schoolId, schoolName, schoolData, loading: schoolLoading } = useSchoolData();
-  const canManageBilling = !!user?.profile?.permissions?.manageBilling;
+  const canManageBilling = !!user?.profile?.permissions?.manageBilling || user?.profile?.role === 'directeur' || user?.profile?.isSuperAdmin;
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [isGeneratingGrandLivre, setIsGeneratingGrandLivre] = useState(false);
   const [isGeneratingBilan, setIsGeneratingBilan] = useState(false);

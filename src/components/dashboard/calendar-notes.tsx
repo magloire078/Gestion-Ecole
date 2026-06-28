@@ -78,7 +78,7 @@ export function CalendarNotes() {
   };
 
   return (
-    <Card className="glass-card border-white/10 bg-card/40 backdrop-blur-2xl shadow-2xl overflow-hidden relative">
+    <Card className="glass-card border-white/10 bg-card/40 backdrop-blur-2xl shadow-2xl overflow-hidden relative h-full flex flex-col">
       <div className="absolute -top-10 -right-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-[40px] pointer-events-none" />
       
       <CardHeader className="pb-2">
@@ -88,7 +88,7 @@ export function CalendarNotes() {
         </CardTitle>
       </CardHeader>
       
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 flex-1">
         <div className="flex justify-center border border-white/10 rounded-xl bg-white/5 p-2">
           <Calendar
             mode="single"

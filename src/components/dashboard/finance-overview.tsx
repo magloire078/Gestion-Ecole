@@ -89,7 +89,7 @@ export function FinanceOverview({ schoolId: propSchoolId, academicYear }: Financ
                     </div>
                 </CardHeader>
 
-                <CardContent className="space-y-6 flex-1 pt-4">
+                <CardContent className="space-y-4 flex-1 pt-4">
                     <div className="h-44 w-full relative">
                         {/* Custom SVG Shadows for PieChart */}
                         <svg className="h-0 w-0 absolute pointer-events-none" aria-hidden="true">

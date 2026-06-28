@@ -16,26 +16,28 @@ const COLLECTION_NAME = 'eleves';
  * Lève une erreur si le plafond est atteint. La limite est dérivée du plan
  * (SUBSCRIPTION_PLANS), pas d'un champ stocké qui peut dériver.
  */
-async function checkStudentLimit(schoolId: string): Promise<void> {
+async function checkStudentLimit(schoolId: string): Promise<string> {
     const schoolSnap = await getDoc(doc(db, `ecoles/${schoolId}`));
-    if (!schoolSnap.exists()) return;
+    const schoolData = schoolSnap.exists() ? schoolSnap.data() : null;
+    if (!schoolData) return "2024-2025";
 
-    const planName = schoolSnap.data()?.subscription?.plan || 'Essentiel';
+    const planName = schoolData.subscription?.plan || 'Essentiel';
     const limits = getPlanLimits(planName);
-    if (!limits || !Number.isFinite(limits.maxStudents)) return;
 
-    // Count des élèves actifs depuis Firestore (source de vérité plus fiable que stats/finance).
-    const activeStudentsQuery = query(
-        collection(db, `ecoles/${schoolId}/${COLLECTION_NAME}`),
-        where('status', '==', 'Actif'),
-    );
-    const countSnap = await getCountFromServer(activeStudentsQuery);
-    const currentCount = countSnap.data().count;
+    if (limits && Number.isFinite(limits.maxStudents)) {
+        // Count des élèves actifs depuis Firestore (source de vérité plus fiable que stats/finance).
+        const activeStudentsQuery = query(
+            collection(db, `ecoles/${schoolId}/${COLLECTION_NAME}`),
+            where('status', '==', 'Actif'),
+        );
+        const countSnap = await getCountFromServer(activeStudentsQuery);
+        const currentCount = countSnap.data().count;
 
-    if (currentCount >= limits.maxStudents) {
-        throw new Error(buildLimitReachedMessage('students', planName, limits.maxStudents));
+        if (currentCount >= limits.maxStudents) {
+            throw new Error(buildLimitReachedMessage('students', planName, limits.maxStudents));
+        }
     }
-    return schoolData?.currentAcademicYear || "2024-2025";
+    return schoolData.currentAcademicYear || "2024-2025";
 }
 
 /**

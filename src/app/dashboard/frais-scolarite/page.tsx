@@ -48,7 +48,13 @@ import { useFees } from "@/hooks/use-fees";
 
 const feeSchema = z.object({
   grade: z.string().min(1, { message: "Le niveau est requis." }),
-  amount: z.string().min(1, { message: "Le montant est requis." }),
+  amount: z.preprocess(
+    (val) => {
+      if (val === undefined || val === null) return "";
+      return String(val).replace(/[\s\u00A0,]/g, ""); // remove spaces, non-breaking spaces, and commas
+    },
+    z.string().min(1, { message: "Le montant est requis." }).regex(/^\d+$/, { message: "Le montant doit être un nombre valide." })
+  ),
   installments: z.string().min(1, { message: "Les modalités de paiement sont requises." }),
   details: z.string().optional(),
 });
@@ -78,7 +84,7 @@ export default function FeesPage() {
   const { schoolId, loading: schoolDataLoading } = useSchoolData();
   const { toast } = useToast();
   const { user } = useUser();
-  const canManageBilling = !!user?.profile?.permissions?.manageBilling;
+  const canManageBilling = !!user?.profile?.permissions?.manageBilling || user?.profile?.role === 'directeur' || user?.profile?.isSuperAdmin;
 
   // Use new hooks for data fetching
   const { fees, loading: feesLoading } = useFees(schoolId);
@@ -110,7 +116,7 @@ export default function FeesPage() {
     if (isFeeGridDialogOpen && editingFee) {
       feeForm.reset({
         grade: editingFee.grade,
-        amount: editingFee.amount,
+        amount: String(editingFee.amount),
         installments: editingFee.installments,
         details: editingFee.details || '',
       });

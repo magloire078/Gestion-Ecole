@@ -100,7 +100,7 @@ const RegularDashboard = () => {
   return (
     <div className="space-y-4">
       {/* Premium Banner with Mesh Gradient and Glassmorphism */}
-      <div className="relative w-full h-44 md:h-60 overflow-hidden rounded-xl shadow-2xl border border-white/10 group">
+      <div className="relative w-full h-36 md:h-52 overflow-hidden rounded-xl shadow-2xl border border-white/10 group">
         {/* Animated Mesh Gradient Background */}
         <div className="absolute inset-0 bg-[#0a0a0b]" />
         <div className="absolute top-0 -left-20 w-96 h-96 bg-blue-600 rounded-full mix-blend-screen filter blur-[100px] opacity-30 animate-blob" />
@@ -108,7 +108,7 @@ const RegularDashboard = () => {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-500/10 via-transparent to-transparent animate-[spin_30s_linear_infinite]" />
         
         {/* Glass Content Overlay */}
-        <div className="absolute inset-0 z-20 flex flex-col justify-center px-8 md:px-16 backdrop-blur-[1px]">
+        <div className="absolute inset-0 z-20 flex flex-col justify-center px-6 md:px-12 backdrop-blur-[1px]">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -176,15 +176,25 @@ const RegularDashboard = () => {
       <AnnouncementBanner />
       <StatCards schoolId={schoolId} academicYear={effectiveAcademicYear} />
 
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
-          <FinanceOverview schoolId={schoolId} academicYear={effectiveAcademicYear} />
-          <RecentActivity schoolId={schoolId} />
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
+        <div className="lg:col-span-2 flex flex-col gap-4">
+          <div className="shrink-0">
+            <FinanceOverview schoolId={schoolId} academicYear={effectiveAcademicYear} />
+          </div>
+          <div className="flex-1 min-h-[400px]">
+            <RecentActivity schoolId={schoolId} />
+          </div>
         </div>
-        <div className="lg:col-span-1 space-y-6">
-          <QuickActions />
-          <ActionItems />
-          <CalendarNotes />
+        <div className="lg:col-span-1 flex flex-col gap-4">
+          <div className="shrink-0">
+            <QuickActions />
+          </div>
+          <div className="shrink-0">
+            <ActionItems />
+          </div>
+          <div className="flex-1 min-h-[400px]">
+            <CalendarNotes />
+          </div>
         </div>
       </div>
     </div>

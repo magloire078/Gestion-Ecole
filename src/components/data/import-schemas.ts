@@ -42,7 +42,7 @@ const optionalEmail = z.preprocess(
 const studentSchema = z.object({
     firstName: requiredString,
     lastName: requiredString,
-    dateOfBirth: z.preprocess(v => (v == null || v === '' ? undefined : v), z.union([z.string(), z.number()])),
+    dateOfBirth: z.preprocess(v => (v == null || v === '' ? undefined : v), z.union([z.string(), z.number()])).optional(),
     placeOfBirth: optionalString,
     gender: z.preprocess(
         v => (v == null ? undefined : String(v).trim().toUpperCase()),

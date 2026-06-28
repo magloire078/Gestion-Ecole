@@ -17,6 +17,7 @@ import {
     LifeBuoy,
     CalendarClock,
     FileText,
+    Menu,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -37,10 +38,26 @@ const adminNavLinks = [
 ];
 
 const themes = [
-    { id: 'aura', name: 'Aura', class: '', primary: '#2D9CDB', dark: '#0C365A' },
-    { id: 'midnight', name: 'Midnight', class: 'theme-midnight dark', primary: '#D4AF37', dark: '#1A1A1A' },
-    { id: 'emerald', name: 'Emerald', class: 'theme-emerald', primary: '#10B981', dark: '#064E3B' },
-    { id: 'cyber', name: 'Cyber', class: 'theme-cyber dark', primary: '#F472B6', dark: '#2E1065' },
+    { 
+        id: 'aura', name: 'Aura', class: '', 
+        primary: '#2D9CDB', dark: '#0C365A',
+        bgPrimary: 'bg-[#2D9CDB]', bgDark: 'bg-[#0C365A]', textDark: 'text-[#0C365A]' 
+    },
+    { 
+        id: 'midnight', name: 'Midnight', class: 'theme-midnight dark', 
+        primary: '#D4AF37', dark: '#1A1A1A',
+        bgPrimary: 'bg-[#D4AF37]', bgDark: 'bg-[#1A1A1A]', textDark: 'text-[#1A1A1A]' 
+    },
+    { 
+        id: 'emerald', name: 'Emerald', class: 'theme-emerald', 
+        primary: '#10B981', dark: '#064E3B',
+        bgPrimary: 'bg-[#10B981]', bgDark: 'bg-[#064E3B]', textDark: 'text-[#064E3B]' 
+    },
+    { 
+        id: 'cyber', name: 'Cyber', class: 'theme-cyber dark', 
+        primary: '#F472B6', dark: '#2E1065',
+        bgPrimary: 'bg-[#F472B6]', bgDark: 'bg-[#2E1065]', textDark: 'text-[#2E1065]' 
+    },
 ];
 
 export default function SystemAdminLayout({
@@ -70,10 +87,9 @@ export default function SystemAdminLayout({
         <>
             <div className="flex h-20 shrink-0 items-center border-b px-6 relative overflow-hidden group border-[hsl(var(--admin-sidebar-border))]">
                 <AnimatedHighlight />
-                <div className="flex items-center gap-3 font-black text-xl tracking-tight font-outfit" style={{ color: activeTheme.dark }}>
+                <div className={cn("flex items-center gap-3 font-black text-xl tracking-tight font-outfit", activeTheme.textDark)}>
                     <div
-                        className="h-10 w-10 rounded-xl flex items-center justify-center text-white shadow-lg transition-all group-hover:scale-110"
-                        style={{ backgroundColor: activeTheme.dark }}
+                        className={cn("h-10 w-10 rounded-xl flex items-center justify-center text-white shadow-lg transition-all group-hover:scale-110", activeTheme.bgDark)}
                     >
                         <ShieldCheck className="h-6 w-6" />
                     </div>
@@ -91,10 +107,9 @@ export default function SystemAdminLayout({
                             className={cn(
                                 "group flex items-center gap-x-3 rounded-xl p-3 text-sm font-bold transition-all duration-300",
                                 isActive
-                                    ? "text-white shadow-xl"
+                                    ? cn("text-white shadow-xl", activeTheme.bgDark)
                                     : "text-slate-400 hover:bg-blue-50/50 hover:text-[hsl(var(--admin-primary))] dark:hover:bg-white/5"
                             )}
-                            style={isActive ? { backgroundColor: activeTheme.dark } : {}}
                             onClick={() => setShowThemePicker(false)} // close theme picker if open
                         >
                             <div className={cn(
@@ -107,8 +122,7 @@ export default function SystemAdminLayout({
                             {isActive && (
                                 <motion.div
                                     layoutId="active-pill"
-                                    className="ml-auto w-1.5 h-1.5 rounded-full"
-                                    style={{ backgroundColor: activeTheme.primary }}
+                                    className={cn("ml-auto w-1.5 h-1.5 rounded-full", activeTheme.bgPrimary)}
                                 />
                             )}
                         </Link>
@@ -144,13 +158,13 @@ export default function SystemAdminLayout({
                                             onClick={() => changeTheme(t)}
                                             className={cn(
                                                 "h-10 rounded-xl transition-all border-2",
-                                                activeTheme.id === t.id ? "border-[hsl(var(--admin-primary))]" : "border-transparent"
+                                                activeTheme.id === t.id ? "border-[hsl(var(--admin-primary))]" : "border-transparent",
+                                                t.bgDark
                                             )}
-                                            style={{ backgroundColor: t.dark }}
                                             title={t.name}
                                         >
                                             <div className="w-full h-full flex items-center justify-center overflow-hidden">
-                                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: t.primary }} />
+                                                <div className={cn("w-3 h-3 rounded-full", t.bgPrimary)} />
                                             </div>
                                         </button>
                                     ))}
@@ -178,18 +192,16 @@ export default function SystemAdminLayout({
             {/* Decorative background elements */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
                 <div
-                    className="absolute top-0 right-0 w-[40%] h-[40%] rounded-full blur-[120px] opacity-20 transition-colors duration-1000"
-                    style={{ backgroundColor: activeTheme.primary }}
+                    className={cn("absolute top-0 right-0 w-[40%] h-[40%] rounded-full blur-[120px] opacity-20 transition-colors duration-1000", activeTheme.bgPrimary)}
                 />
                 <div
-                    className="absolute bottom-0 left-0 w-[40%] h-[40%] rounded-full blur-[120px] opacity-20 transition-colors duration-1000"
-                    style={{ backgroundColor: activeTheme.dark }}
+                    className={cn("absolute bottom-0 left-0 w-[40%] h-[40%] rounded-full blur-[120px] opacity-20 transition-colors duration-1000", activeTheme.bgDark)}
                 />
             </div>
 
             {/* Mobile Header */}
             <div className="sm:hidden flex items-center justify-between p-4 border-b bg-white/70 backdrop-blur-xl dark:bg-black/40 border-[hsl(var(--admin-sidebar-border))] sticky top-0 z-30">
-                <div className="flex items-center gap-2 font-black text-lg tracking-tight font-outfit" style={{ color: activeTheme.dark }}>
+                <div className={cn("flex items-center gap-2 font-black text-lg tracking-tight font-outfit", activeTheme.textDark)}>
                     <ShieldCheck className="h-5 w-5" />
                     <span>SYS ADMIN</span>
                 </div>

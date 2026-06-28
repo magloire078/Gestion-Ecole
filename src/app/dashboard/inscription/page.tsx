@@ -36,9 +36,9 @@ const registrationSchema = z.object({
   lastName: z.string().min(1, { message: "Le nom de famille est requis." }),
   firstName: z.string().min(1, { message: "Le prénom est requis." }),
   photoUrl: z.string().optional(),
-  matricule: z.string().min(1, { message: "Le numéro matricule est requis." }),
-  dateOfBirth: z.string().min(1, { message: "La date de naissance est requise." }),
-  placeOfBirth: z.string().min(1, { message: "Le lieu de naissance est requis." }),
+  matricule: z.string().optional().or(z.literal('')),
+  dateOfBirth: z.string().optional().or(z.literal('')),
+  placeOfBirth: z.string().optional().or(z.literal('')),
   gender: z.enum(['Masculin', 'Féminin'], { required_error: "Le sexe est requis." }),
   address: z.string().optional(),
 
@@ -147,15 +147,15 @@ export default function RegistrationPage() {
 
     const studentData = {
       schoolId,
-      matricule: values.matricule,
+      matricule: values.matricule || '',
       lastName: values.lastName,
       firstName: values.firstName,
-      dateOfBirth: values.dateOfBirth,
-      placeOfBirth: values.placeOfBirth,
+      dateOfBirth: values.dateOfBirth || '',
+      placeOfBirth: values.placeOfBirth || '',
       gender: values.gender,
-      address: values.address,
-      previousSchool: values.previousSchool,
-      photoURL: values.photoUrl || `https://picsum.photos/seed/${values.matricule}/200`,
+      address: values.address || '',
+      previousSchool: values.previousSchool || '',
+      photoURL: values.photoUrl || `https://picsum.photos/seed/${values.matricule || 'placeholder'}/200`,
       status: values.status,
       classId: values.classId,
       class: selectedClassInfo?.name || 'N/A',
@@ -164,9 +164,9 @@ export default function RegistrationPage() {
       parent1LastName: values.parent1LastName,
       parent1FirstName: values.parent1FirstName,
       parent1Contact: values.parent1Contact,
-      parent2LastName: values.parent2LastName,
-      parent2FirstName: values.parent2FirstName,
-      parent2Contact: values.parent2Contact,
+      parent2LastName: values.parent2LastName || '',
+      parent2FirstName: values.parent2FirstName || '',
+      parent2Contact: values.parent2Contact || '',
       parentIds: [], // Initialise le champ parentIds
       tuitionFee: tuitionFee,
       discountAmount: 0,
@@ -286,13 +286,13 @@ export default function RegistrationPage() {
                         <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Ex: GUEYE" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Prénom(s)</FormLabel><FormControl><Input placeholder="Ex: Adama" {...field} /></FormControl><FormMessage /></FormItem>)} />
                       </div>
-                      <FormField control={form.control} name="matricule" render={({ field }) => (<FormItem><FormLabel>Numéro Matricule</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name="matricule" render={({ field }) => (<FormItem><FormLabel>Numéro Matricule (optionnel)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                     </div>
                   </div>
 
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="dateOfBirth" render={({ field }) => (<FormItem><FormLabel>Date de naissance</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="placeOfBirth" render={({ field }) => (<FormItem><FormLabel>Lieu de naissance</FormLabel><FormControl><Input placeholder="Ex: Dakar" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="dateOfBirth" render={({ field }) => (<FormItem><FormLabel>Date de naissance (optionnel)</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="placeOfBirth" render={({ field }) => (<FormItem><FormLabel>Lieu de naissance (optionnel)</FormLabel><FormControl><Input placeholder="Ex: Dakar" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   </div>
                   <div className="grid sm:grid-cols-2 gap-4">
                     <FormField control={form.control} name="gender" render={({ field }) => (<FormItem><FormLabel>Sexe</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner le sexe" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Masculin">Masculin</SelectItem><SelectItem value="Féminin">Féminin</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />

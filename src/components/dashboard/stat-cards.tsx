@@ -159,7 +159,7 @@ export function StatCards({ schoolId, academicYear }: { schoolId: string, academ
                   </div>
                 </CardHeader>
 
-                <CardContent className="relative z-10 pt-6">
+                <CardContent className="relative z-10 pt-4">
                   <div className="flex items-baseline gap-1">
                     <div className="text-5xl font-black tracking-tighter transition-transform duration-500 group-hover:scale-105">
                       {loading || studentsLoading ? <Skeleton className="h-12 w-24" /> : (

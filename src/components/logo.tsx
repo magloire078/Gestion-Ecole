@@ -64,7 +64,7 @@ export function Logo({ size = 'md', schoolName, logoUrl, disableLink = false, cl
       {!compact && schoolName && (
         <div className="flex flex-col select-none items-start text-left min-w-0">
           <span className={cn(
-            "font-black tracking-tighter leading-tight dark:text-white text-[#0C365A] truncate w-full",
+            "font-black tracking-tighter leading-tight dark:text-white text-[#0C365A] line-clamp-2 whitespace-normal break-words w-full",
             currentSize.text
           )}>
             {schoolName.toUpperCase()}
