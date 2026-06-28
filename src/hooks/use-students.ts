@@ -124,18 +124,19 @@ export function useStudents(
     const { data: directData, loading: directLoading, error: directError } = useCollection(directQuery);
 
     const directStudents = useMemo(() => {
-        return directData?.map(doc => {
+        if (!directData) return [];
+        return directData.map(doc => {
             const data = doc.data();
-            return {
+            let student = {
                 id: doc.id,
                 ...data,
                 photoURL: data.photoURL || data.photoUrl,
             } as Student;
 
             // If an academic year is specified, try to find the matching enrollment
-            if (academicYear) {
+            if (effectiveYear) {
                 const enrollments = student.enrollments || [];
-                const enrollment = enrollments.find(e => e.academicYear === academicYear);
+                const enrollment = enrollments.find(e => e.academicYear === effectiveYear);
                 
                 if (enrollment) {
                     // Override root properties with the enrollment specifics for this year
@@ -144,7 +145,7 @@ export function useStudents(
                         classId: enrollment.classId,
                         tuitionFee: enrollment.tuitionFee,
                         amountDue: enrollment.amountDue,
-                        tuitionStatus: enrollment.tuitionStatus,
+                        tuitionStatus: enrollment.tuitionStatus as any,
                         status: enrollment.status === 'Radié' || enrollment.status === 'Transféré' ? 'Radié' : 'Actif'
                     };
                 } else {
@@ -154,8 +155,8 @@ export function useStudents(
             }
 
             return student;
-        }) || [];
-    }, [directData]);
+        }).filter(s => !(s as any)._exclude);
+    }, [directData, effectiveYear]);
 
     const students = useMemo(() => {
         const base = useAssignmentJoin ? assignmentStudents : directStudents;
