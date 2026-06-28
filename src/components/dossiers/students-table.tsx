@@ -118,12 +118,12 @@ export const StudentsTable = ({ students, isLoading, canManageUsers, actionType,
                                                         className="h-full w-full object-cover"
                                                     />
                                                 ) : (
-                                                    <span className="text-xs font-bold">{`${student.firstName?.[0] || ''}${student.lastName?.[0] || ''}`.toUpperCase()}</span>
+                                                    <span className="text-xs font-bold">{`${student.lastName?.[0] || ''}${student.firstName?.[0] || ''}`.toUpperCase()}</span>
                                                 )}
                                             </div>
                                             <div>
                                                 <Link href={`/dashboard/dossiers-eleves/details?id=${student.id}`} className="hover:underline">
-                                                    <p className="font-medium">{student.firstName} {student.lastName}</p>
+                                                    <p className="font-medium">{student.lastName.toUpperCase()} {student.firstName}</p>
                                                 </Link>
                                                 <div className="text-xs text-muted-foreground font-mono">{student.matricule || student.id?.substring(0, 8)}</div>
                                             </div>

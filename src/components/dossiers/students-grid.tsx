@@ -60,8 +60,8 @@ const getAge = (dateOfBirth: string | undefined) => {
 
 const StudentCard = ({ student, onEdit, onArchive, onRestore, actionType }: StudentCardProps) => {
     const router = useRouter();
-    const studentFullName = `${student.firstName} ${student.lastName}`;
-    const fallback = studentFullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    const studentFullName = `${student.lastName.toUpperCase()} ${student.firstName}`;
+    const fallback = `${student.lastName?.[0] || ''}${student.firstName?.[0] || ''}`.toUpperCase();
 
     return (
         <Card className="flex flex-col">

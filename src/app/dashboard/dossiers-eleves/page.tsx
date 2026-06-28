@@ -115,6 +115,7 @@ export default function StudentsPage() {
   const { activeStudents, archivedStudents, filteredActiveStudents } = useMemo(() => {
     const filteredBySearch = allStudents.filter(student =>
       `${student.firstName} ${student.lastName}`.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      `${student.lastName} ${student.firstName}`.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
       student.matricule?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
     );
 
