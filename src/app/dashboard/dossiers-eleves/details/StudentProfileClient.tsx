@@ -72,6 +72,9 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
     const teacherRef = useMemo(() => studentClass?.mainTeacherId ? doc(firestore, `ecoles/${schoolId}/personnel/${studentClass.mainTeacherId}`) as DocumentReference<Staff, DocumentData> : null, [studentClass, schoolId, firestore]);
     const { data: mainTeacher, loading: teacherLoading } = useDoc<Staff>(teacherRef);
 
+    const cycleRef = useMemo(() => studentClass?.cycleId ? doc(firestore, `ecoles/${schoolId}/cycles/${studentClass.cycleId}`) : null, [studentClass, schoolId, firestore]);
+    const { data: cycleData, loading: cycleLoading } = useDoc<any>(cycleRef);
+
     const allSchoolClassesQuery = useMemo(() => canManageUsers ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId, canManageUsers]);
     const { data: allSchoolClassesData, loading: allClassesLoading } = useCollection(allSchoolClassesQuery);
     const feesQuery = useMemo(() => canManageUsers ? collection(firestore, `ecoles/${schoolId}/frais_scolarite`) : null, [firestore, schoolId, canManageUsers]);
@@ -83,9 +86,9 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
     const allSchoolFees: Fee[] = useMemo(() => feesData?.map(d => ({ id: d.id, ...d.data() } as Fee)) || [], [feesData]);
     const allNiveaux: Niveau[] = useMemo(() => niveauxData?.map(d => ({ id: d.id, ...d.data() } as Niveau)) || [], [niveauxData]);
 
-    const studentFullName = student ? `${student.firstName} ${student.lastName}` : '';
+    const studentFullName = student ? `${student.lastName.toUpperCase()} ${student.firstName}` : '';
 
-    const isLoading = studentLoading || classLoading || teacherLoading || (canManageUsers && (allClassesLoading || feesLoading || niveauxLoading));
+    const isLoading = studentLoading || classLoading || teacherLoading || cycleLoading || (canManageUsers && (allClassesLoading || feesLoading || niveauxLoading));
 
     if (isLoading) {
         return <StudentProfilePageSkeleton />;
@@ -138,8 +141,8 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
                                     currentPhotoUrl={student.photoURL}
                                     onUploadSuccess={() => setRefreshTrigger(prev => prev + 1)}
                                 />
-                                <div>
-                                    <CardTitle className="text-2xl">{studentFullName}</CardTitle>
+                                <div className="flex-1 min-w-0">
+                                    <CardTitle className="text-xl md:text-2xl break-words whitespace-pre-wrap leading-tight">{studentFullName}</CardTitle>
                                     <CardDescription className='flex items-center gap-2'><Hash className='h-3 w-3' />{student.matricule || 'N/A'}</CardDescription>
                                     <Badge className={cn("mt-2 border-transparent", getStatusBadgeVariant(student.status || 'Actif'))}>{student.status || 'Actif'}</Badge>
                                 </div>
@@ -151,11 +154,11 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
                                 </div>
                                 <div className="flex items-center">
                                     <User className="mr-3 h-5 w-5 text-muted-foreground" />
-                                    <span>Prof. Principal: <strong>{mainTeacher ? `${mainTeacher.firstName} ${mainTeacher.lastName}` : 'N/A'}</strong></span>
+                                    <span>Prof. Principal: <strong>{mainTeacher ? `${mainTeacher.lastName.toUpperCase()} ${mainTeacher.firstName}` : 'N/A'}</strong></span>
                                 </div>
                                 <div className="flex items-center">
                                     <Building className="mr-3 h-5 w-5 text-muted-foreground" />
-                                    <span>Cycle: {studentClass?.cycleId || student.cycle || 'N/A'}</span>
+                                    <span>Cycle: {cycleData?.name || studentClass?.cycleId || student.cycle || 'N/A'}</span>
                                 </div>
                             </CardContent>
                         </Card>
