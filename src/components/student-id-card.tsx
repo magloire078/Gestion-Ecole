@@ -26,9 +26,10 @@ export const StudentIdCard: React.FC<StudentIdCardProps> = ({ student, school })
         window.print();
     };
 
-    const studentFullName = `${student.firstName} ${student.lastName}`;
-    const fallback = studentFullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    const studentFullName = `${student.lastName ? student.lastName.toUpperCase() : ''} ${student.firstName || ''}`.trim();
+    const fallback = `${student.lastName?.[0] || ''}${student.firstName?.[0] || ''}`.toUpperCase() || 'EL';
     const currentYear = new Date().getFullYear();
+    const academicYear = student.enrollments?.[0]?.academicYear || `${currentYear - 1}-${currentYear}`;
 
     // Le QR code est maintenant un lien direct vers le profil de l'élève
     const qrCodeValue = `${process.env.NEXT_PUBLIC_BASE_URL || window.location.origin}/dashboard/dossiers-eleves/${student.id}`;
@@ -51,7 +52,7 @@ export const StudentIdCard: React.FC<StudentIdCardProps> = ({ student, school })
                                 )}
                                 <h1 className="font-bold text-lg">{school.name}</h1>
                             </div>
-                            <p className="text-xs font-mono">Année {`${currentYear - 1}-${currentYear}`}</p>
+                            <p className="text-xs font-mono">Année {academicYear}</p>
                         </header>
 
                         <div className="flex items-center gap-6">
