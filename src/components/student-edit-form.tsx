@@ -35,6 +35,7 @@ const studentSchema = z.object({
   status: z.enum(['Actif', 'En attente', 'Transféré', 'Diplômé', 'Radié']),
   feedback: z.string().optional(),
   grade: z.string().optional(),
+  academicYear: z.string().optional(),
 });
 
 type StudentFormValues = z.infer<typeof studentSchema>;
@@ -70,6 +71,7 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
       status: student.status || 'Actif',
       feedback: student.feedback || '',
       grade: student.grade || '',
+      academicYear: student.enrollments?.[0]?.academicYear || '2024-2025',
     },
   });
 
@@ -110,6 +112,27 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
 
     const selectedClassInfo = classes.find(c => c.id === newClassId);
 
+    const updatedEnrollments = student.enrollments ? [...student.enrollments] : [];
+    if (updatedEnrollments.length > 0) {
+      updatedEnrollments[0] = {
+        ...updatedEnrollments[0],
+        academicYear: values.academicYear || updatedEnrollments[0].academicYear || '2024-2025'
+      };
+    } else {
+      updatedEnrollments.push({
+        schoolId,
+        studentId: student.id!,
+        academicYear: values.academicYear || '2024-2025',
+        classId: newClassId,
+        status: 'Nouveau',
+        tuitionFee: values.tuitionFee,
+        amountDue: values.amountDue,
+        tuitionStatus: values.tuitionStatus === 'Soldé' ? 'Soldé' : values.tuitionStatus === 'Partiel' ? 'Partiel' : 'En retard'
+      });
+    }
+
+    const startYearInt = values.academicYear ? parseInt(values.academicYear.split('-')[0]) : student.inscriptionYear;
+
     const updatedData = {
       firstName: values.firstName,
       lastName: values.lastName,
@@ -125,6 +148,8 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
       tuitionStatus: values.tuitionStatus,
       status: values.status,
       feedback: values.feedback || '',
+      enrollments: updatedEnrollments,
+      inscriptionYear: startYearInt || null,
       updatedBy: user.uid,
     };
 
@@ -185,22 +210,37 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
                   </FormItem>
                 )}
               />
-              <FormField control={form.control} name="status" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Statut Élève</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      <SelectItem value="Actif">Actif</SelectItem>
-                      <SelectItem value="En attente">En attente</SelectItem>
-                      <SelectSeparator />
-                      <SelectItem value="Transféré">Transféré</SelectItem>
-                      <SelectItem value="Diplômé">Diplômé</SelectItem>
-                      <SelectItem value="Radié">Radié</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )} />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={form.control} name="status" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Statut Élève</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="Actif">Actif</SelectItem>
+                        <SelectItem value="En attente">En attente</SelectItem>
+                        <SelectSeparator />
+                        <SelectItem value="Transféré">Transféré</SelectItem>
+                        <SelectItem value="Diplômé">Diplômé</SelectItem>
+                        <SelectItem value="Radié">Radié</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="academicYear" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Année Scolaire d'Entrée</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="2024-2025">2024-2025</SelectItem>
+                        <SelectItem value="2025-2026">2025-2026</SelectItem>
+                        <SelectItem value="2026-2027">2026-2027</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )} />
+              </div>
             </TabsContent>
             <TabsContent value="tuition" className="mt-0 space-y-4">
               {showFeeWarning && (

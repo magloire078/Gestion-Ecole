@@ -137,18 +137,18 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
                 <div className="grid gap-6 grid-cols-1 lg:grid-cols-4">
                     <div className="lg:col-span-1 flex flex-col gap-6">
                         <Card>
-                             <CardHeader className="flex-row items-center gap-4 pb-4">
-                                 <StudentPhotoUpload
-                                     schoolId={schoolId}
-                                     studentId={eleveId}
-                                     currentPhotoUrl={student.photoURL}
-                                     onUploadSuccess={() => setRefreshTrigger(prev => prev + 1)}
-                                 />
-                                 <div className="flex-1 min-w-0">
-                                     <CardTitle className="text-xl md:text-2xl break-words whitespace-pre-wrap leading-tight">{studentFullName}</CardTitle>
-                                     <CardDescription className='flex items-center gap-2'><Hash className='h-3 w-3' />{student.matricule || 'N/A'}</CardDescription>
-                                     <Badge className={cn("mt-2 border-transparent", getStatusBadgeVariant(student.status || 'Actif'))}>{student.status || 'Actif'}</Badge>
-                                 </div>
+                             <CardHeader className="flex flex-col items-center text-center gap-3 pb-4">
+                                  <StudentPhotoUpload
+                                      schoolId={schoolId}
+                                      studentId={eleveId}
+                                      currentPhotoUrl={student.photoURL}
+                                      onUploadSuccess={() => setRefreshTrigger(prev => prev + 1)}
+                                  />
+                                  <div className="flex-1 min-w-0 w-full">
+                                      <CardTitle className="text-xl md:text-2xl font-black text-slate-800 tracking-tight leading-tight break-words whitespace-pre-wrap">{studentFullName}</CardTitle>
+                                      <CardDescription className='flex items-center justify-center gap-2'><Hash className='h-3 w-3' />{student.matricule || 'N/A'}</CardDescription>
+                                      <Badge className={cn("mt-2 border-transparent", getStatusBadgeVariant(student.status || 'Actif'))}>{student.status || 'Actif'}</Badge>
+                                  </div>
                              </CardHeader>
                              <CardContent className="space-y-3 text-sm">
                                  <div className="flex items-center">
