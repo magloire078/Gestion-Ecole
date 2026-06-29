@@ -49,6 +49,8 @@ export default function SettingsPage() {
     resolver: zodResolver(settingsSchema),
     defaultValues: {
       name: "", directorFirstName: "", directorLastName: "", currentAcademicYear: "", matricule: "", cnpsEmployeur: "", directorPhone: "", address: "", phone: "", website: "", mainLogoUrl: "", digitalSignatureUrl: "", email: "",
+      startMonth: "septembre",
+      endMonth: "juin",
     }
   });
 
@@ -68,6 +70,8 @@ export default function SettingsPage() {
         mainLogoUrl: schoolData.mainLogoUrl || "",
         digitalSignatureUrl: schoolData.digitalSignatureUrl || "",
         email: schoolData.email || "",
+        startMonth: schoolData.startMonth || "septembre",
+        endMonth: schoolData.endMonth || "juin",
       });
     }
   }, [schoolData, methods]);

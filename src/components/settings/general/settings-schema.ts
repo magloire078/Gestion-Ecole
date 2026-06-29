@@ -14,6 +14,8 @@ export const settingsSchema = z.object({
   mainLogoUrl: z.string().url({ message: "URL invalide" }).optional().or(z.literal('')),
   digitalSignatureUrl: z.string().url({ message: "URL invalide" }).optional().or(z.literal('')),
   email: z.string().email("Email invalide").optional().or(z.literal('')),
+  startMonth: z.string().optional().or(z.literal('')),
+  endMonth: z.string().optional().or(z.literal('')),
 });
 
 export type SettingsFormValues = z.infer<typeof settingsSchema>;

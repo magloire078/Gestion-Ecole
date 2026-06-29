@@ -4,8 +4,24 @@ import { useFormContext } from "react-hook-form";
 import { Card } from "@/components/ui/card";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { School, Calendar, Building } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { School, Calendar, Building, CalendarDays } from "lucide-react";
 import type { SettingsFormValues } from "./settings-schema";
+
+const MONTHS = [
+  { value: 'janvier', label: 'Janvier' },
+  { value: 'fevrier', label: 'Février' },
+  { value: 'mars', label: 'Mars' },
+  { value: 'avril', label: 'Avril' },
+  { value: 'mai', label: 'Mai' },
+  { value: 'juin', label: 'Juin' },
+  { value: 'juillet', label: 'Juillet' },
+  { value: 'aout', label: 'Août' },
+  { value: 'septembre', label: 'Septembre' },
+  { value: 'octobre', label: 'Octobre' },
+  { value: 'novembre', label: 'Novembre' },
+  { value: 'decembre', label: 'Décembre' }
+];
 
 export function TabGeneral() {
   const { control } = useFormContext<SettingsFormValues>();
@@ -26,6 +42,42 @@ export function TabGeneral() {
             <FormItem>
               <FormLabel className="flex items-center gap-2 font-bold"><Calendar className="h-4 w-4 text-primary" />Année Académique</FormLabel>
               <FormControl><Input placeholder="Ex: 2024-2025" className="rounded-xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg" {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+          <FormField control={control} name="startMonth" render={({ field }) => (
+            <FormItem>
+              <FormLabel className="flex items-center gap-2 font-bold"><CalendarDays className="h-4 w-4 text-primary" />Mois de Début de l&apos;Année</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger className="rounded-xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg">
+                    <SelectValue placeholder="Sélectionner le mois" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {MONTHS.map((m) => (
+                    <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )} />
+          <FormField control={control} name="endMonth" render={({ field }) => (
+            <FormItem>
+              <FormLabel className="flex items-center gap-2 font-bold"><CalendarDays className="h-4 w-4 text-primary" />Mois de Fin de l&apos;Année</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger className="rounded-xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg">
+                    <SelectValue placeholder="Sélectionner le mois" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {MONTHS.map((m) => (
+                    <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )} />
