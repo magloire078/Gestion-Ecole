@@ -5,6 +5,9 @@ import { format, differenceInYears, addYears, differenceInMonths } from 'date-fn
 import { fr } from 'date-fns/locale';
 import { Cake, VenetianMask, CalendarCheck, MapPin, School, GraduationCap, Users } from 'lucide-react';
 import type { student as Student } from '@/lib/data-types';
+import { useDoc, useFirestore } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { useMemo } from 'react';
 
 interface InfoTabProps {
     student: Student;
@@ -40,6 +43,12 @@ const InfoRow = ({ label, value, icon: Icon }: { label: string, value?: string |
 );
 
 export function InfoTab({ student }: InfoTabProps) {
+    const firestore = useFirestore();
+    const cycleRef = useMemo(() => student.cycle ? doc(firestore, `ecoles/${student.schoolId}/cycles/${student.cycle}`) : null, [firestore, student.schoolId, student.cycle]);
+    const { data: cycleData } = useDoc<any>(cycleRef);
+
+    const cycleName = cycleData?.name || student.cycle;
+
     return (
         <div className="space-y-6">
             <Card>
@@ -61,7 +70,7 @@ export function InfoTab({ student }: InfoTabProps) {
                 </CardHeader>
                 <CardContent className="space-y-3">
                     <InfoRow icon={GraduationCap} label="Niveau" value={student.grade} />
-                    <InfoRow icon={GraduationCap} label="Cycle" value={student.cycle} />
+                    <InfoRow icon={GraduationCap} label="Cycle" value={cycleName} />
                     <InfoRow icon={CalendarCheck} label="Année d'inscription" value={student.inscriptionYear} />
                     <InfoRow icon={School} label="Ancien établissement" value={student.previousSchool} />
                 </CardContent>
