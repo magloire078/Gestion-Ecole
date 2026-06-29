@@ -95,16 +95,15 @@ const SubjectProgressBar = ({ average }: { average: number }) => {
     );
 };
 
-const getProgressionIndicator = (currentGrade: GradeEntry, allGrades: GradeEntry[]) => {
-    const studentGrades = allGrades
-      .filter(g => g.subject === currentGrade.subject)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-    const currentIndex = studentGrades.findIndex(g => g.id === currentGrade.id);
-    if (currentIndex <= 0) return null;
-
-    const previousGrade = studentGrades[currentIndex - 1];
-    const diff = currentGrade.grade - previousGrade.grade;
+const getProgressionIndicator = (diff: number | undefined, prevDate: string | undefined) => {
+    if (diff === undefined || prevDate === undefined) {
+        return (
+          <div className="flex items-center gap-1 text-slate-400 font-bold text-[10px] bg-slate-50/50 px-2 py-0.5 rounded-full border border-slate-100 backdrop-blur-sm">
+            <MinusCircle className="h-3 w-3" />
+            STABLE
+          </div>
+        );
+    }
 
     if (diff > 0) return (
       <TooltipProvider>
@@ -116,7 +115,7 @@ const getProgressionIndicator = (currentGrade: GradeEntry, allGrades: GradeEntry
             </div>
           </TooltipTrigger>
           <TooltipContent className="bg-slate-900 text-white border-none rounded-lg text-[10px]">
-            Progression : +{diff.toFixed(1)} par rapport au {format(new Date(previousGrade.date), 'dd/MM')}
+            Progression : +{diff.toFixed(1)} par rapport au {prevDate}
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -132,7 +131,7 @@ const getProgressionIndicator = (currentGrade: GradeEntry, allGrades: GradeEntry
             </div>
           </TooltipTrigger>
           <TooltipContent className="bg-slate-900 text-white border-none rounded-lg text-[10px]">
-            Régression : {diff.toFixed(1)} par rapport au {format(new Date(previousGrade.date), 'dd/MM')}
+            Régression : {diff.toFixed(1)} par rapport au {prevDate}
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -153,6 +152,36 @@ export function GradesTab({ schoolId, studentId }: GradesTabProps) {
     const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
 
     const grades: GradeEntry[] = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() } as GradeEntry)) || [], [gradesData]);
+
+    const progressionsMap = useMemo(() => {
+        const diffs = new Map<string, number>();
+        const dates = new Map<string, string>();
+        
+        // Group grades by subject
+        const groups: Record<string, GradeEntry[]> = {};
+        grades.forEach(g => {
+            if (!groups[g.subject]) {
+                groups[g.subject] = [];
+            }
+            groups[g.subject].push(g);
+        });
+        
+        // Sort each group chronologically and calculate progression
+        for (const subject in groups) {
+            const subjectGrades = [...groups[subject]].sort(
+                (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+            );
+            
+            for (let i = 1; i < subjectGrades.length; i++) {
+                const current = subjectGrades[i];
+                const prev = subjectGrades[i - 1];
+                diffs.set(current.id, current.grade - prev.grade);
+                dates.set(current.id, format(new Date(prev.date), 'dd/MM'));
+            }
+        }
+        
+        return { diffs, dates };
+    }, [grades]);
 
     const { subjectAverages, generalAverage } = useMemo(() => calculateAverages(grades), [grades]);
     const sortedSubjects = useMemo(() => Object.keys(subjectAverages).sort((a, b) => subjectAverages[b].average - subjectAverages[a].average), [subjectAverages]);
@@ -237,7 +266,7 @@ export function GradesTab({ schoolId, studentId }: GradesTabProps) {
                                                             </TableCell>
                                                             <TableCell className="text-center">
                                                                 <div className="flex justify-center">
-                                                                    {getProgressionIndicator(grade, grades)}
+                                                                    {getProgressionIndicator(progressionsMap.diffs.get(grade.id), progressionsMap.dates.get(grade.id))}
                                                                 </div>
                                                             </TableCell>
                                                             <TableCell className="text-right pr-6 font-mono font-black text-slate-500">{grade.coefficient}</TableCell>
