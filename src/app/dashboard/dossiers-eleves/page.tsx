@@ -112,7 +112,7 @@ export default function StudentsPage() {
   const [selectedStatus, setSelectedStatus] = useState('active');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
-  const { activeStudents, archivedStudents, filteredActiveStudents } = useMemo(() => {
+  const { activeStudents, archivedStudents, filteredActiveStudents, filteredByClass } = useMemo(() => {
     const filteredBySearch = allStudents.filter(student =>
       `${student.firstName} ${student.lastName}`.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
       `${student.lastName} ${student.firstName}`.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
@@ -130,6 +130,7 @@ export default function StudentsPage() {
       activeStudents: allStudents.filter(student => ['Actif', 'En attente'].includes(student.status)),
       archivedStudents: archived,
       filteredActiveStudents: active,
+      filteredByClass,
     }
   }, [allStudents, debouncedSearchTerm, selectedClass]);
 

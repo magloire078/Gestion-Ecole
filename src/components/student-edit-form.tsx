@@ -149,7 +149,7 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
       status: values.status,
       feedback: values.feedback || '',
       enrollments: updatedEnrollments,
-      inscriptionYear: startYearInt || null,
+      inscriptionYear: (startYearInt && !isNaN(startYearInt)) ? startYearInt : undefined,
       updatedBy: user.uid,
     };
 

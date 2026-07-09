@@ -44,6 +44,7 @@ import { useMemo, useState, useEffect } from "react";
 import { SafeImage } from "@/components/ui/safe-image";
 import { FeesService } from "@/services/fees-service";
 import { useFees } from "@/hooks/use-fees";
+import { cn } from "@/lib/utils";
 
 
 const feeSchema = z.object({

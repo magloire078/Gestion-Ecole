@@ -175,8 +175,10 @@ export function GradesTab({ schoolId, studentId }: GradesTabProps) {
             for (let i = 1; i < subjectGrades.length; i++) {
                 const current = subjectGrades[i];
                 const prev = subjectGrades[i - 1];
-                diffs.set(current.id, current.grade - prev.grade);
-                dates.set(current.id, format(new Date(prev.date), 'dd/MM'));
+                if (current.id) {
+                    diffs.set(current.id, current.grade - prev.grade);
+                    dates.set(current.id, format(new Date(prev.date), 'dd/MM'));
+                }
             }
         }
         
@@ -266,7 +268,7 @@ export function GradesTab({ schoolId, studentId }: GradesTabProps) {
                                                             </TableCell>
                                                             <TableCell className="text-center">
                                                                 <div className="flex justify-center">
-                                                                    {getProgressionIndicator(progressionsMap.diffs.get(grade.id), progressionsMap.dates.get(grade.id))}
+                                                                    {grade.id ? getProgressionIndicator(progressionsMap.diffs.get(grade.id), progressionsMap.dates.get(grade.id)) : getProgressionIndicator(undefined, undefined)}
                                                                 </div>
                                                             </TableCell>
                                                             <TableCell className="text-right pr-6 font-mono font-black text-slate-500">{grade.coefficient}</TableCell>
