@@ -5,6 +5,8 @@ import { addMonths } from 'date-fns';
 import type { school as School, student as Student } from './data-types';
 import { formatCurrency } from './currency-utils';
 import { getPlanLimits, type ModuleName } from './subscription-plans';
+import { sendSms, isOrangeSmsConfigured } from './orange-sms';
+import { formatPaymentReceiptSms } from './sms-receipt';
 
 
 /**
@@ -255,6 +257,33 @@ export async function processTuitionPayment(
     const parentIds = studentData.parentIds || [];
     const studentName = `${studentData.firstName} ${studentData.lastName}`;
     const parentName = studentData.parent1FirstName || 'Parent';
+
+    // 5a. Send SMS receipt to payer (parent 1) if the school enabled SMS alerts
+    const smsAlertsEnabled = (schoolData as any)?.notificationSettings?.smsAlerts === true;
+    if (smsAlertsEnabled && isOrangeSmsConfigured() && studentData.parent1Contact) {
+        try {
+            const payerFullName = `${studentData.parent1FirstName || ''} ${studentData.parent1LastName || ''}`.trim() || 'Parent';
+            const smsBody = formatPaymentReceiptSms({
+                reference,
+                amount: cappedAmount,
+                schoolName: schoolData.name,
+                paymentNature: 'Scolarite',
+                className: studentData.class,
+                level: studentData.cycle || studentData.grade,
+                dateOfBirth: studentData.dateOfBirth,
+                studentName,
+                payerName: payerFullName,
+                payerPhone: studentData.parent1Contact,
+                date: new Date(),
+            });
+            const sent = await sendSms(studentData.parent1Contact, smsBody);
+            if (!sent) {
+                console.warn(`[PaymentProcessing] Échec de l'envoi du SMS de reçu à ${studentData.parent1Contact}.`);
+            }
+        } catch (smsError) {
+            console.error(`[PaymentProcessing] Erreur lors de l'envoi du SMS de reçu:`, smsError);
+        }
+    }
 
     for (const parentId of parentIds) {
         try {

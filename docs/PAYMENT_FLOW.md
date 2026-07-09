@@ -149,7 +149,11 @@ les webhooks :
   3. Crée une entrée dans `comptabilite/`.
   4. Crée une entrée dans `eleves/{id}/paiements/`.
   5. Incrémente `stats/finance.totalAmountDue` (négatif).
-  6. Envoie reçu email + notification temps réel à chaque parent.
+  6. Envoie un SMS de reçu au payeur (parent 1) via l'API Orange SMS,
+     si l'école a activé les alertes SMS (`notificationSettings.smsAlerts`)
+     et que la passerelle est configurée (voir §4). Le format du SMS est
+     calqué sur les reçus Orange Money (`src/lib/sms-receipt.ts`).
+  7. Envoie reçu email + notification temps réel à chaque parent.
 
 ## 4. Variables d'environnement requises
 
@@ -171,6 +175,16 @@ ORANGE_MONEY_AUTH_HEADER=Basic ...
 ORANGE_MONEY_MERCHANT_KEY=...
 ORANGE_MONEY_WEBHOOK_SECRET=...
 ```
+
+### Orange SMS (reçus de paiement par SMS)
+```
+ORANGE_SMS_AUTH_HEADER=Basic ...       # credentials app Orange Developer (fallback: ORANGE_MONEY_AUTH_HEADER)
+ORANGE_SMS_SENDER_ADDRESS=+2250000     # numéro émetteur fourni par Orange
+ORANGE_SMS_SENDER_NAME=GereEcole       # optionnel, sender ID alphanumérique (max 11 caractères)
+```
+Le SMS de reçu n'est envoyé que si l'école a activé « Alertes SMS » dans
+Paramètres → Notifications, et nécessite des crédits SMS actifs sur le
+compte Orange Developer (offre « SMS Côte d'Ivoire »).
 
 ### MTN MoMo
 ```
