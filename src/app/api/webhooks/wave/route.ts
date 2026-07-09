@@ -1,16 +1,15 @@
 import { NextResponse } from 'next/server';
 import { processSubscriptionPayment, processTuitionPayment } from '@/lib/payment-processing';
 import { parsePaymentReference } from '@/lib/payment-reference';
-import { verifyHmacSignature } from '@/lib/webhook-verify';
+import { verifyWaveSignature } from '@/lib/webhook-verify';
 
 export async function POST(request: Request) {
     try {
         const rawBody = await request.text();
-        const sig = verifyHmacSignature(
+        const sig = verifyWaveSignature(
             rawBody,
             request.headers.get('wave-signature'),
-            process.env.WAVE_WEBHOOK_SECRET,
-            { algorithm: 'sha256', encoding: 'hex' }
+            process.env.WAVE_WEBHOOK_SECRET
         );
         if (!sig.valid) {
             console.error(`[Wave Webhook] Signature invalide: ${sig.reason}`);

@@ -81,6 +81,63 @@ export function verifyTimestampedHmac(
 }
 
 /**
+ * Vérifie une signature de webhook Wave.
+ *
+ * Wave envoie un header `Wave-Signature: t=<timestamp>,v1=<sig>[,v1=<sig2>...]`
+ * où chaque signature vaut HMAC-SHA256(secret, timestamp + rawBody) en hex.
+ * Voir https://docs.wave.com/business#webhooks
+ *
+ * Les timestamps trop anciens sont rejetés (replay attack) — tolérance 5 min.
+ */
+export function verifyWaveSignature(
+    rawBody: string,
+    signatureHeader: string | null | undefined,
+    secret: string | undefined,
+    options: { toleranceSeconds?: number } = {}
+): { valid: boolean; reason?: string } {
+    if (!secret) {
+        console.warn("[WebhookVerify] Aucun secret configuré — vérification désactivée (mode dégradé).");
+        return { valid: true, reason: 'no_secret_configured' };
+    }
+    if (!signatureHeader) {
+        return { valid: false, reason: 'missing_signature_header' };
+    }
+
+    const parts = signatureHeader.split(',').map(p => p.trim());
+    const timestamp = parts.find(p => p.startsWith('t='))?.slice(2);
+    const signatures = parts.filter(p => p.startsWith('v1=')).map(p => p.slice(3));
+
+    if (!timestamp || signatures.length === 0) {
+        return { valid: false, reason: 'malformed_signature_header' };
+    }
+
+    const tsNum = Number.parseInt(timestamp, 10);
+    if (!Number.isFinite(tsNum)) {
+        return { valid: false, reason: 'invalid_timestamp' };
+    }
+    const tolerance = options.toleranceSeconds ?? 5 * 60;
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (Math.abs(nowSec - tsNum) > tolerance) {
+        return { valid: false, reason: 'timestamp_outside_tolerance' };
+    }
+
+    const computed = crypto.createHmac('sha256', secret).update(timestamp + rawBody).digest('hex');
+    const a = Buffer.from(computed);
+
+    for (const sig of signatures) {
+        try {
+            const b = Buffer.from(sig);
+            if (a.length === b.length && crypto.timingSafeEqual(a, b)) {
+                return { valid: true, reason: 'computed' };
+            }
+        } catch {
+            // signature illisible — on essaie la suivante
+        }
+    }
+    return { valid: false, reason: 'signature_mismatch' };
+}
+
+/**
  * Vérifie l'égalité d'un secret partagé (utilisé par certains PSP qui envoient
  * une clé d'API directement dans le corps ou un header).
  */

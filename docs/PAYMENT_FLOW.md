@@ -121,7 +121,7 @@ Chaque PSP a son endpoint :
 | PSP        | Endpoint                          | Vérification |
 |------------|-----------------------------------|--------------|
 | Stripe     | `/api/webhooks/stripe`            | HMAC `stripe-signature` (SDK officiel) |
-| Wave       | `/api/webhooks/wave`              | HMAC SHA256 `wave-signature` |
+| Wave       | `/api/webhooks/wave`              | HMAC SHA256 `wave-signature` (format `t=...,v1=...`, signé sur `timestamp + body`) |
 | Orange Money | `/api/webhooks/orangemoney`     | HMAC SHA256 `x-orange-signature` |
 | MTN MoMo   | `/api/webhooks/mtn`               | HMAC SHA256 `x-callback-signature` |
 | PayDunya   | `/api/webhooks/paydunya`          | `master_key` partagé |
@@ -165,9 +165,13 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 
 ### Wave
 ```
-WAVE_API_KEY=...
-WAVE_WEBHOOK_SECRET=...
+WAVE_API_KEY=wave_ci_prod_...          # clé API Checkout (à demander à votre représentant Wave Business)
+WAVE_WEBHOOK_SECRET=wave_ci_whsec_...  # secret fourni lors de l'enregistrement du webhook
 ```
+L'accès à l'API Wave Checkout se demande auprès de votre représentant
+Wave Business (le numéro de compte B2B du portail ne suffit pas).
+Enregistrez l'URL de webhook `https://<votre-domaine>/api/webhooks/wave`
+auprès de Wave pour recevoir les confirmations de paiement.
 
 ### Orange Money
 ```
