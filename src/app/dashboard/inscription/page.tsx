@@ -12,7 +12,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useUser, useStorage } from "@/firebase";
 import { collection, addDoc, serverTimestamp, writeBatch, doc, increment, query, where } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { ArrowRight, ArrowLeft, User, Users, GraduationCap, Upload, X, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, ArrowLeft, User, Users, GraduationCap, Upload, X, Loader2, AlertCircle, CheckCircle2, QrCode, Copy, Check, Printer } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import QRCode from 'react-qr-code';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -70,6 +72,56 @@ export default function RegistrationPage() {
   const { user } = useUser();
 
   const [step, setStep] = useState(1);
+  const [copied, setCopied] = useState(false);
+
+  const registrationLink = typeof window !== 'undefined' && schoolId
+    ? `${window.location.origin}/parent-access/register?schoolId=${schoolId}` 
+    : '';
+
+  const handleCopyLink = () => {
+    if (registrationLink) {
+      navigator.clipboard.writeText(registrationLink);
+      setCopied(true);
+      toast({
+        title: "Lien copié !",
+        description: "Le lien d'inscription publique a été copié.",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handlePrintQRCode = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>QR Code Inscription - ${schoolData?.name || 'Établissement'}</title>
+          <style>
+            body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }
+            h1 { color: #0C365A; margin-bottom: 5px; }
+            p { color: #555; margin-bottom: 30px; font-size: 1.1em; max-width: 500px; }
+            .qr-container { padding: 20px; border: 2px solid #eee; border-radius: 20px; background: white; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+            .footer { margin-top: 40px; font-size: 0.8em; color: #aaa; }
+          </style>
+        </head>
+        <body>
+          <h1>${schoolData?.name || 'Votre Établissement'}</h1>
+          <p>Scannez ce code QR pour inscrire votre enfant et effectuer le paiement mobile des frais de scolarité.</p>
+          <div class="qr-container">
+            <svg id="qr-svg" width="250" height="250" viewBox="0 0 250 250" style="display: block;">
+              ${document.getElementById('parent-qr-code')?.innerHTML || ''}
+            </svg>
+          </div>
+          <div class="footer">Propulsé par GèreEcole</div>
+          <script>
+            window.onload = function() { window.print(); window.close(); }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   const classesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
@@ -229,9 +281,64 @@ export default function RegistrationPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold md:text-2xl">Nouvelle Inscription</h1>
-        <p className="text-muted-foreground">Suivez les étapes pour inscrire un nouvel élève.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-lg font-semibold md:text-2xl">Nouvelle Inscription</h1>
+          <p className="text-muted-foreground">Suivez les étapes pour inscrire un nouvel élève.</p>
+        </div>
+        {schoolId && (
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="rounded-xl transition-all hover:scale-105 active:scale-95 bg-indigo-600 hover:bg-indigo-700 text-white gap-2 self-start sm:self-center">
+                <QrCode className="h-4 w-4" /> QR Code Inscription Parent
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md rounded-2xl bg-white border border-white shadow-2xl">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-black text-slate-900 tracking-tight">QR Code d&apos;Inscription</DialogTitle>
+                <DialogDescription>
+                  Permettez aux parents d&apos;inscrire leur enfant et payer en ligne en scannant ce code QR.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex flex-col items-center justify-center space-y-4 py-4">
+                <div id="parent-qr-code" className="p-4 bg-white border border-slate-200 rounded-2xl shadow-md">
+                  <QRCode 
+                    value={registrationLink} 
+                    size={200}
+                    className="h-auto max-w-full w-full"
+                  />
+                </div>
+                <div className="w-full space-y-2">
+                  <p className="text-xs font-black uppercase tracking-widest text-slate-400">Lien direct d&apos;inscription</p>
+                  <div className="flex items-center gap-2">
+                    <Input 
+                      readOnly 
+                      value={registrationLink} 
+                      className="rounded-xl font-mono text-xs bg-slate-50 border-slate-200"
+                    />
+                    <Button 
+                      size="icon" 
+                      variant="outline" 
+                      onClick={handleCopyLink}
+                      className="rounded-xl transition-all hover:scale-105 active:scale-95 shrink-0"
+                    >
+                      {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 border-t pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={handlePrintQRCode} 
+                  className="rounded-xl gap-2 transition-all hover:scale-105 active:scale-95 text-slate-600"
+                >
+                  <Printer className="h-4 w-4" /> Imprimer le QR Code
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       <Card className="max-w-3xl mx-auto">

@@ -47,7 +47,7 @@ import {
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import Link from "next/link";
 import { useCollection, useFirestore, useUser } from "@/firebase";
-import { collection, doc, query } from "firebase/firestore";
+import { collection, doc, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from 'next/navigation';
 import { useSchoolData } from "@/hooks/use-school-data";
@@ -64,6 +64,7 @@ import { StudentsStatsCards } from '@/components/dossiers/stats-cards';
 import { StudentService } from "@/services/student-services";
 import { useStudents } from "@/hooks/use-students";
 import { useDebounce } from "@/hooks/use-debounce";
+import { computeAcademicYearFromDate } from "@/lib/academic-year-utils";
 
 
 export default function StudentsPage() {
@@ -76,7 +77,45 @@ export default function StudentsPage() {
   const canManageUsers = !!user?.profile?.permissions?.manageUsers;
 
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string | undefined>(undefined);
-  const effectiveAcademicYear = selectedAcademicYear || schoolData?.currentAcademicYear || "2024-2025";
+
+  // Déterminer l'année scolaire par défaut (dernière inscription d'élève ou année en cours)
+  useEffect(() => {
+    if (!schoolId) return;
+
+    const latestStudentQuery = query(
+      collection(firestore, `ecoles/${schoolId}/eleves`),
+      orderBy('createdAt', 'desc'),
+      limit(1)
+    );
+
+    getDocs(latestStudentQuery)
+      .then((snap) => {
+        if (!snap.empty) {
+          const data = snap.docs[0].data();
+          const enrollments = data.enrollments || [];
+          const latestEnrollment = enrollments[enrollments.length - 1];
+          let latestYear = latestEnrollment?.academicYear || data.academicYear;
+
+          if (!latestYear && data.inscriptionYear) {
+            latestYear = `${data.inscriptionYear}-${data.inscriptionYear + 1}`;
+          }
+
+          if (!latestYear && data.createdAt) {
+            const createdDate = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+            latestYear = computeAcademicYearFromDate(createdDate);
+          }
+
+          if (latestYear) {
+            setSelectedAcademicYear(latestYear);
+          }
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching latest student for default year:", err);
+      });
+  }, [schoolId, firestore]);
+
+  const effectiveAcademicYear = selectedAcademicYear || schoolData?.currentAcademicYear || computeAcademicYearFromDate();
 
   const availableYears = useMemo(() => {
     const baseYear = parseInt(effectiveAcademicYear.split('-')[0], 10) || 2024;

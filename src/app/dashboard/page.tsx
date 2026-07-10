@@ -1,9 +1,10 @@
 
 'use client';
 
-import { Suspense, useState, useMemo, useEffect } from 'react';
+import { Suspense, useState, useMemo, useEffect, useTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar } from 'lucide-react';
+import { computeAcademicYearFromDate } from '@/lib/academic-year-utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatCards } from '@/components/dashboard/stat-cards';
 import { QuickActions } from '@/components/dashboard/quick-actions';
@@ -56,8 +57,9 @@ const DashboardSkeleton = () => (
 const RegularDashboard = () => {
   const { schoolId, schoolData, isLoading } = useUserSession();
 
+  const [isPending, startTransition] = useTransition();
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string | undefined>(undefined);
-  const effectiveAcademicYear = selectedAcademicYear || schoolData?.currentAcademicYear || "2024-2025";
+  const effectiveAcademicYear = selectedAcademicYear || schoolData?.currentAcademicYear || computeAcademicYearFromDate();
 
   // Real-time clock and date
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -158,7 +160,7 @@ const RegularDashboard = () => {
 
       <div className="flex justify-end">
         <div className="w-full md:w-[200px] space-y-1">
-          <Select value={effectiveAcademicYear} onValueChange={setSelectedAcademicYear}>
+          <Select value={effectiveAcademicYear} onValueChange={(val) => startTransition(() => setSelectedAcademicYear(val))}>
             <SelectTrigger className="h-10 bg-white/50 dark:bg-slate-800/50 border-white/60 dark:border-slate-700/60 rounded-xl focus:ring-indigo-500 shadow-sm backdrop-blur-md">
               <Calendar className="mr-2 h-4 w-4 text-indigo-500" />
               <SelectValue placeholder="Année" />

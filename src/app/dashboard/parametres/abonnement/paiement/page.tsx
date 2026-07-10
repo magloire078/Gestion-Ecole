@@ -21,6 +21,7 @@ import { useSubscription } from '@/hooks/use-subscription';
 import { addMonths } from 'date-fns';
 import { doc } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
+import { getPlanLimits } from '@/lib/subscription-plans';
 
 type Provider = 'orangemoney' | 'stripe' | 'wave' | 'mtn' | 'paydunya' | 'genius';
 
@@ -218,6 +219,13 @@ function PaymentPageContent() {
     const monthlyPrice = parseInt(price || '0', 10);
     const totalPrice = monthlyPrice * selectedDuration;
 
+    // Un plan est réellement gratuit uniquement si son catalogue indique
+    // pricePerStudent === 0. Les plans Pro/Premium ont price=0 dans l'URL
+    // mais facturent par élève → ne doivent jamais déclencher la voie
+    // « free upgrade ».
+    const planLimits = plan ? getPlanLimits(plan) : null;
+    const isTrulyFreePlan = planLimits?.pricePerStudent === 0;
+
     useEffect(() => {
         if (!userLoading && !schoolLoading && (!plan || !price || !description)) {
             const id = setTimeout(() => {
@@ -231,6 +239,10 @@ function PaymentPageContent() {
 
     const handleFreeUpgrade = async () => {
         if (!plan) return;
+        if (!isTrulyFreePlan) {
+            setError(`Le plan ${plan} est facturé par élève. Choisissez un moyen de paiement pour activer l'abonnement.`);
+            return;
+        }
         setIsLoadingProvider('free');
         try {
             const endDate = addMonths(new Date(), selectedDuration).toISOString();
@@ -285,6 +297,8 @@ function PaymentPageContent() {
         setIsLoadingProvider(null);
     };
 
+    const isLoading = userLoading || schoolLoading || settingsLoading;
+
     const availableProviders = useMemo(() => {
         if (!settingsData || !settingsData.paymentProviders) return PROVIDERS;
         return PROVIDERS.filter(p => {
@@ -293,8 +307,6 @@ function PaymentPageContent() {
             return settingsData.paymentProviders[key] !== false;
         });
     }, [settingsData]);
-
-    const isLoading = userLoading || schoolLoading || settingsLoading;
 
     if (isLoading) {
         return (
@@ -352,7 +364,17 @@ function PaymentPageContent() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6 pt-6">
-                        {totalPrice === 0 ? (
+                        {totalPrice === 0 && !isTrulyFreePlan ? (
+                            <Alert variant="destructive">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertTitle>Montant à payer manquant</AlertTitle>
+                                <AlertDescription>
+                                    Le plan {plan} est facturé par élève. Le montant n&apos;a pas été
+                                    calculé. Retournez à la page d&apos;abonnement et choisissez à
+                                    nouveau le plan.
+                                </AlertDescription>
+                            </Alert>
+                        ) : totalPrice === 0 ? (
                             <Button
                                 className="w-full h-14 text-base"
                                 onClick={handleFreeUpgrade}

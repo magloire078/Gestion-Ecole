@@ -37,6 +37,12 @@ interface BulkImportProps {
     existingClasses?: (class_type & { id: string })[];
     existingStudents?: (student & { id: string })[];
     currentAcademicYear?: string;
+    /**
+     * Surcharge le `schoolId` issu de `useSchoolData()`. Utilisé par la
+     * page admin « Import pour le compte d'une école » pour pousser des
+     * données dans une école dont le super-admin n'est pas membre.
+     */
+    targetSchoolId?: string;
 }
 
 /**
@@ -57,9 +63,10 @@ function guessEntityFromTable(table: string): string | undefined {
     return undefined;
 }
 
-export function BulkImport({ existingClasses = [], existingStudents = [], currentAcademicYear }: BulkImportProps) {
+export function BulkImport({ existingClasses = [], existingStudents = [], currentAcademicYear, targetSchoolId }: BulkImportProps) {
     const { toast } = useToast();
-    const { schoolId } = useSchoolData();
+    const { schoolId: contextSchoolId } = useSchoolData();
+    const schoolId = targetSchoolId ?? contextSchoolId;
     const firestore = useFirestore();
     const { availableYears, currentYear } = useAcademicYear();
 

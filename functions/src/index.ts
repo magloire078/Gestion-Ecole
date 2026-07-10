@@ -9,6 +9,7 @@
  * multiple times.
  */
 import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { logger } from 'firebase-functions/v2';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
@@ -21,12 +22,15 @@ if (getApps().length === 0) {
 
 const db = getFirestore();
 
-type ReminderKey = 'd7' | 'd3' | 'd1' | 'expired';
+type ReminderKey = 'd7' | 'd3' | 'd1' | 'past_due' | 'expired';
+
+const PAST_DUE_GRACE_DAYS = 7;
 
 interface SubscriptionShape {
     plan?: string;
     status?: 'active' | 'trialing' | 'past_due' | 'canceled' | 'expired';
     endDate?: string;
+    pastDueSince?: string;
     remindersSent?: Partial<Record<ReminderKey, string>>;
 }
 
@@ -40,20 +44,43 @@ function todayKey(): string {
     return format(new Date(), 'yyyy-MM-dd');
 }
 
-function pickReminderBucket(daysLeft: number): ReminderKey | null {
-    if (daysLeft < 0) return 'expired';
+/**
+ * Détermine le rappel à envoyer en fonction du nombre de jours restants
+ * et du statut courant. La transition active/trialing -> past_due se
+ * déclenche le premier jour après l'échéance. Après PAST_DUE_GRACE_DAYS,
+ * le statut bascule en expired.
+ */
+function pickReminderBucket(
+    daysLeft: number,
+    status?: SubscriptionShape['status'],
+    pastDueSince?: string,
+): ReminderKey | null {
+    if (status === 'past_due') {
+        const since = pastDueSince ? new Date(pastDueSince) : null;
+        if (since && !Number.isNaN(since.getTime())) {
+            const inGrace = differenceInCalendarDays(new Date(), since);
+            if (inGrace >= PAST_DUE_GRACE_DAYS) return 'expired';
+        } else if (daysLeft <= -PAST_DUE_GRACE_DAYS) {
+            return 'expired';
+        }
+        return null; // déjà notifié en past_due, on attend la fin de la grâce
+    }
+    if (daysLeft < 0) {
+        // active/trialing arrivant à échéance => grâce past_due
+        return 'past_due';
+    }
     if (daysLeft === 1) return 'd1';
     if (daysLeft === 3) return 'd3';
     if (daysLeft === 7) return 'd7';
     return null;
 }
 
-function renderEmail(school: SchoolShape, daysLeft: number, endDate: Date): { subject: string; html: string } {
+function renderEmail(school: SchoolShape, daysLeft: number, endDate: Date, bucket: ReminderKey): { subject: string; html: string } {
     const planName = school.subscription?.plan ?? 'votre plan';
     const schoolName = school.name ?? 'votre établissement';
     const dateLabel = format(endDate, 'd MMMM yyyy', { locale: fr });
 
-    if (daysLeft < 0) {
+    if (bucket === 'expired') {
         return {
             subject: `Abonnement expiré - ${schoolName}`,
             html: baseTemplate(
@@ -61,6 +88,18 @@ function renderEmail(school: SchoolShape, daysLeft: number, endDate: Date): { su
                 `<p>L'abonnement <strong>${planName}</strong> pour <strong>${schoolName}</strong> est arrivé à expiration le <strong>${dateLabel}</strong>.</p>
                  <p>Pour continuer à utiliser GèreEcole sans interruption, renouvelez dès maintenant depuis votre tableau de bord.</p>`,
                 'Renouveler l\'abonnement',
+            ),
+        };
+    }
+
+    if (bucket === 'past_due') {
+        return {
+            subject: `Paiement en attente - ${schoolName}`,
+            html: baseTemplate(
+                'Paiement en attente — période de grâce',
+                `<p>L'échéance de votre abonnement <strong>${planName}</strong> pour <strong>${schoolName}</strong> est dépassée (${dateLabel}).</p>
+                 <p>Vous bénéficiez d'une période de grâce de <strong>${PAST_DUE_GRACE_DAYS} jours</strong> pour régulariser votre paiement avant la suspension de l'accès.</p>`,
+                'Régulariser le paiement',
             ),
         };
     }
@@ -110,7 +149,7 @@ async function sendNotice(
     daysLeft: number,
     endDate: Date,
 ): Promise<void> {
-    const { subject, html } = renderEmail(school, daysLeft, endDate);
+    const { subject, html } = renderEmail(school, daysLeft, endDate, bucket);
 
     if (school.directorEmail) {
         await db.collection('mail').add({
@@ -121,12 +160,18 @@ async function sendNotice(
     }
 
     const directorIds = await findDirectorUids(schoolId);
-    const notifTitle = bucket === 'expired'
-        ? 'Abonnement expiré'
-        : `Renouvellement dans ${daysLeft} jour${daysLeft > 1 ? 's' : ''}`;
-    const notifContent = bucket === 'expired'
-        ? `L'abonnement de ${school.name ?? 'votre école'} a expiré. Renouvelez pour réactiver l'accès.`
-        : `L'abonnement de ${school.name ?? 'votre école'} expire le ${format(endDate, 'd MMM yyyy', { locale: fr })}.`;
+    let notifTitle: string;
+    let notifContent: string;
+    if (bucket === 'expired') {
+        notifTitle = 'Abonnement expiré';
+        notifContent = `L'abonnement de ${school.name ?? 'votre école'} a expiré. Renouvelez pour réactiver l'accès.`;
+    } else if (bucket === 'past_due') {
+        notifTitle = 'Paiement en attente';
+        notifContent = `L'échéance de ${school.name ?? 'votre école'} est dépassée. ${PAST_DUE_GRACE_DAYS} jours pour régulariser.`;
+    } else {
+        notifTitle = `Renouvellement dans ${daysLeft} jour${daysLeft > 1 ? 's' : ''}`;
+        notifContent = `L'abonnement de ${school.name ?? 'votre école'} expire le ${format(endDate, 'd MMM yyyy', { locale: fr })}.`;
+    }
 
     for (const uid of directorIds) {
         await db.collection(`ecoles/${schoolId}/notifications`).add({
@@ -156,6 +201,8 @@ export const subscriptionLifecycle = onSchedule(
         let processed = 0;
         let remindersSent = 0;
         let expired = 0;
+        let pastDue = 0;
+        const bucketStats: Record<string, number> = {};
 
         for (const doc of schoolsSnap.docs) {
             const school = doc.data() as SchoolShape;
@@ -169,8 +216,13 @@ export const subscriptionLifecycle = onSchedule(
             }
 
             const daysLeft = differenceInCalendarDays(endDate, now);
-            const bucket = pickReminderBucket(daysLeft);
+            const bucket = pickReminderBucket(daysLeft, sub.status, sub.pastDueSince);
             if (!bucket) continue;
+
+            bucketStats[bucket] = (bucketStats[bucket] ?? 0) + 1;
+            if (bucket === 'd1') {
+                logger.info(`[subscriptionLifecycle] J-1 déclenché pour ${doc.id}`, { schoolName: school.name });
+            }
 
             const remindersSentMap = sub.remindersSent ?? {};
             if (remindersSentMap[bucket] === today) continue; // déjà envoyé aujourd'hui
@@ -182,6 +234,11 @@ export const subscriptionLifecycle = onSchedule(
                     [`subscription.remindersSent.${bucket}`]: today,
                     updatedAt: FieldValue.serverTimestamp(),
                 };
+                if (bucket === 'past_due' && sub.status !== 'past_due') {
+                    update['subscription.status'] = 'past_due';
+                    update['subscription.pastDueSince'] = now.toISOString();
+                    pastDue += 1;
+                }
                 if (bucket === 'expired' && sub.status !== 'expired') {
                     update['subscription.status'] = 'expired';
                     expired += 1;
@@ -200,12 +257,317 @@ export const subscriptionLifecycle = onSchedule(
             scanned: schoolsSnap.size,
             processed,
             remindersSent,
+            pastDue,
             expired,
+            bucketStats,
         });
     },
 );
 
+/* =========================================================================
+ * Messagerie 1-1 super-admin <-> directeur — notifications & relance email
+ * ========================================================================= */
+
+interface ConversationMessage {
+    senderId: string;
+    senderName?: string;
+    senderRole: 'admin' | 'director';
+    text: string;
+}
+
+async function findSuperAdminUids(): Promise<string[]> {
+    const snap = await db.collection('users').where('isSuperAdmin', '==', true).get();
+    return snap.docs.map(d => d.id);
+}
+
+/**
+ * Quand un message arrive dans school_conversations/{schoolId}/messages,
+ * dépose une notification in-app à l'autre rôle.
+ *
+ * - Message du directeur -> notifications aux super-admins (collection
+ *   `notifications` racine, `userId` = uid super-admin).
+ * - Message de l'admin -> notification dans
+ *   `ecoles/{schoolId}/notifications` pour les directeurs/admins école.
+ */
+export const onConversationMessageCreated = onDocumentCreated(
+    'school_conversations/{schoolId}/messages/{messageId}',
+    async event => {
+        const snap = event.data;
+        if (!snap) return;
+        const message = snap.data() as ConversationMessage;
+        const { schoolId } = event.params as { schoolId: string };
+
+        const schoolSnap = await db.doc(`ecoles/${schoolId}`).get();
+        const schoolName = (schoolSnap.data() as SchoolShape | undefined)?.name ?? 'votre école';
+
+        try {
+            if (message.senderRole === 'director') {
+                const adminUids = await findSuperAdminUids();
+                await Promise.all(adminUids.map(uid => db.collection('notifications').add({
+                    userId: uid,
+                    title: `Message de ${schoolName}`,
+                    content: message.text.slice(0, 140),
+                    href: '/admin/system/messages',
+                    isRead: false,
+                    createdAt: FieldValue.serverTimestamp(),
+                })));
+            } else {
+                const directorIds = await findDirectorUids(schoolId);
+                await Promise.all(directorIds.map(uid => db.collection(`ecoles/${schoolId}/notifications`).add({
+                    userId: uid,
+                    title: 'Nouveau message - équipe GèreEcole',
+                    content: message.text.slice(0, 140),
+                    href: '/dashboard/support/messages',
+                    isRead: false,
+                    createdAt: FieldValue.serverTimestamp(),
+                })));
+            }
+
+            // Marque le message comme nécessitant un email de relance si
+            // jamais lu sous 24h (consommé par dispatchUnreadConversationEmails).
+            await db.doc(`school_conversations/${schoolId}`).set({
+                lastMessageAt: FieldValue.serverTimestamp(),
+                lastMessageRole: message.senderRole,
+                emailRelanceSent: false,
+            }, { merge: true });
+        } catch (err) {
+            logger.error('[onConversationMessageCreated] erreur', { schoolId, err });
+        }
+    },
+);
+
+/**
+ * Toutes les heures, parcourt les conversations où il reste des messages
+ * non lus depuis plus de 24h et envoie un email de relance au rôle inactif.
+ * Un seul email par cycle "nouveau message", tracé par `emailRelanceSent`.
+ */
+export const dispatchUnreadConversationEmails = onSchedule(
+    {
+        schedule: 'every 60 minutes',
+        timeZone: 'Africa/Abidjan',
+        timeoutSeconds: 300,
+    },
+    async () => {
+        const cutoff = Timestamp.fromMillis(Date.now() - 24 * 60 * 60 * 1000);
+        const snap = await db.collection('school_conversations')
+            .where('emailRelanceSent', '==', false)
+            .where('lastMessageAt', '<=', cutoff)
+            .get();
+
+        let sent = 0;
+        for (const doc of snap.docs) {
+            const data = doc.data() as {
+                schoolName?: string;
+                lastMessageRole?: 'admin' | 'director';
+                unreadByAdmin?: number;
+                unreadByDirector?: number;
+            };
+            const schoolId = doc.id;
+
+            try {
+                if (data.lastMessageRole === 'admin' && (data.unreadByDirector ?? 0) > 0) {
+                    const schoolSnap = await db.doc(`ecoles/${schoolId}`).get();
+                    const school = schoolSnap.data() as SchoolShape | undefined;
+                    if (school?.directorEmail) {
+                        await db.collection('mail').add({
+                            to: school.directorEmail,
+                            message: {
+                                subject: `Nouveau message de l'équipe GèreEcole`,
+                                html: baseTemplate(
+                                    'Vous avez un message non lu',
+                                    `<p>L'équipe GèreEcole vous a envoyé un message il y a plus de 24h sur la messagerie support de <strong>${school.name ?? 'votre école'}</strong>.</p>
+                                     <p>Connectez-vous pour le consulter.</p>`,
+                                    'Ouvrir la messagerie',
+                                ).replace('/dashboard/parametres/abonnement', '/dashboard/support/messages'),
+                            },
+                            delivery: { startTime: FieldValue.serverTimestamp(), state: 'PENDING' },
+                        });
+                        sent += 1;
+                    }
+                } else if (data.lastMessageRole === 'director' && (data.unreadByAdmin ?? 0) > 0) {
+                    const adminSnap = await db.collection('users').where('isSuperAdmin', '==', true).get();
+                    const emails = adminSnap.docs.map(d => (d.data() as { email?: string }).email).filter(Boolean) as string[];
+                    if (emails.length > 0) {
+                        await db.collection('mail').add({
+                            to: emails,
+                            message: {
+                                subject: `Message non lu d'un directeur (${data.schoolName ?? schoolId})`,
+                                html: baseTemplate(
+                                    'Message en attente',
+                                    `<p>Un directeur a envoyé un message il y a plus de 24h, sans réponse.</p>
+                                     <p><strong>École :</strong> ${data.schoolName ?? schoolId}</p>`,
+                                    'Ouvrir la messagerie admin',
+                                ).replace('/dashboard/parametres/abonnement', '/admin/system/messages'),
+                            },
+                            delivery: { startTime: FieldValue.serverTimestamp(), state: 'PENDING' },
+                        });
+                        sent += 1;
+                    }
+                }
+
+                await doc.ref.update({ emailRelanceSent: true });
+            } catch (err) {
+                logger.error('[dispatchUnreadConversationEmails] erreur', { schoolId, err });
+            }
+        }
+
+        logger.info('[dispatchUnreadConversationEmails] terminé', { scanned: snap.size, sent });
+    },
+);
+
+/* =========================================================================
+ * Module C — Campagnes email/WhatsApp en masse
+ * ========================================================================= */
+
+interface CampaignTarget {
+    type: 'all' | 'plan' | 'status' | 'school';
+    values?: string[];
+}
+
+interface CampaignDoc {
+    name?: string;
+    channel: 'email' | 'whatsapp';
+    subject?: string;
+    body: string;
+    target: CampaignTarget;
+    status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed';
+}
+
+function renderTpl(tpl: string, vars: Record<string, string | number>): string {
+    return tpl.replace(/\{\{\s*(\w+)\s*\}\}/g, (m, key) => {
+        const v = vars[key as string];
+        return v === undefined || v === null ? m : String(v);
+    });
+}
+
+function matchesCampaignTarget(target: CampaignTarget, school: { id: string; plan?: string; status?: string }): boolean {
+    switch (target.type) {
+        case 'all': return true;
+        case 'plan': return !!school.plan && (target.values ?? []).includes(school.plan);
+        case 'status': return !!school.status && (target.values ?? []).includes(school.status);
+        case 'school': return (target.values ?? []).includes(school.id);
+        default: return false;
+    }
+}
+
+/**
+ * Quand une campagne passe en `sending`, parcourt les écoles cibles
+ * et dépose un email (ou un message WhatsApp via la file `whatsapp_outbox`)
+ * par destinataire. Marque ensuite la campagne `sent` ou `failed`.
+ */
+export const processCampaign = onDocumentUpdated('campaigns/{campaignId}', async event => {
+    const before = event.data?.before.data() as CampaignDoc | undefined;
+    const after = event.data?.after.data() as CampaignDoc | undefined;
+    if (!after) return;
+    // On ne traite que la transition vers `sending`.
+    if (before?.status === 'sending' || after.status !== 'sending') return;
+
+    const campaignId = event.params.campaignId as string;
+    const ref = db.doc(`campaigns/${campaignId}`);
+    const startedAt = FieldValue.serverTimestamp();
+
+    try {
+        const schoolsSnap = await db.collection('ecoles').get();
+        const matching = schoolsSnap.docs.filter(d => {
+            const data = d.data() as SchoolShape;
+            return matchesCampaignTarget(after.target, {
+                id: d.id,
+                plan: data.subscription?.plan,
+                status: data.subscription?.status,
+            });
+        });
+
+        let queued = 0;
+        let failed = 0;
+
+        for (const schoolDoc of matching) {
+            const school = schoolDoc.data() as SchoolShape & { directorFirstName?: string; directorLastName?: string };
+            const sub = school.subscription;
+            const endDate = sub?.endDate ? new Date(sub.endDate) : null;
+            const daysLeft = endDate && !Number.isNaN(endDate.getTime())
+                ? differenceInCalendarDays(endDate, new Date())
+                : 0;
+            const vars = {
+                schoolName: school.name ?? 'votre école',
+                directorName: `${school.directorFirstName ?? ''} ${school.directorLastName ?? ''}`.trim() || 'Directeur',
+                plan: sub?.plan ?? '—',
+                daysLeft: String(daysLeft),
+                endDate: endDate ? format(endDate, 'd MMMM yyyy', { locale: fr }) : '—',
+            } as Record<string, string>;
+
+            const renderedBody = renderTpl(after.body, vars);
+            const renderedSubject = after.subject ? renderTpl(after.subject, vars) : undefined;
+
+            try {
+                if (after.channel === 'email') {
+                    if (!school.directorEmail) { failed += 1; continue; }
+                    await db.collection('mail').add({
+                        to: school.directorEmail,
+                        message: {
+                            subject: renderedSubject ?? `Communication GèreEcole`,
+                            html: `<div style="font-family: sans-serif; line-height: 1.6; white-space: pre-wrap;">${renderedBody.replace(/\n/g, '<br/>')}</div>`,
+                            text: renderedBody,
+                        },
+                        delivery: { startTime: FieldValue.serverTimestamp(), state: 'PENDING' },
+                        campaignId,
+                        schoolId: schoolDoc.id,
+                    });
+                } else {
+                    // WhatsApp : on enfile dans une outbox que l'intégration
+                    // existante (webhook + provider) consommera.
+                    await db.collection('whatsapp_outbox').add({
+                        schoolId: schoolDoc.id,
+                        body: renderedBody,
+                        campaignId,
+                        status: 'pending',
+                        createdAt: FieldValue.serverTimestamp(),
+                    });
+                }
+                queued += 1;
+            } catch (err) {
+                logger.error('[processCampaign] envoi échoué', { campaignId, schoolId: schoolDoc.id, err });
+                failed += 1;
+            }
+        }
+
+        await ref.update({
+            status: failed === matching.length && matching.length > 0 ? 'failed' : 'sent',
+            stats: {
+                targetCount: matching.length,
+                queued,
+                failed,
+                startedAt,
+                completedAt: FieldValue.serverTimestamp(),
+            },
+        });
+
+        logger.info('[processCampaign] terminé', { campaignId, targetCount: matching.length, queued, failed });
+    } catch (err) {
+        logger.error('[processCampaign] erreur fatale', { campaignId, err });
+        await ref.update({ status: 'failed' });
+    }
+});
+
+/**
+ * Toutes les 10 minutes, déclenche les campagnes programmées dont
+ * `scheduledAt` est passé. On passe simplement le statut à `sending`
+ * pour réutiliser le pipeline `processCampaign` ci-dessus.
+ */
+export const triggerScheduledCampaigns = onSchedule(
+    { schedule: 'every 10 minutes', timeZone: 'Africa/Abidjan' },
+    async () => {
+        const nowIso = new Date().toISOString();
+        const snap = await db.collection('campaigns')
+            .where('status', '==', 'scheduled')
+            .where('scheduledAt', '<=', nowIso)
+            .get();
+        if (snap.empty) return;
+        await Promise.all(snap.docs.map(d => d.ref.update({ status: 'sending' })));
+        logger.info('[triggerScheduledCampaigns] déclenchées', { count: snap.size });
+    },
+);
+
 // Export pour les tests (non utilisé par Firebase).
-export const __internals = { pickReminderBucket, todayKey };
+export const __internals = { pickReminderBucket, todayKey, PAST_DUE_GRACE_DAYS, renderTpl, matchesCampaignTarget };
 // Suppress unused warnings for Timestamp import (kept for downstream typing).
 export type _Timestamp = Timestamp;

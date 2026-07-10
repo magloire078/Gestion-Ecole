@@ -8,18 +8,28 @@ const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'greecole';
 function getAdminApp() {
     if (!admin.apps.length) {
         try {
-            // Environnement Vercel / CI : on évite les lookups de métadonnées GCP qui font échouer le build
             const isBuild = process.env.NEXT_PHASE === 'phase-production-build';
 
             if (isBuild) {
                 console.log('⚠️ Build-time: Initialisation de Firebase Admin en mode limité.');
                 admin.initializeApp({ projectId });
+            } else if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+                const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
+                admin.initializeApp({
+                    credential: admin.credential.cert({
+                        projectId,
+                        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                        privateKey,
+                    }),
+                    projectId: projectId,
+                });
+                console.log(`✅ Firebase Admin initialisé via Service Account pour le projet: ${projectId}`);
             } else {
                 admin.initializeApp({
                     credential: admin.credential.applicationDefault(),
                     projectId: projectId,
                 });
-                console.log(`✅ Firebase Admin initialisé pour le projet: ${projectId}`);
+                console.log(`✅ Firebase Admin initialisé (applicationDefault) pour le projet: ${projectId}`);
             }
         } catch (error: any) {
             console.warn('⚠️  INFO: Les identifiants par défaut ne sont pas disponibles. L\'accès admin sera limité.');

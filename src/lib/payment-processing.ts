@@ -5,6 +5,7 @@ import { addMonths } from 'date-fns';
 import type { school as School, student as Student } from './data-types';
 import { formatCurrency } from './currency-utils';
 import { getPlanLimits, type ModuleName } from './subscription-plans';
+import { sendSMS } from './sms';
 
 
 /**
@@ -61,6 +62,16 @@ export async function processSubscriptionPayment(
     }
 
     const schoolData = schoolSnap.data() as School;
+
+    // Refuse les downgrades qui violeraient la limite d'élèves du nouveau plan.
+    if (Number.isFinite(planLimits.maxStudents)) {
+        const statsSnap = await getAdminDb().doc(`ecoles/${schoolId}/stats/finance`).get();
+        const currentCount = (statsSnap.exists ? (statsSnap.data()?.studentCount as number | undefined) : 0) ?? 0;
+        if (currentCount > planLimits.maxStudents) {
+            throw new Error(`[PaymentProcessing] Downgrade refusé : ${currentCount} élèves inscrits > limite ${planLimits.maxStudents} du plan ${planName}. Réduisez les effectifs avant de changer de plan.`);
+        }
+    }
+
     const subEndDate = schoolData.subscription?.endDate ? new Date(schoolData.subscription.endDate) : new Date();
     const startDate = subEndDate < new Date() ? new Date() : subEndDate;
     const newEndDate = addMonths(startDate, durationMonths);
@@ -70,6 +81,7 @@ export async function processSubscriptionPayment(
         'subscription.plan': planName,
         'subscription.status': 'active',
         'subscription.endDate': endDateStr,
+        'subscription.pastDueSince': FieldValue.delete(),
         'updatedAt': FieldValue.serverTimestamp(),
     });
 
@@ -186,11 +198,15 @@ export async function processTuitionPayment(
     const reference = `PAY-${Date.now().toString().slice(-6)}`;
 
     // 1. Update Student Balance
-    batch.update(studentRef, {
+    const studentUpdateData: any = {
         amountDue: newAmountDue,
         tuitionStatus: newStatus,
         updatedAt: FieldValue.serverTimestamp()
-    });
+    };
+    if (studentData.status === 'En attente') {
+        studentUpdateData.status = 'Actif';
+    }
+    batch.update(studentRef, studentUpdateData);
 
     const todayStr = new Date().toISOString().split('T')[0];
     const academicYear = (schoolData as any)?.currentAcademicYear
@@ -298,6 +314,17 @@ export async function processTuitionPayment(
             }
         } catch (error) {
             console.error(`[PaymentProcessing] Error sending tuition notification to ${parentId}:`, error);
+        }
+    }
+
+    // 6. Send SMS Receipt
+    const parentPhone = studentData.parent1Contact;
+    if (parentPhone) {
+        try {
+            const smsMessage = `GèreEcole - Reçu de paiement de ${formatCurrency(cappedAmount)} pour l'élève ${studentName} à l'école ${schoolData.name || 'notre établissement'}. Réf: ${reference}. Merci !`;
+            await sendSMS(parentPhone, smsMessage, schoolId);
+        } catch (smsError) {
+            console.error(`[PaymentProcessing] Error sending SMS receipt to parent:`, smsError);
         }
     }
 
