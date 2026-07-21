@@ -22,6 +22,7 @@ import {
     MessageSquare,
     Megaphone,
     Send,
+    UserCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -38,6 +39,7 @@ const adminNavLinks = [
     { href: '/admin/system/import', label: 'Import (assistance)', icon: UploadCloud },
     { href: '/admin/system/messages', label: 'Messagerie écoles', icon: MessageSquare },
     { href: '/admin/system/announcements', label: 'Annonces plateforme', icon: Megaphone },
+    { href: '/admin/system/leads', label: 'Leads & Prospects', icon: UserCheck },
     { href: '/admin/system/campaigns', label: 'Campagnes', icon: Send },
     { href: '/admin/system/formulaires', label: 'Formulaires', icon: FileText },
     { href: '/admin/system/audit-log', label: 'Journaux d\'Audit', icon: Scroll },

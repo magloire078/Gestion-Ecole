@@ -16,6 +16,7 @@ import { AnimatedHighlight } from '@/components/ui/animated-highlight';
 import { LiveChat } from './live-chat';
 import { COUNTRIES, DEFAULT_COUNTRY, type CountryCode, getCountryByCode } from '@/lib/countries-data';
 import { formatCurrency } from '@/lib/currency-utils';
+import { trackEvent } from '@/components/google-analytics';
 
 const featureCategories = [
   {
@@ -133,12 +134,23 @@ export function LandingPageV2() {
                 De l&apos;inscription des élèves à la gestion de la paie, GèreEcole centralise tous les aspects de votre administration pour un ou plusieurs établissements.
               </p>
               <div className="mt-5 flex flex-wrap justify-center gap-4">
-                <Button size="lg" asChild className="bg-[#0C365A] hover:bg-[#0C365A]/90 text-white shadow-xl shadow-blue-900/20 px-8 h-14">
+                <Button
+                  size="lg"
+                  asChild
+                  className="bg-[#0C365A] hover:bg-[#0C365A]/90 text-white shadow-xl shadow-blue-900/20 px-8 h-14"
+                  onClick={() => trackEvent('cta_demo_request', { location: 'hero' })}
+                >
                   <Link href="/contact" className="gap-2">
                     <PlayCircle className="h-5 w-5" />Demander une Démo
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" asChild className="border-[#2D9CDB] text-[#2D9CDB] hover:bg-[#2D9CDB]/10 px-8 h-14 backdrop-blur-sm">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  asChild
+                  className="border-[#2D9CDB] text-[#2D9CDB] hover:bg-[#2D9CDB]/10 px-8 h-14 backdrop-blur-sm"
+                  onClick={() => trackEvent('cta_start', { location: 'hero' })}
+                >
                   <Link href="/onboarding" className="flex items-center">
                     Commencer l&apos;aventure
                     <ArrowRight className="ml-2 h-4 w-4" />
