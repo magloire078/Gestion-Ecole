@@ -10,9 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
-    Activity, AlertTriangle, CheckCircle2, Eye, HeartPulse, Loader2, Mail, Phone, RefreshCw, Search, Users,
+    Activity, AlertTriangle, CheckCircle2, Eye, HeartPulse, Loader2, Mail, NotebookPen, Phone, RefreshCw, Search, Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { InteractionJournalSheet } from '@/components/admin/interaction-journal';
 
 type Risk = 'at_risk' | 'watch' | 'healthy';
 
@@ -92,6 +93,7 @@ export function ClientHealth() {
     const [generatedAt, setGeneratedAt] = useState<string | null>(null);
     const [search, setSearch] = useState('');
     const [activeFilter, setActiveFilter] = useState<Risk | 'all'>('all');
+    const [journalFor, setJournalFor] = useState<{ id: string; name: string } | null>(null);
 
     const load = useCallback(async () => {
         const current = auth.currentUser;
@@ -289,6 +291,15 @@ export function ClientHealth() {
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <div className="flex justify-end gap-1">
+                                                        <Button
+                                                            size="icon"
+                                                            variant="ghost"
+                                                            className="h-8 w-8"
+                                                            title="Journal de suivi"
+                                                            onClick={() => setJournalFor({ id: row.id, name: row.name })}
+                                                        >
+                                                            <NotebookPen className="h-4 w-4" />
+                                                        </Button>
                                                         {row.directorEmail && (
                                                             <Button asChild size="icon" variant="ghost" className="h-8 w-8" title={`Écrire à ${row.directorEmail}`}>
                                                                 <a href={`mailto:${row.directorEmail}`}>
@@ -302,9 +313,6 @@ export function ClientHealth() {
                                                                     <Phone className="h-4 w-4" />
                                                                 </a>
                                                             </Button>
-                                                        )}
-                                                        {!row.directorEmail && !row.directorPhone && (
-                                                            <span className="text-xs text-muted-foreground">—</span>
                                                         )}
                                                     </div>
                                                 </TableCell>
@@ -325,6 +333,13 @@ export function ClientHealth() {
                     </Button>
                 </div>
             )}
+
+            <InteractionJournalSheet
+                schoolId={journalFor?.id ?? null}
+                schoolName={journalFor?.name ?? ''}
+                open={journalFor !== null}
+                onOpenChange={isOpen => { if (!isOpen) setJournalFor(null); }}
+            />
         </div>
     );
 }
