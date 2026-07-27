@@ -211,8 +211,30 @@ service cloud.firestore {
     // =================================
     
     match /users/{userId} {
-      allow read, update, delete: if request.auth.uid == userId || isSuperAdmin();
-      allow create: if isSignedIn();
+      // Champs à privilèges système. Ils ne doivent JAMAIS pouvoir être
+      // positionnés par l'utilisateur sur son propre document : sinon
+      // n'importe quel compte authentifié pourrait s'auto-octroyer l'accès
+      // super-admin (`isSuperAdmin`) — qui débloque tout via isSuperAdmin() —
+      // ou l'accès admin des routes /api/admin/* (`profile.isAdmin`, lu par
+      // leur helper requireAdmin). Seul un super-admin déjà en place
+      // (grantSuperAdmin) ou l'Admin SDK côté serveur/seeding (hors règles)
+      // peut modifier ces champs.
+      function usersNoSelfEscalation() {
+        return request.resource.data.get('isSuperAdmin', false) == false
+            && request.resource.data.get(['profile', 'isAdmin'], false) == false;
+      }
+      function usersKeepsPrivileges() {
+        return request.resource.data.get('isSuperAdmin', false)
+                 == resource.data.get('isSuperAdmin', false)
+            && request.resource.data.get(['profile', 'isAdmin'], false)
+                 == resource.data.get(['profile', 'isAdmin'], false);
+      }
+
+      allow read, delete: if request.auth.uid == userId || isSuperAdmin();
+      allow create: if isSuperAdmin()
+                    || (isSignedIn() && usersNoSelfEscalation());
+      allow update: if isSuperAdmin()
+                    || (request.auth.uid == userId && usersKeepsPrivileges());
     }
 
     // =================================

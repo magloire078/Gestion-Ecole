@@ -20,7 +20,7 @@ const schoolEditSchema = z.object({
   name: z.string().min(2, "Le nom de l'école est requis."),
   status: z.enum(['active', 'suspended', 'deleted']),
   'subscription.plan': z.enum(['Essentiel', 'Pro', 'Premium']),
-  'subscription.status': z.enum(['active', 'trialing', 'past_due', 'canceled']),
+  'subscription.status': z.enum(['active', 'trialing', 'past_due', 'canceled', 'expired']),
 });
 
 type SchoolEditFormValues = z.infer<typeof schoolEditSchema>;
@@ -113,6 +113,7 @@ export function SchoolEditForm({ school, onSave }: SchoolEditFormProps) {
                 <SelectItem value="trialing">En essai</SelectItem>
                 <SelectItem value="past_due">En retard</SelectItem>
                 <SelectItem value="canceled">Annulé</SelectItem>
+                <SelectItem value="expired">Expiré</SelectItem>
               </SelectContent>
             </Select>
             <FormMessage />
