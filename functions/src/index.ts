@@ -779,6 +779,148 @@ export const proposeDecisions = onSchedule(
 );
 
 /* =========================================================================
+ * Assistant support IA — brouillon de réponse pour chaque ticket
+ * =========================================================================
+ * À la création d'un ticket dans `support_tickets`, un brouillon de
+ * réponse est généré (Gemini via GOOGLE_GENAI_API_KEY, ou gabarit de
+ * secours sans clé) puis déposé dans la boîte de décisions : l'admin
+ * relit, ajuste sa décision et approuve — l'email ne part jamais seul.
+ */
+
+interface SupportTicketShape {
+    userId?: string;
+    schoolId?: string;
+    subject?: string;
+    category?: string;
+    description?: string;
+    status?: string;
+    userDisplayName?: string;
+    userEmail?: string;
+}
+
+async function generateSupportDraft(params: {
+    schoolName: string;
+    userDisplayName: string;
+    subject: string;
+    category: string;
+    description: string;
+}): Promise<{ draft: string; generatedBy: 'ia' | 'gabarit' }> {
+    const apiKey = process.env.GOOGLE_GENAI_API_KEY || process.env.GOOGLE_API_KEY;
+    const model = process.env.GENAI_MODEL || 'gemini-1.5-flash';
+
+    const fallback = {
+        draft: `Bonjour ${params.userDisplayName},\n\n`
+            + `Merci pour votre message concernant « ${params.subject} ». `
+            + `Nous avons bien reçu votre demande et nous la traitons en priorité.\n\n`
+            + `Pour aller plus vite, pouvez-vous nous préciser, si possible, une capture d'écran `
+            + `ou les étapes exactes qui mènent au problème ?\n\n`
+            + `Nous revenons vers vous très rapidement.\n\nL'équipe GèreEcole`,
+        generatedBy: 'gabarit' as const,
+    };
+
+    if (!apiKey) return fallback;
+
+    const prompt = `Tu es l'assistant support de GèreEcole, une application de gestion scolaire `
+        + `(élèves, classes, notes, paiements, portail parents) utilisée par des directeurs d'école en Afrique francophone.\n\n`
+        + `Rédige une réponse d'email au ticket support ci-dessous. Règles :\n`
+        + `- Français chaleureux et professionnel, tutoiement interdit.\n`
+        + `- Réponds concrètement si le problème est identifiable (guide pas à pas court) ; sinon pose 1 à 2 questions de clarification précises.\n`
+        + `- Maximum 150 mots. Pas d'objet, uniquement le corps. Signe « L'équipe GèreEcole ».\n`
+        + `- Ne promets jamais de délai précis ni de remboursement.\n\n`
+        + `École : ${params.schoolName}\nDemandeur : ${params.userDisplayName}\n`
+        + `Catégorie : ${params.category}\nSujet : ${params.subject}\n\nMessage :\n${params.description}`;
+
+    try {
+        const res = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { temperature: 0.4, maxOutputTokens: 500 },
+                }),
+            },
+        );
+        if (!res.ok) {
+            logger.warn('[supportAssistant] Gemini API non-OK', { status: res.status });
+            return fallback;
+        }
+        const data = await res.json() as {
+            candidates?: { content?: { parts?: { text?: string }[] } }[];
+        };
+        const text = data.candidates?.[0]?.content?.parts?.map(p => p.text ?? '').join('').trim();
+        if (!text) return fallback;
+        return { draft: text, generatedBy: 'ia' };
+    } catch (err) {
+        logger.warn('[supportAssistant] appel Gemini échoué, gabarit utilisé', err);
+        return fallback;
+    }
+}
+
+export const onSupportTicketCreated = onDocumentCreated('support_tickets/{ticketId}', async event => {
+    const snap = event.data;
+    if (!snap) return;
+    const ticket = snap.data() as SupportTicketShape;
+    const ticketId = event.params.ticketId as string;
+
+    const subject = ticket.subject ?? 'Demande de support';
+    const userDisplayName = ticket.userDisplayName ?? 'Directeur';
+
+    let schoolName = ticket.schoolId ?? '—';
+    let directorEmail: string | null = null;
+    if (ticket.schoolId) {
+        try {
+            const schoolSnap = await db.doc(`ecoles/${ticket.schoolId}`).get();
+            const school = schoolSnap.data() as SchoolShape | undefined;
+            schoolName = school?.name ?? schoolName;
+            directorEmail = school?.directorEmail ?? null;
+        } catch {
+            // école introuvable : le brouillon reste utilisable
+        }
+    }
+
+    try {
+        const { draft, generatedBy } = await generateSupportDraft({
+            schoolName,
+            userDisplayName,
+            subject,
+            category: ticket.category ?? 'Général',
+            description: ticket.description ?? '',
+        });
+
+        const to = ticket.userEmail ?? directorEmail;
+        const excerpt = (ticket.description ?? '').slice(0, 300);
+
+        await db.collection('decision_queue').add({
+            type: 'support_reply',
+            title: `Réponse au ticket : ${subject}`,
+            description: `Ticket de ${userDisplayName} (${schoolName}) — catégorie « ${ticket.category ?? 'Général'} ».\n\n`
+                + `Demande : ${excerpt}${(ticket.description ?? '').length > 300 ? '…' : ''}\n\n`
+                + (generatedBy === 'ia'
+                    ? `Brouillon rédigé par l'IA — relisez et ajustez avant d'approuver.`
+                    : `Brouillon générique (clé IA non configurée) — personnalisez avant d'approuver.`)
+                + (to ? '' : `\n\n⚠️ Aucune adresse email trouvée pour ce demandeur : approuver enregistrera la décision sans envoi.\n\nBrouillon proposé :\n${draft}`),
+            schoolId: ticket.schoolId ?? null,
+            schoolName,
+            source: generatedBy === 'ia' ? 'assistant_support_ia' : 'assistant_support',
+            ticketId,
+            status: 'pending',
+            createdAt: FieldValue.serverTimestamp(),
+            proposedAction: to
+                ? { kind: 'email', to, subject: `Re: ${subject}`, body: draft }
+                : { kind: 'none' },
+        });
+
+        logger.info('[onSupportTicketCreated] brouillon déposé dans la boîte de décisions', {
+            ticketId, schoolId: ticket.schoolId, generatedBy,
+        });
+    } catch (err) {
+        logger.error('[onSupportTicketCreated] erreur', { ticketId, err });
+    }
+});
+
+/* =========================================================================
  * Messagerie 1-1 super-admin <-> directeur — notifications & relance email
  * ========================================================================= */
 
