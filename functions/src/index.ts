@@ -842,6 +842,163 @@ export const proposeDecisions = onSchedule(
 );
 
 /* =========================================================================
+ * Rapport hebdomadaire — la « réunion du lundi » envoyée par email
+ * =========================================================================
+ * Chaque lundi 07:00 (Abidjan), synthèse du parc envoyée aux super-admins
+ * (email + WhatsApp + notification in-app via sendAdminAlert) : statuts
+ * d'abonnement, essais qui se terminent, échéances sous 30 j, décisions
+ * en attente, actions en retard, nouvelles inscriptions de la semaine.
+ * Un paragraphe de synthèse est rédigé par Gemini si la clé est
+ * configurée, sinon un résumé factuel est généré localement.
+ */
+
+interface WeeklyStats {
+    total: number;
+    active: number;
+    trialing: number;
+    pastDue: number;
+    expired: number;
+    trialsEndingIn7d: number;
+    expiringIn30d: number;
+    newThisWeek: number;
+    pendingDecisions: number;
+    overdueActions: number;
+}
+
+async function collectWeeklyStats(now: Date): Promise<WeeklyStats> {
+    const stats: WeeklyStats = {
+        total: 0, active: 0, trialing: 0, pastDue: 0, expired: 0,
+        trialsEndingIn7d: 0, expiringIn30d: 0, newThisWeek: 0,
+        pendingDecisions: 0, overdueActions: 0,
+    };
+
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const today = format(now, 'yyyy-MM-dd');
+
+    const schoolsSnap = await db.collection('ecoles').get();
+    for (const doc of schoolsSnap.docs) {
+        const school = doc.data() as SchoolShape & { createdAt?: { toDate?: () => Date } | string };
+        if (school.status === 'deleted') continue;
+        stats.total += 1;
+
+        const sub = school.subscription;
+        if (sub?.status === 'active') stats.active += 1;
+        if (sub?.status === 'trialing') stats.trialing += 1;
+        if (sub?.status === 'past_due') stats.pastDue += 1;
+        if (sub?.status === 'expired') stats.expired += 1;
+
+        if (sub?.endDate) {
+            const end = new Date(sub.endDate);
+            if (!Number.isNaN(end.getTime())) {
+                const daysLeft = differenceInCalendarDays(end, now);
+                if (sub.status === 'trialing' && daysLeft >= 0 && daysLeft <= 7) stats.trialsEndingIn7d += 1;
+                if (sub.status === 'active' && daysLeft >= 0 && daysLeft <= 30) stats.expiringIn30d += 1;
+            }
+        }
+
+        const createdRaw = school.createdAt;
+        const created = typeof createdRaw === 'string'
+            ? new Date(createdRaw)
+            : createdRaw?.toDate?.();
+        if (created && !Number.isNaN(created.getTime()) && created >= weekAgo) stats.newThisWeek += 1;
+    }
+
+    try {
+        const agg = await db.collection('decision_queue').where('status', '==', 'pending').count().get();
+        stats.pendingDecisions = agg.data().count;
+    } catch { /* compteur indisponible : reste à 0 */ }
+
+    try {
+        const [clientsAgg, prospectsAgg] = await Promise.all([
+            db.collection('crm_interactions').where('nextActionDate', '<', today).count().get(),
+            db.collection('crm_prospects').where('nextActionDate', '<', today).count().get(),
+        ]);
+        stats.overdueActions = clientsAgg.data().count + prospectsAgg.data().count;
+    } catch { /* compteur indisponible : reste à 0 */ }
+
+    return stats;
+}
+
+async function writeWeeklySummary(stats: WeeklyStats): Promise<string> {
+    const factual = `Le parc compte ${stats.total} écoles : ${stats.active} actives, ${stats.trialing} en essai, `
+        + `${stats.pastDue} en impayé et ${stats.expired} expirées. Cette semaine : ${stats.newThisWeek} nouvelle(s) inscription(s), `
+        + `${stats.trialsEndingIn7d} essai(s) se terminant sous 7 jours et ${stats.expiringIn30d} renouvellement(s) à sécuriser sous 30 jours. `
+        + `${stats.pendingDecisions} décision(s) attendent votre validation et ${stats.overdueActions} action(s) planifiée(s) sont en retard.`;
+
+    const apiKey = process.env.GOOGLE_GENAI_API_KEY || process.env.GOOGLE_API_KEY;
+    if (!apiKey) return factual;
+
+    const model = process.env.GENAI_MODEL || 'gemini-1.5-flash';
+    const prompt = `Tu es l'analyste commercial de GèreEcole (SaaS de gestion scolaire en Afrique francophone). `
+        + `À partir des chiffres ci-dessous, rédige en français un paragraphe de synthèse de 3 à 4 phrases maximum pour le fondateur : `
+        + `commence par l'essentiel, signale le point le plus urgent de la semaine et termine par une recommandation d'action concrète. `
+        + `Pas de liste, pas de titre, uniquement le paragraphe.\n\n${factual}`;
+
+    try {
+        const res = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { temperature: 0.3, maxOutputTokens: 300 },
+                }),
+            },
+        );
+        if (!res.ok) return factual;
+        const data = await res.json() as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+        const text = data.candidates?.[0]?.content?.parts?.map(p => p.text ?? '').join('').trim();
+        return text || factual;
+    } catch {
+        return factual;
+    }
+}
+
+export const weeklyClientReport = onSchedule(
+    {
+        schedule: 'every monday 07:00',
+        timeZone: 'Africa/Abidjan',
+        timeoutSeconds: 540,
+        memory: '512MiB',
+    },
+    async () => {
+        const now = new Date();
+        const stats = await collectWeeklyStats(now);
+        const summary = await writeWeeklySummary(stats);
+        const weekLabel = format(now, 'd MMMM yyyy', { locale: fr });
+
+        const statRow = (label: string, value: number, highlight = false) =>
+            `<tr><td style="padding: 6px 12px; border-bottom: 1px solid #eee;">${label}</td>`
+            + `<td style="padding: 6px 12px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold;${highlight && value > 0 ? ' color: #c2410c;' : ''}">${value}</td></tr>`;
+
+        const htmlBody = `
+            <p style="background: #f0f7ff; border-left: 4px solid #2D9CDB; padding: 12px; font-style: italic;">${summary}</p>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
+                ${statRow('Écoles au total', stats.total)}
+                ${statRow('Actives', stats.active)}
+                ${statRow('En essai', stats.trialing)}
+                ${statRow('Nouvelles inscriptions (7 j)', stats.newThisWeek)}
+                ${statRow('Essais se terminant sous 7 j', stats.trialsEndingIn7d, true)}
+                ${statRow('Renouvellements sous 30 j', stats.expiringIn30d, true)}
+                ${statRow('En impayé', stats.pastDue, true)}
+                ${statRow('Expirées', stats.expired, true)}
+                ${statRow('Décisions en attente de validation', stats.pendingDecisions, true)}
+                ${statRow('Actions planifiées en retard', stats.overdueActions, true)}
+            </table>
+            <p style="margin-top: 16px;">Vos trois pages du lundi : la <strong>boîte de décisions</strong>, les <strong>actions du jour</strong> et le <strong>suivi clients</strong>.</p>`;
+
+        const whatsappText = `📊 *Rapport hebdo GèreEcole — ${weekLabel}*\n\n${summary}\n\n`
+            + `Écoles : ${stats.total} (${stats.active} actives, ${stats.trialing} essais)\n`
+            + `⚠️ Essais finissant <7j : ${stats.trialsEndingIn7d} · Renouv. <30j : ${stats.expiringIn30d} · Impayés : ${stats.pastDue}\n`
+            + `📥 Décisions en attente : ${stats.pendingDecisions} · Actions en retard : ${stats.overdueActions}`;
+
+        await sendAdminAlert(`Rapport hebdomadaire GèreEcole — ${weekLabel}`, htmlBody, whatsappText);
+        logger.info('[weeklyClientReport] envoyé', stats as unknown as Record<string, number>);
+    },
+);
+
+/* =========================================================================
  * Assistant support IA — brouillon de réponse pour chaque ticket
  * =========================================================================
  * À la création d'un ticket dans `support_tickets`, un brouillon de
