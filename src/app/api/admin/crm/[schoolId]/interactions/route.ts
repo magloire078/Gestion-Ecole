@@ -151,3 +151,44 @@ export async function POST(
 
     return NextResponse.json({ ok: true, id: ref.id });
 }
+
+/** Marque la prochaine action planifiée comme faite (vue « Actions du jour »). */
+export async function PATCH(
+    request: NextRequest,
+    { params }: { params: { schoolId: string } },
+) {
+    const auth = await requireAdmin(request);
+    if ('error' in auth) {
+        return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
+    const { schoolId } = params;
+    if (!schoolId) {
+        return NextResponse.json({ error: 'schoolId required' }, { status: 400 });
+    }
+
+    let body: any;
+    try {
+        body = await request.json();
+    } catch {
+        return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
+
+    if (body?.clearNextAction !== true) {
+        return NextResponse.json({ error: 'Only { clearNextAction: true } is supported' }, { status: 400 });
+    }
+
+    const ref = getAdminDb().doc(`crm_interactions/${schoolId}`);
+    const snap = await ref.get();
+    if (!snap.exists) {
+        return NextResponse.json({ error: 'No journal for this school' }, { status: 404 });
+    }
+
+    await ref.set({
+        nextActionDate: null,
+        nextActionNote: null,
+        updatedBy: auth.uid,
+    }, { merge: true });
+
+    return NextResponse.json({ ok: true });
+}

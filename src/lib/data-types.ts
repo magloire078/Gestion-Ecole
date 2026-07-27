@@ -38,7 +38,7 @@ export type school = {
     isSetupComplete?: boolean;
     subscription?: {
         plan?: "Essentiel" | "Pro" | "Premium";
-        status?: "active" | "trialing" | "past_due" | "canceled";
+        status?: "active" | "trialing" | "past_due" | "canceled" | "expired";
         startDate?: string;
         endDate?: string;
         maxStudents?: number;
