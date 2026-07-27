@@ -631,6 +631,154 @@ export const clientLifecycleNurture = onSchedule(
 );
 
 /* =========================================================================
+ * Boîte de décisions — l'IA/les automatisations proposent, l'admin valide
+ * =========================================================================
+ * Les producteurs déposent des propositions dans `decision_queue`
+ * (status='pending'). L'admin les approuve ou les refuse depuis
+ * /admin/system/decisions ; l'approbation exécute l'action proposée
+ * (ex. envoi d'un email pré-rédigé). Rien ne part sans validation.
+ */
+
+interface ProposedAction {
+    kind: 'email' | 'none';
+    to?: string;
+    subject?: string;
+    body?: string;
+}
+
+async function hasPendingDecision(schoolId: string, type: string): Promise<boolean> {
+    const snap = await db.collection('decision_queue')
+        .where('schoolId', '==', schoolId)
+        .where('type', '==', type)
+        .where('status', '==', 'pending')
+        .limit(1)
+        .get();
+    return !snap.empty;
+}
+
+async function createDecision(params: {
+    type: string;
+    title: string;
+    description: string;
+    schoolId: string;
+    schoolName: string;
+    proposedAction: ProposedAction;
+    source: string;
+}): Promise<void> {
+    await db.collection('decision_queue').add({
+        ...params,
+        status: 'pending',
+        createdAt: FieldValue.serverTimestamp(),
+    });
+}
+
+async function latestActivityDate(schoolId: string): Promise<Date | null> {
+    const dates: Date[] = [];
+    for (const sub of ['notifications', 'comptabilite']) {
+        try {
+            const snap = await db.collection(`ecoles/${schoolId}/${sub}`)
+                .orderBy('createdAt', 'desc')
+                .limit(1)
+                .get();
+            const ts = snap.docs[0]?.data()?.createdAt;
+            const d = ts?.toDate?.();
+            if (d) dates.push(d);
+        } catch {
+            // sous-collection absente : signal ignoré
+        }
+    }
+    if (dates.length === 0) return null;
+    return new Date(Math.max(...dates.map(d => d.getTime())));
+}
+
+const SILENT_CHURN_DAYS = 30;
+
+/**
+ * Chaque jour, détecte les situations qui méritent une décision humaine
+ * et les dépose dans la boîte de décisions (une seule proposition en
+ * attente par école et par type) :
+ * - churn silencieux : abonnement actif mais aucune activité depuis 30 j,
+ *   avec un email de réengagement pré-rédigé à approuver ;
+ * - impayé : école en past_due, proposition d'appel personnel.
+ */
+export const proposeDecisions = onSchedule(
+    {
+        schedule: 'every day 06:30',
+        timeZone: 'Africa/Abidjan',
+        timeoutSeconds: 540,
+        memory: '512MiB',
+    },
+    async () => {
+        const now = new Date();
+        const schoolsSnap = await db.collection('ecoles').get();
+        let proposed = 0;
+
+        for (const doc of schoolsSnap.docs) {
+            const school = doc.data() as SchoolShape;
+            if (school.status === 'deleted') continue;
+            const sub = school.subscription;
+            const schoolName = school.name ?? doc.id;
+
+            try {
+                if (sub?.status === 'active') {
+                    const lastActivity = await latestActivityDate(doc.id);
+                    const inactiveDays = lastActivity
+                        ? differenceInCalendarDays(now, lastActivity)
+                        : null;
+                    if ((inactiveDays === null || inactiveDays >= SILENT_CHURN_DAYS)
+                        && !(await hasPendingDecision(doc.id, 'silent_churn'))) {
+                        const daysLabel = inactiveDays === null ? 'longtemps' : `${inactiveDays} jours`;
+                        await createDecision({
+                            type: 'silent_churn',
+                            title: `Churn silencieux : ${schoolName}`,
+                            description: `Abonnement actif mais aucune activité détectée depuis ${daysLabel} `
+                                + `(ni notification, ni écriture comptable). Cette école risque de ne pas renouveler. `
+                                + `Proposition : envoyer l'email de réengagement ci-dessous, puis prévoir un appel.`,
+                            schoolId: doc.id,
+                            schoolName,
+                            source: 'detecteur_churn_silencieux',
+                            proposedAction: school.directorEmail ? {
+                                kind: 'email',
+                                to: school.directorEmail,
+                                subject: `Comment pouvons-nous vous aider, ${schoolName} ?`,
+                                body: `Bonjour,\n\nNous avons remarqué que votre espace GèreEcole pour ${schoolName} `
+                                    + `est peu utilisé ces dernières semaines. Un point vous bloque peut-être : `
+                                    + `configuration, import des élèves, prise en main par votre équipe ?\n\n`
+                                    + `Nous pouvons faire la configuration avec vous, à distance et gratuitement. `
+                                    + `Répondez simplement à cet email ou appelez-nous, et nous trouvons un créneau cette semaine.\n\n`
+                                    + `L'équipe GèreEcole`,
+                            } : { kind: 'none' },
+                        });
+                        proposed += 1;
+                    }
+                }
+
+                if (sub?.status === 'past_due'
+                    && !(await hasPendingDecision(doc.id, 'past_due_call'))) {
+                    await createDecision({
+                        type: 'past_due_call',
+                        title: `Impayé à traiter : ${schoolName}`,
+                        description: `L'école est en période de grâce (past_due) depuis le `
+                            + `${sub.pastDueSince ? format(new Date(sub.pastDueSince), 'd MMMM yyyy', { locale: fr }) : '—'}. `
+                            + `Les rappels automatiques sont partis ; proposition : un appel personnel au directeur `
+                            + `avant la suspension (approuvez pour tracer la décision d'appeler).`,
+                        schoolId: doc.id,
+                        schoolName,
+                        source: 'detecteur_impayes',
+                        proposedAction: { kind: 'none' },
+                    });
+                    proposed += 1;
+                }
+            } catch (err) {
+                logger.error('[proposeDecisions] erreur pour une école', { schoolId: doc.id, err });
+            }
+        }
+
+        logger.info('[proposeDecisions] terminé', { scanned: schoolsSnap.size, proposed });
+    },
+);
+
+/* =========================================================================
  * Messagerie 1-1 super-admin <-> directeur — notifications & relance email
  * ========================================================================= */
 
