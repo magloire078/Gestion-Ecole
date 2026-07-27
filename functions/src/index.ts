@@ -26,16 +26,21 @@ type ReminderKey = 'd7' | 'd3' | 'd1' | 'past_due' | 'expired';
 
 const PAST_DUE_GRACE_DAYS = 7;
 
+type NurtureKey = 'trial_j1' | 'trial_j7' | 'winback_j15' | 'winback_j45';
+
 interface SubscriptionShape {
     plan?: string;
     status?: 'active' | 'trialing' | 'past_due' | 'canceled' | 'expired';
+    startDate?: string;
     endDate?: string;
     pastDueSince?: string;
     remindersSent?: Partial<Record<ReminderKey, string>>;
+    nurtureSent?: Partial<Record<NurtureKey, string>>;
 }
 
 interface SchoolShape {
     name?: string;
+    status?: string;
     directorEmail?: string;
     subscription?: SubscriptionShape;
 }
@@ -260,6 +265,182 @@ export const subscriptionLifecycle = onSchedule(
             pastDue,
             expired,
             bucketStats,
+        });
+    },
+);
+
+/* =========================================================================
+ * Relances cycle de vie client — onboarding essai & reconquête
+ * ========================================================================= */
+
+/**
+ * Détermine la relance de nurturing à envoyer pour une école, ou null.
+ *
+ * - Essai (trialing) : email de bienvenue à J+1 du début d'essai, puis
+ *   conseil d'activation à J+7. Chaque étape n'est envoyée que dans une
+ *   fenêtre bornée pour ne pas arroser les essais antérieurs à la mise
+ *   en place de la fonction.
+ * - Reconquête (expired) : offre de retour à J+15 après l'échéance, puis
+ *   dernière relance à J+45. Chaque étape n'est envoyée qu'une seule fois
+ *   (tracée dans subscription.nurtureSent).
+ */
+function pickNurtureStep(
+    now: Date,
+    sub: SubscriptionShape | undefined,
+): NurtureKey | null {
+    if (!sub) return null;
+    const sent = sub.nurtureSent ?? {};
+
+    if (sub.status === 'trialing' && sub.startDate) {
+        const start = new Date(sub.startDate);
+        if (Number.isNaN(start.getTime())) return null;
+        const days = differenceInCalendarDays(now, start);
+        if (days >= 1 && days <= 3 && !sent.trial_j1) return 'trial_j1';
+        if (days >= 7 && days <= 13 && !sent.trial_j7) return 'trial_j7';
+        return null;
+    }
+
+    if (sub.status === 'expired' && sub.endDate) {
+        const end = new Date(sub.endDate);
+        if (Number.isNaN(end.getTime())) return null;
+        const days = differenceInCalendarDays(now, end);
+        if (days >= 15 && days <= 21 && !sent.winback_j15) return 'winback_j15';
+        if (days >= 45 && days <= 52 && !sent.winback_j45) return 'winback_j45';
+        return null;
+    }
+
+    return null;
+}
+
+function renderNurtureEmail(school: SchoolShape, step: NurtureKey): { subject: string; html: string; notifTitle: string; notifContent: string } {
+    const schoolName = school.name ?? 'votre établissement';
+
+    switch (step) {
+        case 'trial_j1':
+            return {
+                subject: `Bienvenue sur GèreEcole - vos premiers pas`,
+                html: baseTemplate(
+                    'Bienvenue ! Configurons votre école',
+                    `<p>Merci d'avoir choisi GèreEcole pour <strong>${schoolName}</strong>. Pour profiter pleinement de votre essai, voici les 3 étapes qui font la différence :</p>
+                     <ol>
+                        <li><strong>Créez vos classes</strong> dans le module Pédagogie.</li>
+                        <li><strong>Importez vos élèves</strong> (fichier Excel accepté).</li>
+                        <li><strong>Configurez les frais de scolarité</strong> pour suivre les paiements.</li>
+                     </ol>
+                     <p>Besoin d'aide ? Répondez simplement à cet email ou écrivez-nous depuis la messagerie support : nous pouvons faire la configuration avec vous.</p>`,
+                    'Configurer mon école',
+                ).replace('/dashboard/parametres/abonnement', '/dashboard'),
+                notifTitle: 'Bienvenue sur GèreEcole !',
+                notifContent: 'Créez vos classes, importez vos élèves et configurez les frais pour bien démarrer votre essai.',
+            };
+        case 'trial_j7':
+            return {
+                subject: `Une semaine d'essai - tirez le meilleur de GèreEcole`,
+                html: baseTemplate(
+                    'Déjà une semaine !',
+                    `<p>Votre essai pour <strong>${schoolName}</strong> a une semaine. Avez-vous découvert :</p>
+                     <ul>
+                        <li>Le <strong>portail parents</strong> pour partager notes et absences ?</li>
+                        <li>Les <strong>paiements en ligne</strong> (Wave, Orange Money, MTN, carte) ?</li>
+                        <li>Les <strong>bulletins automatiques</strong> en fin de période ?</li>
+                     </ul>
+                     <p>Notre équipe peut vous faire une démonstration personnalisée : répondez à cet email pour convenir d'un créneau.</p>`,
+                    'Explorer mon tableau de bord',
+                ).replace('/dashboard/parametres/abonnement', '/dashboard'),
+                notifTitle: 'Une semaine d\'essai !',
+                notifContent: 'Portail parents, paiements en ligne, bulletins automatiques : découvrez ce qui vous attend.',
+            };
+        case 'winback_j15':
+            return {
+                subject: `${schoolName} nous manque - reprenez où vous en étiez`,
+                html: baseTemplate(
+                    'Vos données vous attendent',
+                    `<p>L'abonnement de <strong>${schoolName}</strong> a expiré il y a deux semaines, mais toutes vos données (élèves, notes, paiements) sont <strong>conservées intactes</strong>.</p>
+                     <p>Réactivez votre abonnement en quelques clics et reprenez exactement où vous en étiez. Si un point vous a freiné (prix, fonctionnalité, accompagnement), répondez à cet email : nous trouverons une solution ensemble.</p>`,
+                    'Réactiver mon abonnement',
+                ),
+                notifTitle: 'Vos données vous attendent',
+                notifContent: 'Réactivez votre abonnement pour retrouver élèves, notes et paiements, conservés intacts.',
+            };
+        case 'winback_j45':
+            return {
+                subject: `Dernière relance - vos données GèreEcole`,
+                html: baseTemplate(
+                    'On garde votre place',
+                    `<p>Cela fait maintenant 45 jours que l'abonnement de <strong>${schoolName}</strong> a expiré.</p>
+                     <p>Vos données restent sauvegardées et votre espace peut être réactivé à tout moment. Si vous avez choisi une autre solution, nous serions sincèrement intéressés de savoir ce qui a pesé dans votre décision : une simple réponse à cet email nous aiderait beaucoup.</p>`,
+                    'Réactiver mon abonnement',
+                ),
+                notifTitle: 'Votre espace GèreEcole vous attend',
+                notifContent: 'Vos données sont conservées : réactivez votre abonnement à tout moment.',
+            };
+    }
+}
+
+export const clientLifecycleNurture = onSchedule(
+    {
+        schedule: 'every day 07:00',
+        timeZone: 'Africa/Abidjan',
+        timeoutSeconds: 540,
+        memory: '512MiB',
+    },
+    async () => {
+        const now = new Date();
+        const today = todayKey();
+        logger.info('[clientLifecycleNurture] Lancement', { today });
+
+        const schoolsSnap = await db.collection('ecoles').get();
+        let sentCount = 0;
+        const stepStats: Record<string, number> = {};
+
+        for (const doc of schoolsSnap.docs) {
+            const school = doc.data() as SchoolShape;
+            if (school.status === 'deleted') continue;
+
+            const step = pickNurtureStep(now, school.subscription);
+            if (!step) continue;
+
+            stepStats[step] = (stepStats[step] ?? 0) + 1;
+
+            try {
+                const rendered = renderNurtureEmail(school, step);
+
+                if (school.directorEmail) {
+                    await db.collection('mail').add({
+                        to: school.directorEmail,
+                        message: { subject: rendered.subject, html: rendered.html },
+                        delivery: { startTime: FieldValue.serverTimestamp(), state: 'PENDING' },
+                        nurtureStep: step,
+                        schoolId: doc.id,
+                    });
+                }
+
+                const directorIds = await findDirectorUids(doc.id);
+                for (const uid of directorIds) {
+                    await db.collection(`ecoles/${doc.id}/notifications`).add({
+                        userId: uid,
+                        title: rendered.notifTitle,
+                        content: rendered.notifContent,
+                        href: step.startsWith('winback') ? '/dashboard/parametres/abonnement' : '/dashboard',
+                        isRead: false,
+                        createdAt: FieldValue.serverTimestamp(),
+                    });
+                }
+
+                await doc.ref.update({
+                    [`subscription.nurtureSent.${step}`]: today,
+                    updatedAt: FieldValue.serverTimestamp(),
+                });
+                sentCount += 1;
+            } catch (err) {
+                logger.error(`[clientLifecycleNurture] Erreur pour ${doc.id}`, err);
+            }
+        }
+
+        logger.info('[clientLifecycleNurture] Terminé', {
+            scanned: schoolsSnap.size,
+            sent: sentCount,
+            stepStats,
         });
     },
 );
@@ -568,6 +749,6 @@ export const triggerScheduledCampaigns = onSchedule(
 );
 
 // Export pour les tests (non utilisé par Firebase).
-export const __internals = { pickReminderBucket, todayKey, PAST_DUE_GRACE_DAYS, renderTpl, matchesCampaignTarget };
+export const __internals = { pickReminderBucket, pickNurtureStep, todayKey, PAST_DUE_GRACE_DAYS, renderTpl, matchesCampaignTarget };
 // Suppress unused warnings for Timestamp import (kept for downstream typing).
 export type _Timestamp = Timestamp;
