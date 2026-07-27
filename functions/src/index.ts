@@ -692,6 +692,35 @@ async function latestActivityDate(schoolId: string): Promise<Date | null> {
 }
 
 const SILENT_CHURN_DAYS = 30;
+const TRIAL_RISK_WINDOW_DAYS = 7;
+const TRIAL_RISK_MAX_STUDENTS = 5;
+
+/**
+ * Essai à risque : l'essai se termine dans TRIAL_RISK_WINDOW_DAYS jours
+ * ou moins et l'école n'a presque rien configuré (< TRIAL_RISK_MAX_STUDENTS
+ * élèves). Sans accompagnement, cette école ne convertira pas.
+ */
+function isTrialAtRisk(
+    now: Date,
+    sub: SubscriptionShape | undefined,
+    studentsCount: number,
+): boolean {
+    if (sub?.status !== 'trialing' || !sub.endDate) return false;
+    const end = new Date(sub.endDate);
+    if (Number.isNaN(end.getTime())) return false;
+    const daysLeft = differenceInCalendarDays(end, now);
+    return daysLeft >= 0 && daysLeft <= TRIAL_RISK_WINDOW_DAYS
+        && studentsCount < TRIAL_RISK_MAX_STUDENTS;
+}
+
+async function countStudents(schoolId: string): Promise<number> {
+    try {
+        const agg = await db.collection(`ecoles/${schoolId}/eleves`).count().get();
+        return agg.data().count;
+    } catch {
+        return 0;
+    }
+}
 
 /**
  * Chaque jour, détecte les situations qui méritent une décision humaine
@@ -746,6 +775,40 @@ export const proposeDecisions = onSchedule(
                                     + `configuration, import des élèves, prise en main par votre équipe ?\n\n`
                                     + `Nous pouvons faire la configuration avec vous, à distance et gratuitement. `
                                     + `Répondez simplement à cet email ou appelez-nous, et nous trouvons un créneau cette semaine.\n\n`
+                                    + `L'équipe GèreEcole`,
+                            } : { kind: 'none' },
+                        });
+                        proposed += 1;
+                    }
+                }
+
+                if (sub?.status === 'trialing') {
+                    const students = await countStudents(doc.id);
+                    if (isTrialAtRisk(now, sub, students)
+                        && !(await hasPendingDecision(doc.id, 'trial_at_risk'))) {
+                        const daysLeft = differenceInCalendarDays(new Date(sub.endDate!), now);
+                        await createDecision({
+                            type: 'trial_at_risk',
+                            title: `Essai à risque : ${schoolName}`,
+                            description: `L'essai se termine dans ${daysLeft} jour${daysLeft > 1 ? 's' : ''} et l'école n'a que `
+                                + `${students} élève${students > 1 ? 's' : ''} enregistré${students > 1 ? 's' : ''} : elle n'a pas vraiment démarré `
+                                + `et ne convertira probablement pas sans aide. Proposition : envoyer l'email d'accompagnement `
+                                + `ci-dessous, puis appeler le directeur. Vous pouvez aussi prolonger l'essai manuellement `
+                                + `depuis la fiche école si le contact est positif.`,
+                            schoolId: doc.id,
+                            schoolName,
+                            source: 'detecteur_essai_a_risque',
+                            proposedAction: school.directorEmail ? {
+                                kind: 'email',
+                                to: school.directorEmail,
+                                subject: `Votre essai GèreEcole se termine bientôt — on vous aide à démarrer ?`,
+                                body: `Bonjour,\n\nVotre période d'essai GèreEcole pour ${schoolName} se termine dans `
+                                    + `${daysLeft} jour${daysLeft > 1 ? 's' : ''}, et nous avons remarqué que la configuration `
+                                    + `n'est pas terminée (import des élèves, classes, frais de scolarité).\n\n`
+                                    + `Plutôt que de vous laisser repartir sans avoir vu ce que l'application peut vous apporter, `
+                                    + `nous vous proposons de faire la configuration avec vous, à distance et gratuitement — `
+                                    + `en général 30 minutes suffisent pour tout mettre en place.\n\n`
+                                    + `Répondez simplement à cet email avec un créneau qui vous arrange, ou appelez-nous.\n\n`
                                     + `L'équipe GèreEcole`,
                             } : { kind: 'none' },
                         });
@@ -1224,6 +1287,6 @@ export const triggerScheduledCampaigns = onSchedule(
 );
 
 // Export pour les tests (non utilisé par Firebase).
-export const __internals = { pickReminderBucket, pickNurtureStep, pickSubscriptionEvent, todayKey, PAST_DUE_GRACE_DAYS, renderTpl, matchesCampaignTarget };
+export const __internals = { pickReminderBucket, pickNurtureStep, pickSubscriptionEvent, isTrialAtRisk, todayKey, PAST_DUE_GRACE_DAYS, renderTpl, matchesCampaignTarget };
 // Suppress unused warnings for Timestamp import (kept for downstream typing).
 export type _Timestamp = Timestamp;

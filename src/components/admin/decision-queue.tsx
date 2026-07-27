@@ -44,6 +44,7 @@ interface Decision {
 const TYPE_LABELS: Record<string, string> = {
     silent_churn: 'Churn silencieux',
     past_due_call: 'Impayé',
+    trial_at_risk: 'Essai à risque',
     support_reply: 'Réponse support',
     custom: 'Autre',
 };
