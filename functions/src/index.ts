@@ -270,6 +270,191 @@ export const subscriptionLifecycle = onSchedule(
 );
 
 /* =========================================================================
+ * Alertes admin — nouvelle inscription & nouvel abonnement
+ * =========================================================================
+ * Notifie les super-admins par email (collection `mail`) et par WhatsApp
+ * (Evolution API, même configuration que le chat support :
+ * EVOLUTION_API_URL, EVOLUTION_API_KEY, WhatsApp_INSTANCE_NAME,
+ * WhatsApp_GROUP_ID). Si la configuration WhatsApp est absente, seule
+ * l'alerte email part.
+ */
+
+async function sendAdminWhatsApp(text: string): Promise<boolean> {
+    const apiUrl = process.env.EVOLUTION_API_URL;
+    const apiKey = process.env.EVOLUTION_API_KEY;
+    const instance = process.env.WhatsApp_INSTANCE_NAME;
+    const groupId = process.env.WhatsApp_GROUP_ID;
+
+    if (!apiUrl || !apiKey || !instance || !groupId || apiUrl.includes('votre-serveur.com')) {
+        logger.warn('[adminAlerts] WhatsApp non configuré, alerte email uniquement');
+        return false;
+    }
+
+    try {
+        const response = await fetch(`${apiUrl}/message/sendText/${instance}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', apikey: apiKey },
+            body: JSON.stringify({
+                number: groupId,
+                options: { delay: 1200, presence: 'composing', linkPreview: false },
+                textMessage: { text },
+            }),
+        });
+        if (!response.ok) {
+            const result = await response.text();
+            logger.error('[adminAlerts] Evolution API error', { result });
+            return false;
+        }
+        return true;
+    } catch (err) {
+        logger.error('[adminAlerts] envoi WhatsApp échoué', err);
+        return false;
+    }
+}
+
+async function sendAdminAlert(subject: string, htmlBody: string, whatsappText: string): Promise<void> {
+    const adminsSnap = await db.collection('users').where('isSuperAdmin', '==', true).get();
+    const emails = adminsSnap.docs
+        .map(d => (d.data() as { email?: string }).email)
+        .filter(Boolean) as string[];
+
+    if (emails.length > 0) {
+        await db.collection('mail').add({
+            to: emails,
+            message: {
+                subject,
+                html: baseTemplate(subject, htmlBody, 'Ouvrir l\'admin système')
+                    .replace('/dashboard/parametres/abonnement', '/admin/system/dashboard'),
+            },
+            delivery: { startTime: FieldValue.serverTimestamp(), state: 'PENDING' },
+            adminAlert: true,
+        });
+    }
+
+    await sendAdminWhatsApp(whatsappText);
+
+    // Notification in-app pour les super-admins (cloche de l'admin système).
+    await Promise.all(adminsSnap.docs.map(d => db.collection('notifications').add({
+        userId: d.id,
+        title: subject,
+        content: whatsappText.replace(/\*/g, '').slice(0, 180),
+        href: '/admin/system/dashboard',
+        isRead: false,
+        createdAt: FieldValue.serverTimestamp(),
+    })));
+}
+
+interface NewSchoolShape extends SchoolShape {
+    directorFirstName?: string;
+    directorLastName?: string;
+    directorPhone?: string;
+    country?: string;
+    region?: string;
+    address?: string;
+}
+
+/** Alerte à la création d'une école (nouvelle inscription sur la plateforme). */
+export const onSchoolRegistered = onDocumentCreated('ecoles/{schoolId}', async event => {
+    const snap = event.data;
+    if (!snap) return;
+    const school = snap.data() as NewSchoolShape;
+    const schoolName = school.name ?? event.params.schoolId;
+    const director = `${school.directorFirstName ?? ''} ${school.directorLastName ?? ''}`.trim() || '—';
+    const plan = school.subscription?.plan ?? '—';
+    const status = school.subscription?.status ?? '—';
+    const location = [school.region, school.country].filter(Boolean).join(', ') || '—';
+
+    try {
+        await sendAdminAlert(
+            `Nouvelle inscription : ${schoolName}`,
+            `<p>Une nouvelle école vient de s'inscrire sur GèreEcole :</p>
+             <ul>
+                <li><strong>École :</strong> ${schoolName}</li>
+                <li><strong>Directeur :</strong> ${director}</li>
+                <li><strong>Localisation :</strong> ${location}</li>
+                <li><strong>Plan :</strong> ${plan} (${status})</li>
+                <li><strong>Email :</strong> ${school.directorEmail ?? '—'}</li>
+                <li><strong>Téléphone :</strong> ${school.directorPhone ?? '—'}</li>
+             </ul>
+             <p>Pensez à un appel de bienvenue dans les 48h : c'est le meilleur levier de conversion de l'essai.</p>`,
+            `🎉 *Nouvelle inscription GèreEcole*\n\n*École :* ${schoolName}\n*Directeur :* ${director}\n*Localisation :* ${location}\n*Plan :* ${plan} (${status})\n*Tél :* ${school.directorPhone ?? '—'}`,
+        );
+        logger.info('[onSchoolRegistered] alerte envoyée', { schoolId: event.params.schoolId, schoolName });
+    } catch (err) {
+        logger.error('[onSchoolRegistered] erreur', { schoolId: event.params.schoolId, err });
+    }
+});
+
+type SubscriptionEvent = 'activated' | 'plan_changed' | 'renewed';
+
+/**
+ * Détecte un événement d'abonnement notable entre deux versions du
+ * document école : activation d'un abonnement payant, changement de plan,
+ * ou renouvellement (échéance repoussée). Les mises à jour techniques
+ * (rappels, nurturing, stats) ne déclenchent rien.
+ */
+function pickSubscriptionEvent(
+    before: SubscriptionShape | undefined,
+    after: SubscriptionShape | undefined,
+): SubscriptionEvent | null {
+    if (!after) return null;
+    if (after.status === 'active' && before?.status !== 'active') return 'activated';
+    if (after.status === 'active' && before?.plan && after.plan && before.plan !== after.plan) return 'plan_changed';
+    if (
+        after.status === 'active' && before?.status === 'active'
+        && before.endDate && after.endDate
+        && new Date(after.endDate).getTime() > new Date(before.endDate).getTime()
+    ) return 'renewed';
+    return null;
+}
+
+/** Alerte quand un abonnement est activé, renouvelé ou change de plan. */
+export const onSubscriptionChanged = onDocumentUpdated('ecoles/{schoolId}', async event => {
+    const before = event.data?.before.data() as SchoolShape | undefined;
+    const after = event.data?.after.data() as SchoolShape | undefined;
+    if (!after) return;
+
+    const change = pickSubscriptionEvent(before?.subscription, after?.subscription);
+    if (!change) return;
+
+    const schoolName = after.name ?? event.params.schoolId;
+    const plan = after.subscription?.plan ?? '—';
+    const endDate = after.subscription?.endDate
+        ? format(new Date(after.subscription.endDate), 'd MMMM yyyy', { locale: fr })
+        : '—';
+
+    const labels: Record<SubscriptionEvent, { subject: string; emoji: string; detail: string }> = {
+        activated: {
+            subject: `Nouvel abonnement : ${schoolName}`,
+            emoji: '💰',
+            detail: `L'école <strong>${schoolName}</strong> vient d'activer un abonnement <strong>${plan}</strong> (échéance : ${endDate}).`,
+        },
+        plan_changed: {
+            subject: `Changement de plan : ${schoolName}`,
+            emoji: '🔄',
+            detail: `L'école <strong>${schoolName}</strong> est passée du plan <strong>${before?.subscription?.plan ?? '—'}</strong> au plan <strong>${plan}</strong>.`,
+        },
+        renewed: {
+            subject: `Renouvellement : ${schoolName}`,
+            emoji: '✅',
+            detail: `L'école <strong>${schoolName}</strong> a renouvelé son abonnement <strong>${plan}</strong> (nouvelle échéance : ${endDate}).`,
+        },
+    };
+    const label = labels[change];
+
+    try {
+        await sendAdminAlert(
+            label.subject,
+            `<p>${label.detail}</p>`,
+            `${label.emoji} *${label.subject}*\n\n${label.detail.replace(/<[^>]+>/g, '')}`,
+        );
+        logger.info('[onSubscriptionChanged] alerte envoyée', { schoolId: event.params.schoolId, change });
+    } catch (err) {
+        logger.error('[onSubscriptionChanged] erreur', { schoolId: event.params.schoolId, change, err });
+    }
+});
+
+/* =========================================================================
  * Relances cycle de vie client — onboarding essai & reconquête
  * ========================================================================= */
 
@@ -749,6 +934,6 @@ export const triggerScheduledCampaigns = onSchedule(
 );
 
 // Export pour les tests (non utilisé par Firebase).
-export const __internals = { pickReminderBucket, pickNurtureStep, todayKey, PAST_DUE_GRACE_DAYS, renderTpl, matchesCampaignTarget };
+export const __internals = { pickReminderBucket, pickNurtureStep, pickSubscriptionEvent, todayKey, PAST_DUE_GRACE_DAYS, renderTpl, matchesCampaignTarget };
 // Suppress unused warnings for Timestamp import (kept for downstream typing).
 export type _Timestamp = Timestamp;
