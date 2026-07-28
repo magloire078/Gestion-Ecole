@@ -37,6 +37,23 @@ const nextConfig = {
       },
     ],
   },
+  // Force le domaine canonique : toute requête vers l'apex gerecole.com est
+  // redirigée (308) vers www.gerecole.com. Sans cela, une page chargée sur
+  // l'apex fait des appels API relatifs qui subissent la redirection apex→www
+  // de Vercel en pleine requête, devenant cross-origin et bloqués par CORS
+  // (ex. /api/gateway/create-link pour les paiements). En redirigeant dès le
+  // document HTML, le navigateur reste toujours sur www et les appels API
+  // restent same-origin.
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'gerecole.com' }],
+        destination: 'https://www.gerecole.com/:path*',
+        permanent: true,
+      },
+    ];
+  },
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.externals.push('firebase-admin');
