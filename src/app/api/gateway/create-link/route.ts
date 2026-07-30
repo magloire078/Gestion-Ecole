@@ -178,6 +178,12 @@ export async function POST(req: Request) {
         }
     } catch (error: any) {
         console.error("[CreateLinkAPI] Error:", error);
-        return NextResponse.json({ error: "Erreur interne du serveur." }, { status: 500 });
+        // Remonte un message actionnable au client (ex. « clés API Genius Pay
+        // non configurées ») plutôt qu'un 500 opaque. Les messages des
+        // librairies de paiement décrivent la cause sans exposer de secret.
+        const message = typeof error?.message === 'string' && error.message.trim()
+            ? error.message
+            : "Erreur interne du serveur.";
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
