@@ -7,7 +7,8 @@ import {
   initializeFirestore,
   memoryLocalCache,
   enableNetwork,
-  Firestore
+  Firestore,
+  FirestoreSettings
 } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 
@@ -48,12 +49,18 @@ if (typeof window !== 'undefined') {
 
   try {
     // On force le cache en mémoire pour éviter les erreurs "offline" liées à IndexedDB/Tabs
-    // et on force le long-polling pour les réseaux restrictifs (évite QUIC_PROTOCOL_ERROR)
-    firestore = initializeFirestore(app, {
+    // et on force le long-polling pour les réseaux restrictifs (évite QUIC_PROTOCOL_ERROR).
+    // useFetchStreams: false => bascule sur le transport XHR historique, plus tolérant aux
+    // proxys/réseaux d'entreprise stricts qui provoquent des 400 "WebChannel transport errored".
+    // NB: useFetchStreams est bien lu par le SDK au runtime mais absent du type public
+    // FirestoreSettings (firebase 11.9.0), d'où l'extension de type locale ci-dessous.
+    const firestoreSettings: FirestoreSettings & { useFetchStreams?: boolean } = {
       localCache: memoryLocalCache(),
       experimentalForceLongPolling: true,
+      useFetchStreams: false,
       ignoreUndefinedProperties: true,
-    });
+    };
+    firestore = initializeFirestore(app, firestoreSettings);
     console.log("[FirebaseConfig] Firestore initialized successfully with MemoryCache + LongPolling");
   } catch (e: any) {
     if (e.code === 'failed-precondition') {
