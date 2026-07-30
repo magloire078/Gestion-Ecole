@@ -49,9 +49,8 @@ function TuitionPaymentPageContent() {
     const { data: settingsData, loading: settingsLoading } = useDoc(settingsRef);
 
     const [amountToPay, setAmountToPay] = useState<number>(0);
-    const [isLoadingProvider, setIsLoadingProvider] = useState<null | 'orangemoney' | 'stripe' | 'wave' | 'mtn' | 'paydunya' | 'genius'>(null);
+    const [isLoadingProvider, setIsLoadingProvider] = useState<null | 'genius'>(null);
     const [error, setError] = useState<string | null>(null);
-    const [mtnPhoneNumber, setMtnPhoneNumber] = useState('');
 
     useEffect(() => {
         if (student?.amountDue) {
@@ -59,7 +58,7 @@ function TuitionPaymentPageContent() {
         }
     }, [student]);
 
-    const handlePayment = async (provider: 'orangemoney' | 'stripe' | 'wave' | 'mtn' | 'paydunya' | 'genius') => {
+    const handlePayment = async (provider: 'genius') => {
         setIsLoadingProvider(provider);
         setError(null);
 
@@ -76,7 +75,6 @@ function TuitionPaymentPageContent() {
             user: user.authUser!,
             schoolId,
             studentId,
-            phoneNumber: provider === 'mtn' ? mtnPhoneNumber : undefined,
         });
 
         if (url) {
@@ -150,12 +148,10 @@ function TuitionPaymentPageContent() {
                     <div className="space-y-4">
                         <h3 className="text-xs font-black uppercase tracking-[0.2em] text-center text-muted-foreground mb-6">Moyens de paiement disponibles</h3>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4">
                             {[
-                                { id: 'wave' as const, name: 'Wave', color: 'bg-[#01a79e]/5 border-[#01a79e]/20 hover:bg-[#01a79e]/10', icon: '🌊', enabled: settingsData?.paymentProviders?.wave },
-                                { id: 'orangemoney' as const, name: 'Orange Money', color: 'bg-orange-50 border-orange-200 hover:bg-orange-100', icon: '📱', enabled: settingsData?.paymentProviders?.orangeMoney },
-                                { id: 'genius' as const, name: 'Genius Pay', color: 'bg-amber-50 border-amber-200 hover:bg-amber-100', icon: '✨', enabled: settingsData?.paymentProviders?.genius },
-                                { id: 'paydunya' as const, name: 'PayDunya', color: 'bg-blue-50 border-blue-200 hover:bg-blue-100', icon: '🌍', enabled: settingsData?.paymentProviders?.paydunya },
+                                // GeniusPay est l'unique prestataire de la plateforme (Mobile Money + cartes).
+                                { id: 'genius' as const, name: 'Genius Pay', color: 'bg-amber-50 border-amber-200 hover:bg-amber-100', icon: '✨', enabled: true },
                             ].filter(p => p.enabled).map((provider) => (
                                 <button
                                     key={provider.id}
@@ -183,46 +179,9 @@ function TuitionPaymentPageContent() {
                             ))}
                         </div>
 
-                        {settingsData?.paymentProviders?.mtn && (
-                            <div className="p-6 bg-slate-50 rounded-xl border border-slate-100 space-y-4">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-                                    <Label htmlFor="mtn-phone" className="text-xs font-black uppercase tracking-widest text-muted-foreground">MTN MoMo</Label>
-                                </div>
-                                <div className="flex gap-3">
-                                    <Input 
-                                        id="mtn-phone" 
-                                        placeholder="05xxxxxxxx" 
-                                        value={mtnPhoneNumber} 
-                                        onChange={(e) => setMtnPhoneNumber(e.target.value)}
-                                        className="h-14 rounded-xl bg-white border-slate-200 text-lg font-bold"
-                                    />
-                                    <Button
-                                        className="h-14 px-8 rounded-xl bg-[#FFCC00] hover:bg-[#FFCC00]/90 text-black font-black"
-                                        onClick={() => handlePayment('mtn')}
-                                        disabled={!!isLoadingProvider || !mtnPhoneNumber}
-                                    >
-                                        {isLoadingProvider === 'mtn' ? <Loader2 className="h-6 w-6 animate-spin" /> : "Payer"}
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
-
-                        {settingsData?.paymentProviders?.stripe && (
-                            <Button
-                                variant="outline"
-                                className="w-full h-16 rounded-xl border-slate-200 hover:bg-slate-50 group transition-all"
-                                onClick={() => handlePayment('stripe')}
-                                disabled={!!isLoadingProvider}
-                            >
-                                {isLoadingProvider === 'stripe' ? <Loader2 className="h-6 w-6 animate-spin" /> : (
-                                    <div className="flex items-center justify-center gap-3">
-                                        <div className="h-8 w-12 bg-slate-900 rounded-lg flex items-center justify-center text-white text-[8px] font-black group-hover:scale-110 transition-transform">CARD</div>
-                                        <span className="font-bold text-slate-700">Payer par Carte Bancaire</span>
-                                    </div>
-                                )}
-                            </Button>
-                        )}
+                        <p className="text-center text-xs text-muted-foreground">
+                            Mobile Money (Wave, Orange Money, MTN…) et cartes bancaires via GeniusPay.
+                        </p>
                     </div>
                 </CardContent>
                 <CardFooter className="bg-slate-50/50 p-4 md:p-6 border-t border-slate-100 group">
