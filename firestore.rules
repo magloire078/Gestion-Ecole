@@ -136,13 +136,11 @@ service cloud.firestore {
       // n'importe qui fabriquer une session liant un code à un élève arbitraire.
       allow create: if isSignedIn()
                     && hasPermission(request.resource.data.schoolId, 'manageUsers');
-      // ATTENTION — dette de sécurité connue : `read: if true` reste nécessaire
-      // car la connexion parent recherche la session par code côté client
-      // (onboarding). Cela expose les codes actifs en lecture publique. La
-      // correction complète impose de déplacer cette recherche vers une route
-      // serveur authentifiée (firebase-admin), puis de passer read à `false`.
-      allow read: if true;
-      allow update, delete: if isSuperAdmin();
+      // La lecture n'est plus publique : la connexion parent passe désormais par
+      // la route serveur /api/parent/redeem-code (firebase-admin, hors règles)
+      // qui recherche la session par code. Les clients n'ont aucune raison de
+      // lire les codes d'accès ; seul le super-admin y accède (débogage).
+      allow read, update, delete: if isSuperAdmin();
     }
 
     match /mail/{mailId} {

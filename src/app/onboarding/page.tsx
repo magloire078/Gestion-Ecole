@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from '@/hooks/use-user';
 import { useFirestore } from "@/firebase";
+import { firebaseAuth } from '@/firebase/config';
 import { doc, writeBatch, collection, query, where, getDocs, getDoc, updateDoc } from "firebase/firestore";
 import { Logo } from '@/components/logo';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -298,39 +299,32 @@ export default function OnboardingPage() {
     if (!parentAccessCode.trim()) return;
     setIsProcessing(true);
     try {
-      const sessionsRef = collection(firestore, 'sessions_parents');
-      const q = query(sessionsRef, where("accessCode", "==", parentAccessCode.trim()), where("isActive", "==", true));
-      const querySnapshot = await getDocs(q);
-      if (querySnapshot.empty) {
-        toast({ variant: 'destructive', title: 'Code Invalide', description: 'Code incorrect ou expiré.' });
+      // La liaison est faite côté serveur (/api/parent/redeem-code) : le client
+      // ne lit plus les codes d'accès et n'écrit plus dans les documents élèves.
+      // On transmet le jeton d'ID pour authentifier le parent.
+      const idToken = await firebaseAuth.currentUser?.getIdToken();
+      if (!idToken) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Veuillez vous reconnecter.' });
         setIsProcessing(false);
         return;
       }
-      const sessionDoc = querySnapshot.docs[0];
-      const sessionData = sessionDoc.data() as parent_session;
-      const schoolId = sessionData.schoolId!;
-      const studentIds = sessionData.studentIds!;
-      const batch = writeBatch(firestore);
-      const userRootRef = doc(firestore, `users/${user.uid}`);
-      const userRootSnap = await getDoc(userRootRef);
-      const currentSchools = userRootSnap.exists() ? (userRootSnap.data() as user_root).schools || {} : {};
-      const updatedSchools = { ...currentSchools, [schoolId]: 'parent' };
-      batch.set(userRootRef, { schools: updatedSchools, activeSchoolId: schoolId }, { merge: true });
-      const parentProfileRef = doc(firestore, `ecoles/${schoolId}/parents/${user.uid}`);
-      const parentProfileSnap = await getDoc(parentProfileRef);
-      const existingStudentIds = parentProfileSnap.exists() ? (parentProfileSnap.data() as Parent).studentIds || [] : [];
-      const newStudentIds = [...new Set([...existingStudentIds, ...studentIds])];
-      batch.set(parentProfileRef, { uid: user.uid, email: user.email, displayName: user.displayName, photoURL: user.photoURL, schoolId: schoolId, studentIds: newStudentIds }, { merge: true });
-      for (const studentId of studentIds) {
-        const studentRef = doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`);
-        const studentSnap = await getDoc(studentRef);
-        if (studentSnap.exists()) {
-          const parentIds = [...new Set([...(studentSnap.data().parentIds || []), user.uid])];
-          batch.update(studentRef, { parentIds: parentIds });
-        }
+
+      const res = await fetch('/api/parent/redeem-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ accessCode: parentAccessCode.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        toast({ variant: 'destructive', title: 'Code Invalide', description: data?.error || 'Code incorrect ou expiré.' });
+        setIsProcessing(false);
+        return;
       }
-      batch.update(sessionDoc.ref, { isActive: false });
-      await batch.commit();
+
       await reloadUser();
       toast({ title: 'Accès parent activé!', description: 'Redirection...' });
       router.replace('/dashboard');
