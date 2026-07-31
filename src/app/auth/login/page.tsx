@@ -129,13 +129,41 @@ export default function LoginPage() {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
 
-      // Use redirect directly to avoid COOP/COEP issues with popups
-      await signInWithRedirect(auth, provider);
+      // Popup en priorité : contrairement à signInWithRedirect, la popup n'est
+      // pas affectée par le partitionnement du stockage tiers (Safari/Chrome)
+      // lorsque le domaine d'auth Firebase diffère du domaine de l'app. On ne
+      // bascule sur le redirect qu'en cas d'échec propre à la popup (bloquée,
+      // non supportée sur mobile...).
+      try {
+        await signInWithPopup(auth, provider);
+        toast({
+          title: "Connexion réussie",
+          description: "Bienvenue sur votre espace GèreEcole."
+        });
+        router.push('/dashboard');
+      } catch (popupError) {
+        const code = (popupError as AuthError)?.code || '';
+        const popupUnavailable =
+          code === 'auth/popup-blocked' ||
+          code === 'auth/operation-not-supported-in-this-environment' ||
+          code === 'auth/cancelled-popup-request';
 
+        // L'utilisateur a simplement fermé la popup : ne pas relancer un redirect.
+        if (code === 'auth/popup-closed-by-user') {
+          setIsGoogleProcessing(false);
+          return;
+        }
+
+        if (popupUnavailable) {
+          await signInWithRedirect(auth, provider);
+          return; // La page va se recharger ; getRedirectResult prend le relais.
+        }
+        throw popupError;
+      }
     } catch (error) {
       console.error("Google Sign-in error:", error);
-      const authError = error as AuthError;
       setError('Erreur de connexion avec Google. Veuillez réessayer.');
+    } finally {
       setIsGoogleProcessing(false);
     }
   };

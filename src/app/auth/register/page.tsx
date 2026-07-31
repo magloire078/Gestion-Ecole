@@ -132,20 +132,40 @@ export default function RegisterPage() {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
 
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-      if (isMobile) {
-        await signInWithRedirect(auth, provider);
-      } else {
+      // Popup en priorité : plus fiable que signInWithRedirect quand le domaine
+      // d'auth Firebase diffère du domaine de l'app (partitionnement du stockage
+      // tiers sur Safari/Chrome). Repli sur le redirect si la popup est bloquée
+      // ou non supportée (certains navigateurs mobiles).
+      try {
         await signInWithPopup(auth, provider);
+        toast({
+          title: "Connexion réussie",
+          description: "Préparation de votre espace établissement..."
+        });
         router.push('/onboarding');
+      } catch (popupError) {
+        const code = (popupError as AuthError)?.code || '';
+
+        if (code === 'auth/popup-closed-by-user') {
+          setIsGoogleProcessing(false);
+          return;
+        }
+
+        const popupUnavailable =
+          code === 'auth/popup-blocked' ||
+          code === 'auth/operation-not-supported-in-this-environment' ||
+          code === 'auth/cancelled-popup-request';
+
+        if (popupUnavailable) {
+          await signInWithRedirect(auth, provider);
+          return; // La page va se recharger ; getRedirectResult prend le relais.
+        }
+        throw popupError;
       }
     } catch (error) {
       setError('Erreur de connexion avec Google.');
     } finally {
-      if (!/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-        setIsGoogleProcessing(false);
-      }
+      setIsGoogleProcessing(false);
     }
   };
 
