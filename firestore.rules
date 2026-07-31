@@ -144,7 +144,12 @@ service cloud.firestore {
     }
 
     match /mail/{mailId} {
-      allow create: if isSignedIn();
+      // L'écriture directe est désormais interdite aux clients : tout email
+      // passe par la route serveur /api/mail/send (Admin SDK, hors règles), qui
+      // authentifie l'appelant et estampille l'auteur. Auparavant
+      // 'create: if isSignedIn()' laissait tout compte authentifié fabriquer
+      // des emails arbitraires (spam/phishing depuis le domaine de l'école).
+      allow create: if false;
       allow read, update, delete: if isSuperAdmin();
     }
 
@@ -441,8 +446,12 @@ service cloud.firestore {
 
     match /visitor_chats/{chatId} {
       allow create: if true;
-      allow read: if true; // Public for visitors
-      allow update: if true; // Public for visitors and webhook
+      allow read: if true; // Public : le visiteur anonyme lit sa propre conversation
+      // Le chat visiteur est anonyme (pas d'auth), mais une mise à jour ne peut
+      // désormais toucher QUE les champs attendus — empêche l'écrasement ou
+      // l'injection de champs arbitraires dans un document de conversation.
+      allow update: if request.resource.data.diff(resource.data)
+                      .affectedKeys().hasOnly(['messages', 'lastMessageAt', 'status']);
       allow delete: if isSuperAdmin();
     }
 
