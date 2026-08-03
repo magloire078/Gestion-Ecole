@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Check, ArrowRight, PlayCircle, FileText, Users, Wallet, Briefcase, Rocket, Star, Shield } from 'lucide-react';
+import { Check, ArrowRight, PlayCircle, FileText, Users, Wallet, Briefcase, Rocket, Star, Shield, Play, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -66,6 +66,23 @@ export function LandingPageV2() {
   const router = useRouter();
   const [currentHero, setCurrentHero] = useState(0);
   const [selectedCountry, setSelectedCountry] = useState<CountryCode>(DEFAULT_COUNTRY || 'CI');
+  const [showDemo, setShowDemo] = useState(false);
+
+  // Bloque le défilement de la page quand la vidéo de démo est ouverte
+  useEffect(() => {
+    if (showDemo) {
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = ''; };
+    }
+  }, [showDemo]);
+
+  // Fermeture de la modal démo avec la touche Échap
+  useEffect(() => {
+    if (!showDemo) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowDemo(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showDemo]);
 
 
   useEffect(() => {
@@ -144,6 +161,17 @@ export function LandingPageV2() {
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
+                <Button
+                  size="lg"
+                  variant="ghost"
+                  onClick={() => setShowDemo(true)}
+                  className="px-6 h-14 text-[#0C365A] dark:text-white hover:bg-primary/10 gap-2 group"
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary transition-transform group-hover:scale-110">
+                    <Play className="h-4 w-4 fill-current translate-x-[1px]" />
+                  </span>
+                  Voir la vidéo
+                </Button>
               </div>
             </motion.div>
           </div>
@@ -220,6 +248,52 @@ export function LandingPageV2() {
             </motion.div>
           </div>
         </section>
+
+        {/* Modal Vidéo de démonstration */}
+        <AnimatePresence>
+          {showDemo && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-sm p-3 md:p-6"
+              onClick={() => setShowDemo(false)}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Vidéo de démonstration GèreEcole"
+            >
+              <motion.div
+                initial={{ scale: 0.94, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.94, opacity: 0 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+                className="relative w-full max-w-6xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={() => setShowDemo(false)}
+                  className="absolute -top-11 right-0 flex items-center gap-1.5 text-white/80 hover:text-white transition-colors text-sm"
+                  aria-label="Fermer la vidéo"
+                >
+                  Fermer <X className="h-5 w-5" />
+                </button>
+                <div className="relative w-full overflow-hidden rounded-xl bg-[#0a1622] shadow-2xl ring-1 ring-white/10" style={{ aspectRatio: '16 / 9' }}>
+                  <iframe
+                    src="/demo/gereecole-spot.html"
+                    title="Spot de démonstration GèreEcole"
+                    className="absolute inset-0 h-full w-full border-0"
+                    allow="autoplay; fullscreen"
+                    allowFullScreen
+                  />
+                </div>
+                <p className="mt-3 text-center text-xs text-white/60">
+                  Astuce : cliquez sur <b className="text-white/80">🔊 Activer la voix</b> dans la vidéo pour le commentaire audio.
+                </p>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Features Section */}
         <section id="features" className="py-12 relative overflow-hidden">
