@@ -38,9 +38,26 @@ if (getApps().length === 0) {
   app = getApp();
 }
 
-// Initialisation des Services
-auth = getAuth(app);
-storage = getStorage(app, firebaseConfig.storageBucket);
+// Initialisation des Services.
+// On protège getAuth/getStorage par try/catch : si les variables
+// NEXT_PUBLIC_FIREBASE_* sont absentes au moment du build (ex. environnement
+// Preview mal configuré), getAuth lève `auth/invalid-api-key` et fait échouer
+// le pré-rendu de TOUTES les pages. Le garde-fou permet au build d'aboutir en
+// mode dégradé ; en production (clés présentes) le comportement est identique.
+// NB : sans les clés, l'app reste non fonctionnelle au runtime — ce garde-fou
+// ne dispense pas de configurer les variables, il évite juste un build cassé.
+try {
+  auth = getAuth(app);
+} catch (e) {
+  console.error('[FirebaseConfig] getAuth a échoué (clés Firebase absentes au build ?) :', e);
+  auth = undefined as unknown as Auth;
+}
+try {
+  storage = getStorage(app, firebaseConfig.storageBucket);
+} catch (e) {
+  console.error('[FirebaseConfig] getStorage a échoué :', e);
+  storage = undefined as unknown as FirebaseStorage;
+}
 
 // Initialisation Firestore (Gestion robuste du Singleton et du Cache)
 if (typeof window !== 'undefined') {
@@ -75,8 +92,14 @@ if (typeof window !== 'undefined') {
   // Tentative proactive d'activer le réseau
   enableNetwork(firestore).catch(err => console.error("[FirebaseConfig] enableNetwork failed:", err));
 } else {
-  // Côté Serveur
-  firestore = getFirestore(app);
+  // Côté Serveur (SSR / build). Protégé par précaution : si la config est
+  // incomplète au build, on ne fait pas échouer le pré-rendu.
+  try {
+    firestore = getFirestore(app);
+  } catch (e) {
+    console.error('[FirebaseConfig] getFirestore (serveur) a échoué :', e);
+    firestore = undefined as unknown as Firestore;
+  }
 }
 
 // Exports sécurisés
