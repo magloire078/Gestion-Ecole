@@ -1,9 +1,10 @@
 import axios from 'axios';
 
 // Configuration basée sur la documentation officielle Genius Pay
+// Domaine officiel documenté : https://geniuspay.ci/api/v1/merchant
 const GENIUS_API_URL = process.env.GENIUS_PAY_API_URL
     || process.env.NEXT_PUBLIC_GENIUS_PAY_API_URL
-    || 'https://pay.genius.ci/api/v1/merchant';
+    || 'https://geniuspay.ci/api/v1/merchant';
 const GENIUS_API_KEY = process.env.GENIUS_PAY_API_KEY
     || process.env.NEXT_PUBLIC_GENIUS_PAY_API_KEY; // pk_sandbox_xxx ou pk_live_xxx
 const GENIUS_API_SECRET = process.env.GENIUS_PAY_API_SECRET; // sk_sandbox_xxx ou sk_live_xxx
@@ -64,7 +65,7 @@ interface GeniusPaymentDetails {
  * Initialise un paiement avec Genius Pay.
  * Mode Checkout: Sans spécifier payment_method, le client choisit sur la page GeniusPay.
  * 
- * Documentation: https://pay.genius.ci/docs/api
+ * Documentation: https://geniuspay.ci/docs/api
  */
 export async function createGeniusPayment(data: GeniusPaymentInit): Promise<GeniusPaymentResponse> {
     if (!GENIUS_API_KEY || !GENIUS_API_SECRET) {
