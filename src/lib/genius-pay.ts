@@ -167,6 +167,72 @@ export async function listGeniusPayments(params?: {
     }
 }
 
+export interface GeniusWebhookConfig {
+    name?: string;
+    url: string;
+    events: string[];
+}
+
+/**
+ * Enregistre un endpoint webhook auprès de GeniusPay.
+ * ⚠️ La réponse contient le secret `whsec_...` UNE SEULE FOIS : il doit être
+ * copié dans la variable d'environnement GENIUS_WEBHOOK_SECRET.
+ *
+ * POST /webhooks — https://geniuspay.ci/docs/api
+ */
+export async function registerGeniusWebhook(config: GeniusWebhookConfig): Promise<any> {
+    if (!GENIUS_API_KEY || !GENIUS_API_SECRET) {
+        throw new Error("Les clés API Genius Pay ne sont pas configurées.");
+    }
+    try {
+        const response = await axios.post(
+            `${GENIUS_API_URL}/webhooks`,
+            {
+                name: config.name || 'GèreEcole',
+                url: config.url,
+                events: config.events,
+            },
+            {
+                headers: {
+                    'X-API-Key': GENIUS_API_KEY,
+                    'X-API-Secret': GENIUS_API_SECRET,
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
+        return response.data;
+    } catch (error: any) {
+        const apiMsg = error.response?.data?.error?.message || error.response?.data?.message;
+        console.error("Erreur lors de l'enregistrement du webhook Genius Pay:", error.response?.data || error.message);
+        throw new Error(apiMsg || "Impossible d'enregistrer le webhook Genius Pay.");
+    }
+}
+
+/**
+ * Liste les webhooks enregistrés. GET /webhooks
+ */
+export async function listGeniusWebhooks(): Promise<any> {
+    if (!GENIUS_API_KEY || !GENIUS_API_SECRET) {
+        throw new Error("Les clés API Genius Pay ne sont pas configurées.");
+    }
+    try {
+        const response = await axios.get(
+            `${GENIUS_API_URL}/webhooks`,
+            {
+                headers: {
+                    'X-API-Key': GENIUS_API_KEY,
+                    'X-API-Secret': GENIUS_API_SECRET,
+                },
+            }
+        );
+        return response.data;
+    } catch (error: any) {
+        const apiMsg = error.response?.data?.error?.message || error.response?.data?.message;
+        console.error("Erreur lors de la récupération des webhooks Genius Pay:", error.response?.data || error.message);
+        throw new Error(apiMsg || "Impossible de lister les webhooks Genius Pay.");
+    }
+}
+
 /**
  * Récupère le solde du compte marchand.
  */
