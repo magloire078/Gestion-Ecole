@@ -271,6 +271,49 @@ export function LandingPageV2() {
           </div>
         </section>
 
+        {/* Social proof : chiffres clés + logos écoles partenaires */}
+        <section id="social-proof" className="py-16 bg-gradient-to-b from-background to-slate-50/50 relative overflow-hidden">
+          <div className="container relative z-10">
+            <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-3 text-center mb-12">
+              <span className="text-xs font-black uppercase tracking-widest text-primary">Ils nous font confiance</span>
+              <h2 className="text-3xl font-black tracking-tight sm:text-4xl text-[#0C365A] dark:text-white">
+                Des chiffres qui parlent
+              </h2>
+            </div>
+
+            {/* TODO marketing : remplacer par les vrais chiffres dès qu'ils sont disponibles. */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto mb-16">
+              {[
+                { value: '30+', label: 'Écoles abonnées' },
+                { value: '15 000+', label: 'Élèves gérés' },
+                { value: '6', label: 'Pays couverts' },
+                { value: '99,9%', label: 'Disponibilité' },
+              ].map(stat => (
+                <div key={stat.label} className="text-center p-6 rounded-2xl bg-white/60 backdrop-blur border border-slate-200/60 shadow-sm">
+                  <div className="text-3xl md:text-4xl font-black text-primary">{stat.value}</div>
+                  <div className="text-xs md:text-sm font-semibold text-slate-500 uppercase tracking-wider mt-1">{stat.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Bandeau "écoles partenaires" — remplacer par les vrais logos dans /public/clients/ */}
+            <div className="text-center mb-6">
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                Écoles partenaires
+              </p>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6 items-center justify-items-center max-w-4xl mx-auto opacity-70">
+              {[
+                'École Demo 1', 'École Demo 2', 'École Demo 3', 'École Demo 4', 'École Demo 5',
+              ].map(name => (
+                <div key={name} className="h-12 px-4 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-600 w-full">
+                  {name}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* Countries Section */}
         <section id="countries" className="py-20 bg-background relative overflow-hidden">
           <div className="container relative z-10">
@@ -432,8 +475,10 @@ export function LandingPageV2() {
             </p>
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">© {new Date().getFullYear()} GèreEcole.</span>
           </div>
-          <nav className="flex flex-col sm:flex-row gap-8 items-center">
-            <Link href="/contact" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">Support & Contact</Link>
+          <nav className="flex flex-wrap gap-6 md:gap-8 items-center justify-center">
+            <Link href="/about-us" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">À propos</Link>
+            <Link href="/faq" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">FAQ</Link>
+            <Link href="/contact" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">Contact</Link>
             <Link href="/auth/login" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">Espace Client</Link>
             <Link href="/mentions-legales" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">Mentions Légales</Link>
           </nav>

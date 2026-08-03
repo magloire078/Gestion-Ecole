@@ -1443,6 +1443,80 @@ export const triggerScheduledCampaigns = onSchedule(
     },
 );
 
+/* =========================================================================
+ * Onboarding — relance J+3 si l'école n'a pas démarré son setup
+ * ========================================================================= */
+
+/**
+ * Tous les jours à 09:00 Abidjan, identifie les écoles créées il y a 3
+ * jours qui n'ont jamais ajouté d'élève ni de classe, et envoie au
+ * directeur un email de relance « Premiers pas ».
+ *
+ * Tracé via `onboarding.relanceJ3Sent` sur le document école pour éviter
+ * tout double envoi.
+ */
+export const onboardingFollowUp = onSchedule(
+    { schedule: 'every day 09:00', timeZone: 'Africa/Abidjan' },
+    async () => {
+        const now = new Date();
+        const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+        const fourDaysAgo = new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000);
+
+        const snap = await db.collection('ecoles')
+            .where('createdAt', '<=', threeDaysAgo)
+            .where('createdAt', '>=', fourDaysAgo)
+            .get();
+
+        let sent = 0;
+        for (const doc of snap.docs) {
+            const school = doc.data() as SchoolShape & {
+                directorFirstName?: string;
+                onboarding?: { relanceJ3Sent?: boolean };
+            };
+            if (school.onboarding?.relanceJ3Sent) continue;
+            if (!school.directorEmail) continue;
+
+            // Vérifie qu'aucun élève ni classe n'a été créé.
+            const [studentsCount, classesCount] = await Promise.all([
+                db.collection(`ecoles/${doc.id}/eleves`).limit(1).get(),
+                db.collection(`ecoles/${doc.id}/classes`).limit(1).get(),
+            ]);
+            if (!studentsCount.empty || !classesCount.empty) {
+                await doc.ref.set({ onboarding: { relanceJ3Sent: true } }, { merge: true });
+                continue;
+            }
+
+            try {
+                await db.collection('mail').add({
+                    to: school.directorEmail,
+                    message: {
+                        subject: `Démarrez votre école sur GèreEcole en 3 étapes`,
+                        html: baseTemplate(
+                            `Bonjour ${school.directorFirstName ?? ''} 👋`,
+                            `<p>Vous avez créé <strong>${school.name ?? 'votre école'}</strong> il y a quelques jours mais n'avez pas encore ajouté d'élèves ou de classes.</p>
+                             <p>Voici les 3 étapes pour démarrer en moins de 15 minutes :</p>
+                             <ol style="line-height: 1.8; padding-left: 20px;">
+                                 <li><strong>Ajoutez vos cycles et classes</strong> (Pédagogie → Structure)</li>
+                                 <li><strong>Importez vos élèves</strong> via Excel/CSV (Paramètres → Données → Import)</li>
+                                 <li><strong>Configurez votre année scolaire</strong> et les frais</li>
+                             </ol>
+                             <p>Besoin d'aide ? Notre équipe peut faire l'import pour vous depuis votre fichier existant.</p>`,
+                            'Reprendre la configuration',
+                        ),
+                    },
+                    delivery: { startTime: FieldValue.serverTimestamp(), state: 'PENDING' },
+                });
+                await doc.ref.set({ onboarding: { relanceJ3Sent: true } }, { merge: true });
+                sent += 1;
+            } catch (err) {
+                logger.error('[onboardingFollowUp] erreur', { schoolId: doc.id, err });
+            }
+        }
+
+        logger.info('[onboardingFollowUp] terminé', { scanned: snap.size, sent });
+    },
+);
+
 // Export pour les tests (non utilisé par Firebase).
 export const __internals = { pickReminderBucket, pickNurtureStep, pickSubscriptionEvent, isTrialAtRisk, todayKey, PAST_DUE_GRACE_DAYS, renderTpl, matchesCampaignTarget };
 // Suppress unused warnings for Timestamp import (kept for downstream typing).

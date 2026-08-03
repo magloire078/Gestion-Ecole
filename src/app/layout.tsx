@@ -32,8 +32,31 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'GèreEcole - Gestion scolaire simplifiée',
-  description: 'La solution complète pour gérer les élèves, les notes, les paiements et la communication scolaire.',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'https://gerecole.com'),
+  title: {
+    default: 'GèreEcole — Gestion scolaire simplifiée pour l\'Afrique de l\'Ouest',
+    template: '%s — GèreEcole',
+  },
+  description: 'Logiciel SaaS de gestion scolaire pour les écoles primaires et secondaires d\'Afrique de l\'Ouest. Élèves, notes, paiements (Mobile Money + cartes), bulletins PDF, portail parents. Essai gratuit.',
+  keywords: ['gestion scolaire', 'logiciel école', 'SaaS éducation', 'Afrique de l\'Ouest', 'Côte d\'Ivoire', 'Sénégal', 'paiement mobile money écoles', 'bulletins notes', 'portail parents'],
+  authors: [{ name: 'GèreEcole' }],
+  openGraph: {
+    type: 'website',
+    locale: 'fr_FR',
+    url: '/',
+    siteName: 'GèreEcole',
+    title: 'GèreEcole — Gestion scolaire simplifiée pour l\'Afrique de l\'Ouest',
+    description: 'Élèves, notes, paiements Mobile Money, bulletins PDF, portail parents — tout-en-un. Essai gratuit.',
+    images: [
+      { url: '/og-image.png', width: 1200, height: 630, alt: 'GèreEcole — SaaS de gestion scolaire' },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'GèreEcole — Gestion scolaire simplifiée',
+    description: 'Solution tout-en-un pour les écoles d\'Afrique de l\'Ouest. Essai gratuit.',
+    images: ['/og-image.png'],
+  },
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
