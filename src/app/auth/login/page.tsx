@@ -179,7 +179,12 @@ export default function LoginPage() {
       }
     } catch (error) {
       console.error("Google Sign-in error:", error);
-      setError('Erreur de connexion avec Google. Veuillez réessayer.');
+      const code = (error as AuthError)?.code;
+      const msg = (error as AuthError)?.message;
+      // On affiche le vrai code d'erreur Firebase (ex: auth/web-storage-unsupported,
+      // auth/internal-error…) au lieu d'un message générique, pour permettre le
+      // diagnostic sans ouvrir la console du navigateur.
+      setError(`Échec de la connexion Google : ${code || msg || 'erreur inconnue'}`);
     } finally {
       setIsGoogleProcessing(false);
     }
