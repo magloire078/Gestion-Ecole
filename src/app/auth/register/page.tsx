@@ -13,6 +13,7 @@ import {
 } from 'firebase/auth';
 import { useEffect } from 'react';
 import { useAuth } from '@/firebase';
+import { useUser } from '@/hooks/use-user';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -67,6 +68,16 @@ export default function RegisterPage() {
   const router = useRouter();
   const auth = useAuth();
   const { toast } = useToast();
+  const { user, loading: userLoading } = useUser();
+
+  // Même logique que la page de connexion : un utilisateur déjà authentifié
+  // (profil résolu) ne doit pas rester bloqué sur /auth/register. On l'envoie
+  // vers l'app ; le garde du dashboard l'orientera vers l'onboarding si besoin.
+  useEffect(() => {
+    if (!userLoading && user) {
+      router.replace('/dashboard');
+    }
+  }, [user, userLoading, router]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();

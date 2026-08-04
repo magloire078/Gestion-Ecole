@@ -12,6 +12,7 @@ import {
 } from 'firebase/auth';
 import { useEffect } from 'react';
 import { useAuth } from '@/firebase';
+import { useUser } from '@/hooks/use-user';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -63,6 +64,22 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
+  const { user, loading: userLoading } = useUser();
+
+  // Si l'utilisateur est déjà authentifié (profil résolu), on le renvoie vers
+  // l'app. Sans cela, un compte connecté qui atterrit sur /auth/login — via le
+  // flux de redirection Google, ou après un rebond du garde d'accès pendant que
+  // l'observateur d'auth se met à jour — reste bloqué sur la page de connexion,
+  // car cette page n'est pas enveloppée par AuthGuard. On se base sur `user`
+  // (contexte, profil chargé) et non sur auth.currentUser : si Firestore est
+  // momentanément indisponible, `user` reste null et on évite toute boucle
+  // login ⇄ dashboard. Le garde du dashboard oriente ensuite vers l'onboarding
+  // si aucune école n'est rattachée.
+  useEffect(() => {
+    if (!userLoading && user) {
+      router.replace('/dashboard');
+    }
+  }, [user, userLoading, router]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
