@@ -109,6 +109,16 @@ npx next build
 npx vercel --prod
 ```
 
+## Documentation
+
+- [`docs/STRATEGIE-PRODUIT.md`](docs/STRATEGIE-PRODUIT.md) — **direction du produit** : les
+  axes d'évolution, confrontés un à un à ce qui existe réellement dans le code. À lire avant
+  de proposer une nouvelle fonctionnalité, pour savoir si elle est déjà construite.
+- [`docs/BUSINESS_PLAN.md`](docs/BUSINESS_PLAN.md) — le produit et le modèle économique
+  **actuels** (plans, modules, marché).
+- `docs/PAYMENT_FLOW.md`, `docs/WHATSAPP_INTEGRATION.md`, `docs/IMPORT_DE_MASSE.md`,
+  `docs/DEPLOYMENT_GUIDE.md` — fonctionnement des intégrations et du déploiement.
+
 ## Points d'Attention
 
 1. **Firebase** : Les règles Firestore sont en mode authentifié. Toute nouvelle collection doit être ajoutée aux rules.

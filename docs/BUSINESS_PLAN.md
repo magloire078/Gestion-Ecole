@@ -1,5 +1,9 @@
 # Plan d'Affaires : GèreEcole
 
+> Ce document décrit le produit et le modèle économique **actuels**. Pour la direction à
+> moyen terme — plateforme, IA, marketplace, offre gouvernement — voir
+> [`STRATEGIE-PRODUIT.md`](./STRATEGIE-PRODUIT.md).
+
 ## 1. Synthèse (Executive Summary)
 
 **GèreEcole** est une solution de gestion scolaire intégrée (ERP/SIS) conçue spécifiquement pour les établissements d'enseignement en Afrique francophone. Proposée sous un modèle SaaS (Software as a Service) avec des abonnements flexibles, la plateforme vise à numériser, centraliser et simplifier l'ensemble des opérations administratives, pédagogiques, financières et de vie scolaire.
