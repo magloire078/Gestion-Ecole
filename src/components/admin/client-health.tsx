@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth, useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { apiUrl } from '@/lib/api-base';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -101,7 +102,7 @@ export function ClientHealth() {
         setLoading(true);
         try {
             const token = await current.getIdToken();
-            const res = await fetch('/api/admin/health', {
+            const res = await fetch(apiUrl('/api/admin/health'), {
                 headers: { Authorization: `Bearer ${token}` },
             });
             const body = await res.json().catch(() => ({}));

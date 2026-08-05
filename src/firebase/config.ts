@@ -6,8 +6,11 @@ import {
   getFirestore,
   initializeFirestore,
   memoryLocalCache,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   enableNetwork,
-  Firestore
+  Firestore,
+  FirestoreSettings
 } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 
@@ -46,22 +49,45 @@ if (typeof window !== 'undefined') {
   // Debug des variables d'environnement sur le client
   console.log("[FirebaseConfig] Initializing Firestore for project:", firebaseConfig.projectId);
 
+  // Réglages communs aux deux modes de cache. Le long-polling force le transport
+  // XHR historique, plus tolérant aux réseaux restrictifs (évite QUIC_PROTOCOL_ERROR).
+  const baseSettings: FirestoreSettings = {
+    experimentalForceLongPolling: true,
+    ignoreUndefinedProperties: true,
+  };
+
   try {
-    // On force le cache en mémoire pour éviter les erreurs "offline" liées à IndexedDB/Tabs
-    // et on force le long-polling pour les réseaux restrictifs (évite QUIC_PROTOCOL_ERROR)
+    // Cache persistant (IndexedDB) : c'est la condition du fonctionnement hors ligne.
+    // Contrairement au cache mémoire, les données survivent au rechargement de la page
+    // et à la fermeture de l'application, et les écritures effectuées sans réseau sont
+    // conservées dans une file d'attente que le SDK rejoue automatiquement à la
+    // reconnexion.
+    // `persistentMultipleTabManager` permet à plusieurs onglets de partager la même base
+    // IndexedDB : c'est ce qui évite le `failed-precondition` de l'ancienne API de
+    // persistance, motif pour lequel le cache mémoire avait été retenu ici.
     firestore = initializeFirestore(app, {
-      localCache: memoryLocalCache(),
-      experimentalForceLongPolling: true,
-      ignoreUndefinedProperties: true,
+      ...baseSettings,
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
     });
-    console.log("[FirebaseConfig] Firestore initialized successfully with MemoryCache + LongPolling");
+    console.log("[FirebaseConfig] Firestore initialized successfully with PersistentCache (multi-tab) + LongPolling");
   } catch (e: any) {
     if (e.code === 'failed-precondition') {
       console.warn("[FirebaseConfig] Firestore already initialized, fetching existing instance.");
       firestore = getFirestore(app);
     } else {
-      console.error("[FirebaseConfig] Unexpected Firestore init error. Falling back to default settings.", e);
-      firestore = getFirestore(app);
+      // Repli sur le cache mémoire : l'application reste utilisable en ligne, mais perd
+      // le mode hors ligne. NB : si IndexedDB est simplement indisponible (navigation
+      // privée, WebView restreinte), le SDK bascule lui-même en mémoire de façon
+      // asynchrone sans passer par ce bloc.
+      console.error("[FirebaseConfig] Persistent cache unavailable, falling back to memory cache (offline mode disabled).", e);
+      try {
+        firestore = initializeFirestore(app, {
+          ...baseSettings,
+          localCache: memoryLocalCache(),
+        });
+      } catch {
+        firestore = getFirestore(app);
+      }
     }
   }
 

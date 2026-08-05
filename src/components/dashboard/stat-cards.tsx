@@ -173,7 +173,7 @@ export function StatCards({ schoolId, academicYear }: { schoolId: string, academ
                     <p className="text-[10px] text-muted-foreground/50 font-black uppercase tracking-[0.3em] group-hover:text-foreground/70 transition-colors">
                       Visionner
                     </p>
-                    <div className="h-[3px] w-0 bg-gradient-to-r from-blue-500 to-indigo-500 group-hover:w-16 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+                    <div className="h-[3px] w-0 bg-gradient-to-r from-blue-500 to-indigo-500 group-hover:w-16 transition-all duration-700 ease-out-expo rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
                   </div>
                 </CardContent>
 

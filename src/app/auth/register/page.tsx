@@ -19,7 +19,8 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Loader2, User, Mail, Lock, Eye, EyeOff, CheckCircle2, Rocket, Star } from 'lucide-react';
+import { Loader2, User, Mail, Lock, Eye, EyeOff, CheckCircle2, Rocket, Star, Phone } from 'lucide-react';
+import { PhoneSignUp } from '@/components/auth/phone-sign-up';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Logo } from '@/components/logo';
@@ -63,6 +64,8 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isGoogleProcessing, setIsGoogleProcessing] = useState(false);
+  // Bascule entre la création de compte par email et celle par numéro de téléphone.
+  const [usePhone, setUsePhone] = useState(false);
 
   const router = useRouter();
   const auth = useAuth();
@@ -266,6 +269,10 @@ export default function RegisterPage() {
               )}
             </AnimatePresence>
 
+            {usePhone ? (
+              <PhoneSignUp onCancel={() => setUsePhone(false)} />
+            ) : (
+              <>
             <form onSubmit={handleRegister} className="space-y-3 relative z-10">
               <div className="space-y-1.5">
                 <Label htmlFor="displayName" className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nom complet</Label>
@@ -362,6 +369,17 @@ export default function RegisterPage() {
             >
               <GoogleIcon className="mr-3" /> S'inscrire rapidement
             </Button>
+
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setUsePhone(true)}
+              className="w-full h-14 rounded-xl border-slate-100 hover:bg-slate-50 hover:border-slate-200 transition-all font-bold text-slate-600 mt-3"
+            >
+              <Phone className="mr-3 h-5 w-5" /> S&apos;inscrire avec mon numéro
+            </Button>
+              </>
+            )}
 
             <p className="text-center text-sm font-medium text-slate-400 mt-6">
               Déjà un compte ?{' '}

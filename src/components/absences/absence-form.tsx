@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { student as Student } from '@/lib/data-types';
 import { useEffect } from 'react';
 import { AbsencesService } from '@/services/absences-service';
+import { writeOutcomeMessage } from '@/lib/offline-writes';
 
 const absenceSchema = z.object({
   date: z.string().min(1, { message: "La date est requise." }),
@@ -63,10 +64,13 @@ export function AbsenceForm({ schoolId, student, onSave }: AbsenceFormProps) {
     };
 
     try {
-      await AbsencesService.createAbsence(schoolId, student.id, absenceData, user.uid);
+      const { outcome } = await AbsencesService.createAbsence(schoolId, student.id, absenceData, user.uid);
       toast({
         title: "Absence enregistrée",
-        description: `L'absence de ${student.firstName} a été enregistrée.`,
+        description: writeOutcomeMessage(
+          outcome,
+          `L'absence de ${student.firstName} a été enregistrée.`,
+        ),
       });
       onSave();
     } catch (error) {

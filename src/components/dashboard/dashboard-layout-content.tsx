@@ -11,6 +11,7 @@ import { MobileNav as MobileSidebar } from '@/components/mobile-nav';
 import { MobileNav as MobileNavTabs } from '@/components/layout/mobile-nav';
 import { AcademicYearPicker } from '@/components/layout/academic-year-picker';
 import { ArchiveYearBanner } from '@/components/layout/archive-year-banner';
+import { SyncStatusBanner } from '@/components/layout/sync-status-banner';
 import { PlatformAnnouncementsBanner } from '@/components/messaging/platform-announcements-banner';
 import { AcademicYearProvider } from '@/providers/academic-year-provider';
 import { cn } from '@/lib/utils';
@@ -25,7 +26,7 @@ import { Home } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
 import { NotificationsPanel } from "@/components/notifications-panel";
 import { useNotifications } from "@/hooks/use-notifications";
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Badge } from "@/components/ui/badge";
 import { useFirestore } from "@/firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -365,22 +366,30 @@ export default function DashboardLayoutContent({ children }: { children: React.R
 
           <main className="flex-1 px-4 pt-4 sm:px-6 sm:pt-6 pb-24 lg:pb-6 print:p-0 overflow-auto mesh-gradient relative">
             <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:32px_32px] pointer-events-none" />
-            <div className="mb-4 print:hidden">
+            <div className="mb-4 space-y-2 print:hidden">
+              <SyncStatusBanner />
               <ArchiveYearBanner />
               <PlatformAnnouncementsBanner />
             </div>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={pathname}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3, ease: 'easeInOut' }}
-                className="h-full"
-              >
-                {children}
-              </motion.div>
-            </AnimatePresence>
+            {/*
+              Pas d'AnimatePresence ici. Avec `mode="wait"`, le nouvel enfant n'est monté
+              qu'une fois l'animation de sortie de l'ancien terminée ; or l'App Router
+              démonte le segment précédent pendant la transition RSC, si bien que Framer
+              Motion ne reçoit jamais la fin de sortie et reste bloqué en attente, laissant
+              la zone de contenu vide jusqu'au rechargement de la page.
+              La clé sur `pathname` suffit à rejouer l'animation d'entrée à chaque
+              navigation ; l'animation de sortie, elle, n'est de toute façon pas réalisable
+              en App Router puisque React retire l'ancien arbre avant qu'elle puisse jouer.
+            */}
+            <motion.div
+              key={pathname}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="h-full"
+            >
+              {children}
+            </motion.div>
             <MobileNavTabs />
           </main>
 

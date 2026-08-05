@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withCors, corsPreflight } from '@/lib/api-cors';
 
-export async function POST(req: NextRequest) {
+async function POSTHandler(req: NextRequest) {
     try {
         const { text, visitorId, chatId } = await req.json();
 
@@ -57,3 +58,11 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+
+
+// Appelée depuis l'application mobile : la requête est inter-origines, d'où CORS.
+export function OPTIONS(req: Request) {
+  return corsPreflight(req);
+}
+
+export const POST = withCors(POSTHandler);

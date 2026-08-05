@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withCors, corsPreflight } from '@/lib/api-cors';
 import { differenceInCalendarDays, format, startOfMonth, subMonths } from 'date-fns';
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
 import { estimateMonthlyRevenue, type ModuleName } from '@/lib/subscription-plans';
@@ -50,7 +51,7 @@ function toDate(value: FirebaseFirestore.Timestamp | string | undefined | null):
     return null;
 }
 
-export async function GET(request: NextRequest) {
+async function GETHandler(request: NextRequest) {
     const auth = await requireAdmin(request);
     if ('error' in auth) {
         return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -157,3 +158,11 @@ export async function GET(request: NextRequest) {
         lost90,
     });
 }
+
+
+// Appelée depuis l'application mobile : la requête est inter-origines, d'où CORS.
+export function OPTIONS(req: Request) {
+  return corsPreflight(req);
+}
+
+export const GET = withCors(GETHandler);

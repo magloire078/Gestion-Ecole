@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { apiUrl } from '@/lib/api-base';
 import { doc, collection, query, where, limit, onSnapshot, setDoc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
 import { useDoc, useFirestore } from '@/firebase';
 import { system_setting as SystemSetting } from '@/lib/data-types';
@@ -125,7 +126,7 @@ export function LiveChat() {
 
                 // Envoi vers WhatsApp via notre API proxy (OPTIONNEL - Si configuré)
                 // On ne bloque pas si ça échoue, et on laisse l'API gérer les configs manquantes
-                fetch('/api/support/chat/send', {
+                fetch(apiUrl('/api/support/chat/send'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

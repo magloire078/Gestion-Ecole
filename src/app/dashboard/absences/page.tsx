@@ -55,6 +55,7 @@ import { cn } from '@/lib/utils';
 import { Trash2 } from 'lucide-react';
 import { AbsenceForm } from '@/components/absences/absence-form';
 import { AbsencesService } from '@/services/absences-service';
+import { writeOutcomeMessage } from '@/lib/offline-writes';
 import { useAbsences } from '@/hooks/use-absences';
 
 interface StudentWithAbsence extends Student {
@@ -143,8 +144,11 @@ export default function AbsencesPage() {
     if (!schoolId || !absenceToDelete || !absenceToDelete.studentId) return;
 
     try {
-      await AbsencesService.deleteAbsence(schoolId, absenceToDelete.studentId, absenceToDelete.id);
-      toast({ title: 'Absence supprimée', description: "L'enregistrement de l'absence a été supprimé." });
+      const outcome = await AbsencesService.deleteAbsence(schoolId, absenceToDelete.studentId, absenceToDelete.id);
+      toast({
+        title: 'Absence supprimée',
+        description: writeOutcomeMessage(outcome, "L'enregistrement de l'absence a été supprimé."),
+      });
     } catch (e) {
       console.error("Failed to delete absence: ", e);
       toast({

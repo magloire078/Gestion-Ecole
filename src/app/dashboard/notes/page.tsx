@@ -78,6 +78,7 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { subject as Subject } from '@/lib/data-types';
 import { GradesService, type GradeEntry } from '@/services/grades-service';
+import { writeOutcomeMessage } from '@/lib/offline-writes';
 import { useGrades } from '@/hooks/use-grades';
 
 // --- Interfaces ---
@@ -243,12 +244,12 @@ export default function GradeEntryPage() {
     try {
       if (editingGrade) {
         // Update
-        await GradesService.updateGrade(schoolId, editingGrade.studentId, editingGrade.id, gradeData);
-        toast({ title: 'Note modifiée', description: `La note a été mise à jour.` });
+        const outcome = await GradesService.updateGrade(schoolId, editingGrade.studentId, editingGrade.id, gradeData);
+        toast({ title: 'Note modifiée', description: writeOutcomeMessage(outcome, 'La note a été mise à jour.') });
       } else {
         // Create
-        await GradesService.createGrade(schoolId, values.studentId, gradeData);
-        toast({ title: 'Note ajoutée avec succès !' });
+        const { outcome } = await GradesService.createGrade(schoolId, values.studentId, gradeData);
+        toast({ title: 'Note ajoutée avec succès !', description: writeOutcomeMessage(outcome, 'La note a été enregistrée.') });
       }
       setIsFormOpen(false);
       // The useGrades hook will automatically refresh the data
@@ -267,8 +268,8 @@ export default function GradeEntryPage() {
     if (!schoolId || !gradeToDelete) return;
 
     try {
-      await GradesService.deleteGrade(schoolId, gradeToDelete.studentId, gradeToDelete.id);
-      toast({ title: 'Note supprimée', description: 'La note a été supprimée.' });
+      const outcome = await GradesService.deleteGrade(schoolId, gradeToDelete.studentId, gradeToDelete.id);
+      toast({ title: 'Note supprimée', description: writeOutcomeMessage(outcome, 'La note a été supprimée.') });
       setIsDeleting(false);
       setGradeToDelete(null);
       // The useGrades hook will automatically refresh the data

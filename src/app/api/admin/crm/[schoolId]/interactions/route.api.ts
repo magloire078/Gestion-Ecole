@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withCors, corsPreflight } from '@/lib/api-cors';
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 
@@ -45,7 +46,7 @@ function entriesCollection(schoolId: string) {
     return getAdminDb().collection(`crm_interactions/${schoolId}/entries`);
 }
 
-export async function GET(
+async function GETHandler(
     request: NextRequest,
     { params }: { params: { schoolId: string } },
 ) {
@@ -81,7 +82,7 @@ export async function GET(
     return NextResponse.json({ entries });
 }
 
-export async function POST(
+async function POSTHandler(
     request: NextRequest,
     { params }: { params: { schoolId: string } },
 ) {
@@ -153,7 +154,7 @@ export async function POST(
 }
 
 /** Marque la prochaine action planifiée comme faite (vue « Actions du jour »). */
-export async function PATCH(
+async function PATCHHandler(
     request: NextRequest,
     { params }: { params: { schoolId: string } },
 ) {
@@ -192,3 +193,15 @@ export async function PATCH(
 
     return NextResponse.json({ ok: true });
 }
+
+
+// Appelée depuis l'application mobile : la requête est inter-origines, d'où CORS.
+export function OPTIONS(req: Request) {
+  return corsPreflight(req);
+}
+
+export const GET = withCors(GETHandler);
+
+export const POST = withCors(POSTHandler);
+
+export const PATCH = withCors(PATCHHandler);

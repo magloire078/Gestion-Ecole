@@ -1,7 +1,8 @@
 'use client';
 
-import { doc, addDoc, deleteDoc, collection, query, where, collectionGroup, getDocs, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, deleteDoc, collection, query, where, collectionGroup, getDocs, serverTimestamp } from "firebase/firestore";
 import { firebaseFirestore as db } from '@/firebase/config';
+import { commitWrite, type WriteOutcome } from '@/lib/offline-writes';
 
 interface AbsenceData {
     date: string;
@@ -31,6 +32,11 @@ export const AbsencesService = {
     createAbsence: async (schoolId: string, studentId: string, data: Omit<AbsenceData, 'schoolId' | 'studentId' | 'recordedBy'>, recordedBy: string) => {
         try {
             const absenceCollectionRef = collection(db, `ecoles/${schoolId}/eleves/${studentId}/absences`);
+            // `doc()` sans identifiant en génère un côté client : on dispose donc de l'id
+            // immédiatement, sans attendre le serveur. C'est aussi ce qui rend la saisie
+            // hors ligne idempotente — une même validation produit toujours le même
+            // document, là où `addDoc` répété créerait des doublons.
+            const absenceRef = doc(absenceCollectionRef);
             const absenceData = {
                 ...data,
                 schoolId,
@@ -38,8 +44,11 @@ export const AbsencesService = {
                 recordedBy,
                 createdAt: serverTimestamp(),
             };
-            const docRef = await addDoc(absenceCollectionRef, absenceData);
-            return docRef.id;
+            const outcome = await commitWrite(
+                setDoc(absenceRef, absenceData),
+                "création d'une absence",
+            );
+            return { id: absenceRef.id, outcome };
         } catch (error) {
             console.error('Error creating absence:', error);
             throw error;
@@ -49,10 +58,10 @@ export const AbsencesService = {
     /**
      * Delete an absence record (permanent deletion)
      */
-    deleteAbsence: async (schoolId: string, studentId: string, absenceId: string) => {
+    deleteAbsence: async (schoolId: string, studentId: string, absenceId: string): Promise<WriteOutcome> => {
         try {
             const absenceRef = doc(db, `ecoles/${schoolId}/eleves/${studentId}/absences/${absenceId}`);
-            await deleteDoc(absenceRef);
+            return await commitWrite(deleteDoc(absenceRef), "suppression d'une absence");
         } catch (error) {
             console.error('Error deleting absence:', error);
             throw error;

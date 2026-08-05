@@ -6,6 +6,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { UserProvider } from '@/providers/user-provider';
 import { SchoolProvider } from '@/providers/school-provider';
 import { MobileBridge } from '@/components/mobile-bridge';
+import { ServiceWorkerRegistrar } from '@/components/service-worker-registrar';
 import { Toaster } from '@/components/ui/toaster';
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
@@ -34,6 +35,9 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: 'GèreEcole - Gestion scolaire simplifiée',
   description: 'La solution complète pour gérer les élèves, les notes, les paiements et la communication scolaire.',
+  // Le manifeste existait déjà dans /public mais n'était référencé nulle part : sans ce
+  // lien, l'application n'est pas installable et ne peut donc pas s'ouvrir hors ligne.
+  manifest: '/manifest.json',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
@@ -58,6 +62,7 @@ export default function RootLayout({
           <UserProvider>
             <SchoolProvider>
               <MobileBridge />
+              <ServiceWorkerRegistrar />
               {children}
               <Toaster />
               <Analytics />

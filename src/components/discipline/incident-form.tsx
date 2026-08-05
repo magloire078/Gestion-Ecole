@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { student as Student } from '@/lib/data-types';
 import { useEffect } from 'react';
 import { DisciplineService } from '@/services/discipline-service';
+import { writeOutcomeMessage } from '@/lib/offline-writes';
 
 const incidentSchema = z.object({
     studentId: z.string().min(1, "Veuillez sélectionner un élève."),
@@ -81,7 +82,7 @@ export function IncidentForm({ schoolId, students, onSave, student }: IncidentFo
         };
 
         try {
-            await DisciplineService.createIncident(
+            const { outcome } = await DisciplineService.createIncident(
                 schoolId,
                 studentInfo.id,
                 incidentData,
@@ -98,7 +99,10 @@ export function IncidentForm({ schoolId, students, onSave, student }: IncidentFo
                 );
             }
 
-            toast({ title: 'Incident enregistré', description: "Le nouvel incident disciplinaire a été ajouté." });
+            toast({
+                title: 'Incident enregistré',
+                description: writeOutcomeMessage(outcome, "Le nouvel incident disciplinaire a été ajouté."),
+            });
             onSave();
         } catch (error) {
             console.error("Error saving incident:", error);

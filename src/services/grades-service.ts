@@ -1,7 +1,8 @@
 'use client';
 
-import { doc, addDoc, updateDoc, deleteDoc, collection, query, where, getDocs, getDoc } from "firebase/firestore";
+import { doc, setDoc, updateDoc, deleteDoc, collection, query, where, getDocs, getDoc } from "firebase/firestore";
 import { firebaseFirestore as db } from '@/firebase/config';
+import { commitWrite, reportSyncError, type WriteOutcome } from '@/lib/offline-writes';
 import { NotificationService } from "@/services/notification-service";
 import { student as Student } from "@/lib/data-types";
 import { resolveAcademicYearForWrite } from "@/lib/academic-year-utils";
@@ -34,39 +35,35 @@ export const GradesService = {
     createGrade: async (schoolId: string, studentId: string, data: Omit<GradeData, 'schoolId'>) => {
         try {
             if (!db) throw new Error("Firestore not initialized");
-            const schoolSnap = await getDoc(doc(db, `ecoles/${schoolId}`));
+            // Hors ligne, `getDoc` sert le cache persistant. Si l'école n'y a jamais été
+            // chargée, la lecture échoue : on retombe alors sur la déduction par date
+            // plutôt que de bloquer la saisie de la note.
+            let schoolCurrentYear: string | undefined;
+            try {
+                const schoolSnap = await getDoc(doc(db, `ecoles/${schoolId}`));
+                schoolCurrentYear = schoolSnap.data()?.currentAcademicYear;
+            } catch (readError) {
+                console.warn('[GradesService] École indisponible (hors ligne ?), année scolaire déduite de la date.', readError);
+            }
             const academicYear = data.academicYear ?? resolveAcademicYearForWrite({
-                schoolCurrentYear: schoolSnap.data()?.currentAcademicYear,
+                schoolCurrentYear,
                 docDate: data.date,
             });
             const gradesCollectionRef = collection(db, `ecoles/${schoolId}/eleves/${studentId}/notes`);
+            const gradeRef = doc(gradesCollectionRef);
             const gradeData: GradeData = {
                 ...data,
                 schoolId,
                 academicYear,
             };
-            const docRef = await addDoc(gradesCollectionRef, gradeData);
+            const outcome = await commitWrite(setDoc(gradeRef, gradeData), "création d'une note");
 
-            // Notify parents
-            try {
-                const studentDoc = await getDoc(doc(db, `ecoles/${schoolId}/eleves/${studentId}`));
-                if (studentDoc.exists()) {
-                    const student = studentDoc.data() as Student;
-                    if (student.parentIds && student.parentIds.length > 0) {
-                        for (const parentId of student.parentIds) {
-                            await NotificationService.sendNotification(db, schoolId, parentId, {
-                                title: "Nouvelle Note Disponbile",
-                                content: `Une nouvelle note (${data.grade}/20) a été enregistrée pour ${student.firstName} en ${data.subject}.`,
-                                href: `/dashboard/parent/student/${studentId}?tab=notes`,
-                            });
-                        }
-                    }
-                }
-            } catch (notifyError) {
-                console.error('Error sending grade notification:', notifyError);
-            }
+            // Notification aux parents : volontairement détachée du retour utilisateur.
+            // Hors ligne, ces écritures rejoignent la file d'attente et partiront à la
+            // reconnexion — les attendre bloquerait l'enseignant après coup.
+            void GradesService.notifyParentsOfGrade(schoolId, studentId, data);
 
-            return docRef.id;
+            return { id: gradeRef.id, outcome };
         } catch (error) {
             console.error('Error creating grade:', error);
             throw error;
@@ -74,13 +71,39 @@ export const GradesService = {
     },
 
     /**
+     * Prévient les parents qu'une note a été saisie.
+     *
+     * Détachée de `createGrade` : aucune de ces écritures ne doit retarder le retour à
+     * l'enseignant, et un échec de notification ne doit jamais faire échouer la note.
+     */
+    notifyParentsOfGrade: async (schoolId: string, studentId: string, data: Omit<GradeData, 'schoolId'>) => {
+        try {
+            if (!db) return;
+            const studentDoc = await getDoc(doc(db, `ecoles/${schoolId}/eleves/${studentId}`));
+            if (!studentDoc.exists()) return;
+            const student = studentDoc.data() as Student;
+            if (!student.parentIds?.length) return;
+
+            for (const parentId of student.parentIds) {
+                NotificationService.sendNotification(db, schoolId, parentId, {
+                    title: "Nouvelle note disponible",
+                    content: `Une nouvelle note (${data.grade}/20) a été enregistrée pour ${student.firstName} en ${data.subject}.`,
+                    href: `/dashboard/parent/student/${studentId}?tab=notes`,
+                }).catch(reportSyncError("notification d'une note aux parents"));
+            }
+        } catch (notifyError) {
+            console.error('Error sending grade notification:', notifyError);
+        }
+    },
+
+    /**
      * Update an existing grade
      */
-    updateGrade: async (schoolId: string, studentId: string, gradeId: string, data: Partial<GradeData>) => {
+    updateGrade: async (schoolId: string, studentId: string, gradeId: string, data: Partial<GradeData>): Promise<WriteOutcome> => {
         try {
             if (!db) throw new Error("Firestore not initialized");
             const gradeRef = doc(db, `ecoles/${schoolId}/eleves/${studentId}/notes/${gradeId}`);
-            await updateDoc(gradeRef, data);
+            return await commitWrite(updateDoc(gradeRef, data), "modification d'une note");
         } catch (error) {
             console.error('Error updating grade:', error);
             throw error;
@@ -90,11 +113,11 @@ export const GradesService = {
     /**
      * Delete a grade (permanent deletion)
      */
-    deleteGrade: async (schoolId: string, studentId: string, gradeId: string) => {
+    deleteGrade: async (schoolId: string, studentId: string, gradeId: string): Promise<WriteOutcome> => {
         try {
             if (!db) throw new Error("Firestore not initialized");
             const gradeRef = doc(db, `ecoles/${schoolId}/eleves/${studentId}/notes/${gradeId}`);
-            await deleteDoc(gradeRef);
+            return await commitWrite(deleteDoc(gradeRef), "suppression d'une note");
         } catch (error) {
             console.error('Error deleting grade:', error);
             throw error;

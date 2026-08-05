@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { apiUrl } from '@/lib/api-base';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -62,7 +63,7 @@ export function InteractionJournalSheet({ schoolId, schoolName, open, onOpenChan
         setEntries(null);
         try {
             const token = await current.getIdToken();
-            const res = await fetch(`/api/admin/crm/${schoolId}/interactions`, {
+            const res = await fetch(apiUrl(`/api/admin/crm/${schoolId}/interactions`), {
                 headers: { Authorization: `Bearer ${token}` },
             });
             const body = await res.json().catch(() => ({}));
@@ -94,7 +95,7 @@ export function InteractionJournalSheet({ schoolId, schoolName, open, onOpenChan
         setSaving(true);
         try {
             const token = await current.getIdToken();
-            const res = await fetch(`/api/admin/crm/${schoolId}/interactions`, {
+            const res = await fetch(apiUrl(`/api/admin/crm/${schoolId}/interactions`), {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({

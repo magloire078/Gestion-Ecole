@@ -1,10 +1,11 @@
 
 'use client';
 
-import { doc, getDoc, getCountFromServer, query, where, updateDoc, writeBatch, increment, serverTimestamp, addDoc, collection, deleteDoc, Firestore } from "firebase/firestore";
+import { doc, getDoc, getDocs, getCountFromServer, query, where, updateDoc, writeBatch, increment, serverTimestamp, addDoc, collection, deleteDoc, Firestore } from "firebase/firestore";
 import { firebaseFirestore } from '@/firebase/config';
 import { getPlanLimits } from '@/lib/subscription-plans';
 import { buildLimitReachedMessage } from '@/lib/subscription-guards';
+import { commitWrite, type WriteOutcome } from '@/lib/offline-writes';
 
 const db = firebaseFirestore as Firestore;
 import type { student as Student } from '@/lib/data-types';
@@ -17,8 +18,17 @@ const COLLECTION_NAME = 'eleves';
  * (SUBSCRIPTION_PLANS), pas d'un champ stocké qui peut dériver.
  */
 async function checkStudentLimit(schoolId: string): Promise<string> {
-    const schoolSnap = await getDoc(doc(db, `ecoles/${schoolId}`));
-    const schoolData = schoolSnap.exists() ? schoolSnap.data() : null;
+    let schoolData: Record<string, any> | null = null;
+    try {
+        const schoolSnap = await getDoc(doc(db, `ecoles/${schoolId}`));
+        schoolData = schoolSnap.exists() ? schoolSnap.data() : null;
+    } catch (readError) {
+        // Hors ligne et école jamais mise en cache : on ne peut pas vérifier le plan.
+        // On laisse passer la création plutôt que de bloquer une inscription sur le
+        // terrain ; le plafond reste garanti côté serveur par les règles Firestore.
+        console.warn('[StudentService] École indisponible (hors ligne ?), contrôle du plafond ignoré.', readError);
+        return "2024-2025";
+    }
     if (!schoolData) return "2024-2025";
 
     const planName = schoolData.subscription?.plan || 'Essentiel';
@@ -30,8 +40,20 @@ async function checkStudentLimit(schoolId: string): Promise<string> {
             collection(db, `ecoles/${schoolId}/${COLLECTION_NAME}`),
             where('status', '==', 'Actif'),
         );
-        const countSnap = await getCountFromServer(activeStudentsQuery);
-        const currentCount = countSnap.data().count;
+
+        // `getCountFromServer` est une agrégation exclusivement serveur : elle échoue
+        // hors ligne. On retombe alors sur un comptage depuis le cache persistant, qui
+        // peut sous-estimer si tous les élèves n'ont pas été chargés — d'où le refus de
+        // bloquer sur cette seule base, le contrôle définitif restant côté serveur.
+        let currentCount: number;
+        try {
+            const countSnap = await getCountFromServer(activeStudentsQuery);
+            currentCount = countSnap.data().count;
+        } catch (countError) {
+            console.warn('[StudentService] Comptage serveur indisponible (hors ligne ?), repli sur le cache local.', countError);
+            const cachedSnap = await getDocs(activeStudentsQuery);
+            currentCount = cachedSnap.size;
+        }
 
         if (currentCount >= limits.maxStudents) {
             throw new Error(buildLimitReachedMessage('students', planName, limits.maxStudents));
@@ -94,8 +116,8 @@ export const StudentService = {
                 lastUpdated: serverTimestamp()
             }, { merge: true });
 
-            await batch.commit();
-            return newStudentRef.id;
+            const outcome = await commitWrite(batch.commit(), "création d'un élève");
+            return { id: newStudentRef.id, outcome };
         } catch (error) {
             console.error('Error creating student:', error);
             throw error;
@@ -105,7 +127,7 @@ export const StudentService = {
     /**
      * Update an existing student
      */
-    updateStudent: async (schoolId: string, studentId: string, data: Partial<Student>, previousData?: Student) => {
+    updateStudent: async (schoolId: string, studentId: string, data: Partial<Student>, previousData?: Student): Promise<WriteOutcome> => {
         try {
             const batch = writeBatch(db);
             const studentRef = doc(db, `ecoles/${schoolId}/${COLLECTION_NAME}/${studentId}`);
@@ -140,7 +162,7 @@ export const StudentService = {
                 batch.update(newClassRef, { studentCount: increment(1) });
             }
 
-            await batch.commit();
+            return await commitWrite(batch.commit(), "modification d'un élève");
         } catch (error) {
             console.error('Error updating student:', error);
             throw error;
@@ -150,7 +172,7 @@ export const StudentService = {
     /**
      * Delete a student (permanent deletion)
      */
-    deleteStudent: async (schoolId: string, student: Student) => {
+    deleteStudent: async (schoolId: string, student: Student): Promise<WriteOutcome> => {
         try {
             const batch = writeBatch(db);
             const studentRef = doc(db, `ecoles/${schoolId}/${COLLECTION_NAME}/${student.id}`);
@@ -172,7 +194,7 @@ export const StudentService = {
                 batch.update(classRef, { studentCount: increment(-1) });
             }
 
-            await batch.commit();
+            return await commitWrite(batch.commit(), "suppression d'un élève");
         } catch (error) {
             console.error('Error deleting student:', error);
             throw error;

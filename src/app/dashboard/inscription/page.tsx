@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useUser, useStorage } from "@/firebase";
-import { collection, addDoc, serverTimestamp, writeBatch, doc, increment, query, where } from "firebase/firestore";
+import { collection, addDoc, setDoc, serverTimestamp, writeBatch, doc, increment, query, where } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { ArrowRight, ArrowLeft, User, Users, GraduationCap, Upload, X, Loader2, AlertCircle, CheckCircle2, QrCode, Copy, Check, Printer } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -30,6 +30,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import Link from 'next/link';
 import { getTuitionInfoForClass } from '@/lib/school-utils';
 import { StudentService } from '@/services/student-services';
+import { reportSyncError, writeOutcomeMessage } from '@/lib/offline-writes';
 import { formatCurrency } from '@/lib/currency-utils';
 
 
@@ -230,7 +231,7 @@ export default function RegistrationPage() {
     };
 
     try {
-      const newStudentId = await StudentService.createStudent(schoolId, studentData, user.uid);
+      const { id: newStudentId, outcome } = await StudentService.createStudent(schoolId, studentData, user.uid);
 
       if (schoolData?.directorId) {
         const notificationsCollectionRef = collection(firestore, `ecoles/${schoolId}/notifications`);
@@ -242,12 +243,18 @@ export default function RegistrationPage() {
           isRead: false,
           createdAt: serverTimestamp(),
         };
-        await addDoc(notificationsCollectionRef, notificationData);
+        // Sans attente : la notification du directeur ne doit pas retarder — ni faire
+        // échouer — l'inscription. Hors ligne, elle partira à la reconnexion.
+        setDoc(doc(notificationsCollectionRef), notificationData)
+          .catch(reportSyncError("notification d'une pré-inscription"));
       }
 
       toast({
         title: "Inscription réussie",
-        description: `${values.firstName} ${values.lastName} a été inscrit(e) avec succès.`,
+        description: writeOutcomeMessage(
+          outcome,
+          `${values.firstName} ${values.lastName} a été inscrit(e) avec succès.`,
+        ),
       });
       // Petit délai pour laisser le toast respirer et éviter les port errors
       setTimeout(() => {
