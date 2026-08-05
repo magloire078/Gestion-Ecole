@@ -148,6 +148,15 @@ service cloud.firestore {
     match /system_logs/{logId} {
       allow read, write: if isSuperAdmin();
     }
+
+    // Codes de vérification de la création de compte par téléphone.
+    // Fermeture totale, y compris aux super-admins : ces documents contiennent
+    // l'empreinte d'un code à 6 chiffres, qui se casse en quelques secondes une fois
+    // l'empreinte connue. Seul l'Admin SDK y accède (src/lib/otp.ts), et il n'est pas
+    // soumis à ces règles.
+    match /otp_requests/{requestId} {
+      allow read, write: if false;
+    }
     
     match /system_settings/{settingId} {
       allow read: if settingId == 'default' || isSignedIn(); 
