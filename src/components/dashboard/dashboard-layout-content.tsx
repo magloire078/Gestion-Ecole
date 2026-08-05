@@ -11,6 +11,7 @@ import { MobileNav as MobileSidebar } from '@/components/mobile-nav';
 import { MobileNav as MobileNavTabs } from '@/components/layout/mobile-nav';
 import { AcademicYearPicker } from '@/components/layout/academic-year-picker';
 import { ArchiveYearBanner } from '@/components/layout/archive-year-banner';
+import { SyncStatusBanner } from '@/components/layout/sync-status-banner';
 import { PlatformAnnouncementsBanner } from '@/components/messaging/platform-announcements-banner';
 import { AcademicYearProvider } from '@/providers/academic-year-provider';
 import { cn } from '@/lib/utils';
@@ -365,7 +366,8 @@ export default function DashboardLayoutContent({ children }: { children: React.R
 
           <main className="flex-1 px-4 pt-4 sm:px-6 sm:pt-6 pb-24 lg:pb-6 print:p-0 overflow-auto mesh-gradient relative">
             <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:32px_32px] pointer-events-none" />
-            <div className="mb-4 print:hidden">
+            <div className="mb-4 space-y-2 print:hidden">
+              <SyncStatusBanner />
               <ArchiveYearBanner />
               <PlatformAnnouncementsBanner />
             </div>

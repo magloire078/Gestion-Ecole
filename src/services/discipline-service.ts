@@ -1,7 +1,8 @@
 'use client';
 
-import { addDoc, collection, query, where, collectionGroup, orderBy, getDocs, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, collection, query, where, collectionGroup, orderBy, getDocs, serverTimestamp } from "firebase/firestore";
 import { firebaseFirestore as db } from '@/firebase/config';
+import { commitWrite, reportSyncError } from '@/lib/offline-writes';
 
 interface IncidentData {
     type: 'Avertissement Oral' | 'Avertissement Écrit' | 'Retenue' | 'Mise à pied' | 'Exclusion temporaire' | 'Exclusion définitive';
@@ -48,8 +49,12 @@ export const DisciplineService = {
                 reportedByName: reportedBy.displayName || 'Système',
                 followUpNotes: data.followUpNotes || '',
             };
-            const docRef = await addDoc(incidentCollectionRef, incidentData);
-            return docRef.id;
+            const incidentRef = doc(incidentCollectionRef);
+            const outcome = await commitWrite(
+                setDoc(incidentRef, incidentData),
+                "création d'un incident disciplinaire",
+            );
+            return { id: incidentRef.id, outcome };
         } catch (error) {
             console.error('Error creating incident:', error);
             throw error;
@@ -66,7 +71,11 @@ export const DisciplineService = {
         incidentType: string
     ) => {
         try {
-            const promises = parentIds.map(parentId => {
+            const notificationsRef = collection(db, `ecoles/${schoolId}/notifications`);
+            // Aucune attente : hors ligne ces écritures rejoignent la file d'attente et
+            // partiront à la reconnexion. Les attendre bloquerait l'enregistrement de
+            // l'incident, alors que les notifications ne sont pas critiques.
+            parentIds.forEach(parentId => {
                 const notificationData = {
                     userId: parentId,
                     title: `Incident disciplinaire: ${studentInfo.firstName}`,
@@ -75,9 +84,9 @@ export const DisciplineService = {
                     isRead: false,
                     createdAt: serverTimestamp(),
                 };
-                return addDoc(collection(db, `ecoles/${schoolId}/notifications`), notificationData);
+                setDoc(doc(notificationsRef), notificationData)
+                    .catch(reportSyncError("notification d'un incident aux parents"));
             });
-            await Promise.all(promises);
         } catch (error) {
             console.error('Error creating notifications:', error);
             // Don't throw - notifications are not critical

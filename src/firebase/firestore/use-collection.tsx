@@ -17,6 +17,11 @@ export function useCollection<T>(query: Query<T> | null, options?: UseCollection
   const [data, setData] = useState<QueryDocumentSnapshot<T>[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
+  // État de synchronisation du dernier instantané reçu :
+  // - `fromCache` : les données proviennent du cache local, pas du serveur (typiquement hors ligne) ;
+  // - `hasPendingWrites` : au moins une écriture locale n'a pas encore été confirmée par le serveur.
+  const [fromCache, setFromCache] = useState(false);
+  const [hasPendingWrites, setHasPendingWrites] = useState(false);
 
   useEffect(() => {
     if (!query) {
@@ -30,6 +35,8 @@ export function useCollection<T>(query: Query<T> | null, options?: UseCollection
     const unsubscribe = onSnapshot(query,
       (snapshot) => {
         setData(snapshot.docs);
+        setFromCache(snapshot.metadata.fromCache);
+        setHasPendingWrites(snapshot.metadata.hasPendingWrites);
         setError(null);
         setLoading(false);
       },
@@ -64,5 +71,5 @@ export function useCollection<T>(query: Query<T> | null, options?: UseCollection
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
-  return { data: data || [], loading, error };
+  return { data: data || [], loading, error, fromCache, hasPendingWrites };
 }

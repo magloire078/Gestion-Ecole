@@ -155,11 +155,15 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
 
     try {
       const { StudentService } = await import('@/services/student-services');
-      await StudentService.updateStudent(schoolId, student.id!, updatedData, student);
+      const { writeOutcomeMessage } = await import('@/lib/offline-writes');
+      const outcome = await StudentService.updateStudent(schoolId, student.id!, updatedData, student);
 
       toast({
         title: "Élève modifié",
-        description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour. ${classHasChanged ? 'Les frais de scolarité ont été recalculés pour la nouvelle classe.' : ''}`
+        description: writeOutcomeMessage(
+          outcome,
+          `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour. ${classHasChanged ? 'Les frais de scolarité ont été recalculés pour la nouvelle classe.' : ''}`,
+        ),
       });
       // On attend un petit peu avant de fermer pour laisser le toast s'afficher
       // et éviter les erreurs de "port déconnecté" avec les extensions
