@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 
 /**
  * Enregistre le service worker qui met la coque de l'application en cache (voir
@@ -13,6 +14,11 @@ import { useEffect } from 'react';
 export function ServiceWorkerRegistrar() {
   useEffect(() => {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+
+    // Sur mobile, les fichiers sont déjà embarqués dans l'application par Capacitor :
+    // le service worker n'apporte rien et viendrait s'interposer devant eux. Le test
+    // sur NODE_ENV ne suffit pas, un build Capacitor étant lui aussi un build de production.
+    if (Capacitor.isNativePlatform()) return;
 
     // En développement, le rechargement à chaud et le cache du service worker se
     // gênent mutuellement.

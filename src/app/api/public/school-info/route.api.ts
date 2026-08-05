@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withCors, corsPreflight } from '@/lib/api-cors';
 import { getAdminDb } from '@/firebase/admin';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: NextRequest) {
+async function GETHandler(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
         const schoolId = searchParams.get('schoolId');
@@ -54,3 +55,11 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Erreur interne du serveur lors de la récupération des informations." }, { status: 500 });
     }
 }
+
+
+// Appelée depuis l'application mobile : la requête est inter-origines, d'où CORS.
+export function OPTIONS(req: Request) {
+  return corsPreflight(req);
+}
+
+export const GET = withCors(GETHandler);

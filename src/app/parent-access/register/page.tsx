@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { apiUrl } from '@/lib/api-base';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -75,7 +76,7 @@ function PublicParentRegistrationPageForm() {
 
     async function fetchSchoolData() {
       try {
-        const res = await fetch(`/api/public/school-info?schoolId=${schoolId}`);
+        const res = await fetch(apiUrl(`/api/public/school-info?schoolId=${schoolId}`));
         const data = await res.json();
         
         if (!res.ok) {
@@ -157,7 +158,7 @@ function PublicParentRegistrationPageForm() {
 
     setSubmitting(true);
     try {
-      const response = await fetch('/api/public/register-student', {
+      const response = await fetch(apiUrl('/api/public/register-student'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withCors, corsPreflight } from '@/lib/api-cors';
 import { differenceInCalendarDays } from 'date-fns';
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
 
@@ -212,7 +213,7 @@ async function buildRow(
     };
 }
 
-export async function GET(request: NextRequest) {
+async function GETHandler(request: NextRequest) {
     const auth = await requireAdmin(request);
     if ('error' in auth) {
         return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -241,3 +242,11 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ generatedAt: now.toISOString(), rows });
 }
+
+
+// Appelée depuis l'application mobile : la requête est inter-origines, d'où CORS.
+export function OPTIONS(req: Request) {
+  return corsPreflight(req);
+}
+
+export const GET = withCors(GETHandler);

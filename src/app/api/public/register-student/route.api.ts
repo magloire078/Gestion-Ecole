@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withCors, corsPreflight } from '@/lib/api-cors';
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 
@@ -13,7 +14,7 @@ function resolveBaseUrl(req: Request): string {
     return 'http://localhost:3000';
 }
 
-export async function POST(req: NextRequest) {
+async function POSTHandler(req: NextRequest) {
     let createdStudentPath = '';
     const db = getAdminDb();
     let schoolId = '';
@@ -239,3 +240,11 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: error.message || "Impossible de finaliser l'inscription ou de générer le lien de paiement." }, { status: 500 });
     }
 }
+
+
+// Appelée depuis l'application mobile : la requête est inter-origines, d'où CORS.
+export function OPTIONS(req: Request) {
+  return corsPreflight(req);
+}
+
+export const POST = withCors(POSTHandler);

@@ -6,11 +6,11 @@ const config: CapacitorConfig = {
   webDir: 'out',
   server: {
     androidScheme: 'https',
-    // Pour le développement Android Emulator : http://10.0.2.2:3000
-    // Pour iOS Simulator ou appareil physique : Utiliser l'IP locale (ex: http://192.168.1.x:3000)
-    // Pour la PROD : Remplacer par https://www.gerecole.com
+    // L'application embarque ses fichiers (`webDir: 'out'`, produit par `npm run build:mobile`)
+    // et démarre donc sans réseau. Ne définissez `url` que pour du développement en direct
+    // contre un serveur local — sinon l'app charge tout depuis le réseau et perd le hors-ligne.
+    // Android Emulator : http://10.0.2.2:3000 · iOS/appareil : http://192.168.1.x:3000
     // url: 'http://10.0.2.2:3000',
-    cleartext: true
   },
   plugins: {
     SplashScreen: {

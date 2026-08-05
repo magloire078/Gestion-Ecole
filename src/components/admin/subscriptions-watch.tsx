@@ -5,6 +5,7 @@ import { collection, query } from 'firebase/firestore';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { useAuth } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { apiUrl } from '@/lib/api-base';
 import { differenceInCalendarDays, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -90,7 +91,7 @@ export function SubscriptionsWatch() {
         setSendingFor(schoolId);
         try {
             const token = await current.getIdToken();
-            const res = await fetch(`/api/admin/subscriptions/${schoolId}/remind`, {
+            const res = await fetch(apiUrl(`/api/admin/subscriptions/${schoolId}/remind`), {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` },
             });

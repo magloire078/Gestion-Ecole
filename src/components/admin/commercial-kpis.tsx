@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth, useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { apiUrl } from '@/lib/api-base';
 import { format, parse } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -72,7 +73,7 @@ export function CommercialKpis() {
         setLoading(true);
         try {
             const token = await current.getIdToken();
-            const res = await fetch('/api/admin/kpis', {
+            const res = await fetch(apiUrl('/api/admin/kpis'), {
                 headers: { Authorization: `Bearer ${token}` },
             });
             const body = await res.json().catch(() => ({}));

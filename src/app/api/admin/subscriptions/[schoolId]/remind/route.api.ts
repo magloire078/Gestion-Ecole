@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withCors, corsPreflight } from '@/lib/api-cors';
 import { differenceInCalendarDays, format } from 'date-fns';
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
@@ -38,7 +39,7 @@ async function requireAdmin(request: NextRequest): Promise<{ uid: string } | { e
     return { uid: decoded.uid };
 }
 
-export async function POST(
+async function POSTHandler(
     request: NextRequest,
     { params }: { params: { schoolId: string } },
 ) {
@@ -118,3 +119,11 @@ export async function POST(
         daysLeft,
     });
 }
+
+
+// Appelée depuis l'application mobile : la requête est inter-origines, d'où CORS.
+export function OPTIONS(req: Request) {
+  return corsPreflight(req);
+}
+
+export const POST = withCors(POSTHandler);
