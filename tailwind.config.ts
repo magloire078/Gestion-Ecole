@@ -67,6 +67,14 @@ const config = {
         'glow': '0 0 20px -5px hsl(var(--primary) / 0.5)',
         'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
       },
+      transitionTimingFunction: {
+        // easeOutQuint. Passer par le thème plutôt que par une valeur arbitraire
+        // `ease-[cubic-bezier(...)]` : le plugin tailwindcss-animate réenregistre
+        // l'espace de noms `ease-*` pour animation-timing-function, ce qui rend
+        // toute valeur arbitraire ambiguë — Tailwind abandonne alors la classe
+        // et n'émet aucun CSS.
+        'out-expo': 'cubic-bezier(0.23, 1, 0.32, 1)',
+      },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },

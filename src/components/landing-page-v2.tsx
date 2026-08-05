@@ -168,7 +168,7 @@ export function LandingPageV2() {
                     src={heroSlides[currentHero].image}
                     alt={heroSlides[currentHero].title}
                     fill
-                    className="object-cover transition-transform duration-[12s] scale-105 hover:scale-110 rounded-xl"
+                    className="object-cover transition-transform duration-1000 scale-105 hover:scale-110 rounded-xl"
                     priority
                   />
 
