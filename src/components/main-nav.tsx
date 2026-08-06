@@ -144,6 +144,7 @@ export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscriptio
 
     const isLinkVisible = (link: any) => {
         if (isSuperAdmin) return true;
+        if (link.isSeparator) return true;
         
         // Base access (permissions + modules)
         if (!hasAccess(link.permission, link.module)) return false;
@@ -162,7 +163,7 @@ export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscriptio
             <nav className="flex flex-col items-center gap-2 px-2 py-4">
                 {NAV_LINKS.flatMap(group => {
                     if (group.adminOnly && !isSuperAdmin) return [];
-                    return group.links.filter(link => hasAccess(link.permission, link.module)).map(link => (
+                    return group.links.filter(link => hasAccess(link.permission, link.module) && !link.isSeparator).map(link => (
                         <NavLink key={link.href} {...link} collapsed pathname={pathname} hasUnreadMessages={hasUnreadChats && link.label === 'Support'} />
                     ));
                 })}
@@ -204,9 +205,41 @@ export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscriptio
                             </AccordionTrigger>
                             <AccordionContent className="pb-1 pl-4">
                                 <div className="space-y-1">
-                                    {visibleLinks.map((link) => (
-                                        <NavLink key={link.href} {...link} collapsed={false} pathname={pathname} hasUnreadMessages={hasUnreadChats && link.label === 'Support'} />
-                                    ))}
+                                    {visibleLinks.map((link) => {
+                                        if (link.isSeparator) {
+                                            return <div key="separator" className="my-2 border-t border-white/10" />;
+                                        }
+                                        const isParentActive = pathname.startsWith(link.href) && link.href !== '/dashboard';
+                                        return (
+                                            <div key={link.href} className="space-y-1">
+                                                <NavLink {...link} collapsed={false} pathname={pathname} hasUnreadMessages={hasUnreadChats && link.label === 'Support'} />
+                                                {link.subLinks && isParentActive && (
+                                                    <ul className="ml-9 border-l border-white/10 pl-3 space-y-0.5">
+                                                        {link.subLinks.map(sub => {
+                                                            const isSubActive = pathname === sub.href;
+                                                            const SubIcon = sub.icon;
+                                                            return (
+                                                                <li key={sub.href}>
+                                                                    <Link
+                                                                        href={sub.href}
+                                                                        className={cn(
+                                                                            'flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors',
+                                                                            isSubActive
+                                                                                ? 'text-primary bg-primary/10'
+                                                                                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                                                                        )}
+                                                                    >
+                                                                        <SubIcon className="h-3.5 w-3.5 shrink-0" />
+                                                                        <span className="truncate">{sub.label}</span>
+                                                                    </Link>
+                                                                </li>
+                                                            );
+                                                        })}
+                                                    </ul>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </AccordionContent>
                         </AccordionItem>

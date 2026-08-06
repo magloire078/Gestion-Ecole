@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MoreHorizontal, Eye, Printer, FileText, CalendarDays, FileSignature, CreditCard, Edit, UserX, UserCheck } from "lucide-react";
+import { MoreHorizontal, Eye, Printer, FileText, CalendarDays, FileSignature, CreditCard, Edit, UserX, UserCheck, Camera } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -122,10 +122,23 @@ export const StudentsTable = ({ students, isLoading, canManageUsers, actionType,
                                                 )}
                                             </div>
                                             <div>
-                                                <Link href={`/dashboard/dossiers-eleves/details?id=${student.id}`} className="hover:underline">
-                                                    <p className="font-medium">{student.lastName.toUpperCase()} {student.firstName}</p>
-                                                </Link>
-                                                <div className="text-xs text-muted-foreground font-mono">{student.matricule || student.id?.substring(0, 8)}</div>
+                                                <div className="flex items-center gap-2">
+                                                    <Link href={`/dashboard/dossiers-eleves/details?id=${student.id}`} className="hover:underline">
+                                                        <p className="font-bold text-slate-900">{student.lastName.toUpperCase()} {student.firstName}</p>
+                                                    </Link>
+                                                    {student.statusAff === 'Affecté' && (
+                                                        <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 hover:bg-emerald-50 text-[10px] py-0 px-1.5 font-bold border border-emerald-200/50 rounded-md">Affecté</Badge>
+                                                    )}
+                                                    {student.isRepeater && (
+                                                        <Badge variant="secondary" className="bg-rose-50 text-rose-700 hover:bg-rose-50 text-[10px] py-0 px-1.5 font-bold border border-rose-200/50 rounded-md">Redoublant</Badge>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    <span className="text-[10px] text-muted-foreground font-mono">{student.matricule || student.id?.substring(0, 8)}</span>
+                                                    {student.nationality && (
+                                                        <span className="text-[10px] text-slate-400 font-medium">({student.nationality})</span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </TableCell>
@@ -156,6 +169,9 @@ export const StudentsTable = ({ students, isLoading, canManageUsers, actionType,
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/details?id=${student.id}`)}>
                                                         <Eye className="mr-2 h-4 w-4" /> Voir le Profil
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/photos?classId=${student.classId || ''}`)}>
+                                                        <Camera className="mr-2 h-4 w-4" /> Photos de la classe
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSub>
                                                         <DropdownMenuSubTrigger>

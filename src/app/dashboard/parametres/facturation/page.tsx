@@ -107,7 +107,7 @@ function BillingDashboardContent() {
         const currentUsage = await calculateMonthlyUsage(firestore, schoolId);
         if (cancelled) return;
         setUsage(currentUsage);
-        const billingProjection = await applyPricing(subscription, currentUsage);
+        const billingProjection = await applyPricing(subscription as any, currentUsage);
         if (cancelled) return;
         setProjection(billingProjection);
       } catch (error: any) {

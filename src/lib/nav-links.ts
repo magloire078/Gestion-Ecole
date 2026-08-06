@@ -1,4 +1,3 @@
-
 import {
   LayoutDashboard,
   Users,
@@ -42,21 +41,36 @@ import {
   Link as LinkIcon,
   Database,
   ReceiptText,
+  Printer,
+  Download,
+  Lock,
+  Star,
+  User,
+  Folder,
+  Tag,
+  ClipboardList,
+  Columns,
+  Image,
+  Play,
+  Calculator,
+  FileDown
 } from 'lucide-react';
 import type { UserProfile } from '@/lib/data-types';
 
 type PermissionKey = keyof NonNullable<UserProfile['permissions']>;
 type Module = 'sante' | 'cantine' | 'transport' | 'internat' | 'immobilier' | 'activites' | 'rh';
 
-interface NavLink {
+export interface NavLink {
   href: string;
   label: string;
   icon: React.ElementType;
   permission?: PermissionKey;
   module?: Module;
+  isSeparator?: boolean;
+  subLinks?: NavLink[];
 }
 
-interface NavGroup {
+export interface NavGroup {
   group: string;
   icon: React.ElementType;
   links: NavLink[];
@@ -68,66 +82,139 @@ export const NAV_LINKS: NavGroup[] = [
     group: "Principal",
     icon: LayoutDashboard,
     links: [
-      { href: '/dashboard', label: 'Tableau de Bord', icon: LayoutDashboard },
+      { href: '/dashboard', label: 'Accueil', icon: LayoutDashboard },
       { href: '/dashboard/analytics', label: 'Statistiques', icon: BarChart3, permission: 'viewAnalytics' },
     ]
   },
   {
     group: "Vie Scolaire",
+    icon: Users,
+    links: [
+      { 
+        href: '/dashboard/dossiers-eleves', 
+        label: 'Élèves', 
+        icon: Users, 
+        permission: 'viewUsers',
+        subLinks: [
+          { href: '/dashboard/dossiers-eleves', label: 'Dossiers Élèves', icon: Users },
+          { href: '/dashboard/dossiers-eleves/import-export', label: 'Import / Export', icon: Database },
+          { href: '/dashboard/dossiers-eleves/attribution', label: 'Affectations', icon: School },
+          { href: '/dashboard/dossiers-eleves/presences', label: 'Présences', icon: CalendarClock },
+          { href: '/dashboard/dossiers-eleves/imprimer', label: 'Impression listes', icon: Printer },
+        ]
+      },
+      { 
+        href: '/dashboard/discipline', 
+        label: 'Discipline & Santé', 
+        icon: ShieldAlert, 
+        permission: 'manageDiscipline',
+        subLinks: [
+          { href: '/dashboard/discipline', label: 'Discipline', icon: ShieldAlert },
+          { href: '/dashboard/sante', label: 'Santé & Suivi', icon: HeartPulse, permission: 'manageMedical', module: 'sante' },
+        ]
+      },
+      {
+        href: '/dashboard/cantine',
+        label: 'Services & Cantine',
+        icon: Utensils,
+        permission: 'manageCantine',
+        module: 'cantine',
+        subLinks: [
+          { href: '/dashboard/cantine', label: 'Cantine', icon: Utensils },
+          { href: '/dashboard/stocks', label: 'Stocks cantine', icon: Package, permission: 'manageInventory' },
+          { href: '/dashboard/transport', label: 'Transports', icon: Bus, permission: 'manageTransport', module: 'transport' },
+          { href: '/dashboard/internat', label: 'Internat', icon: Bed, permission: 'manageInternat', module: 'internat' },
+          { href: '/dashboard/activites/dashboard', label: 'Activités', icon: Trophy, permission: 'manageActivities', module: 'activites' },
+        ]
+      }
+    ]
+  },
+  {
+    group: "Pédagogie & Notes",
     icon: School,
     links: [
-      { href: '/dashboard/dossiers-eleves', label: 'Élèves', icon: Users, permission: 'viewUsers' },
-      { href: '/dashboard/discipline', label: 'Discipline', icon: ShieldAlert, permission: 'manageDiscipline' },
-      { href: '/dashboard/sante', label: 'Santé', icon: HeartPulse, permission: 'manageMedical', module: 'sante' },
-      { href: '/dashboard/cantine', label: 'Cantine', icon: Utensils, permission: 'manageCantine', module: 'cantine' },
-      { href: '/dashboard/stocks', label: 'Stocks', icon: Package, permission: 'manageInventory' },
-      { href: '/dashboard/transport', label: 'Transport', icon: Bus, permission: 'manageTransport', module: 'transport' },
-      { href: '/dashboard/internat', label: 'Internat', icon: Bed, permission: 'manageInternat', module: 'internat' },
-      { href: '/dashboard/activites/dashboard', label: 'Activités', icon: Trophy, permission: 'manageActivities', module: 'activites' },
+      { href: '/dashboard/classes', label: 'Classes', icon: School, permission: 'manageClasses' },
+      { href: '/dashboard/emploi-du-temps', label: 'Emplois du temps', icon: CalendarClock, permission: 'manageSchedule' },
+      { 
+        href: '/dashboard/notes/fiche', 
+        label: 'Carnet de Notes', 
+        icon: FileText, 
+        permission: 'manageGrades',
+        subLinks: [
+          { href: '/dashboard/notes/fiche', label: 'Saisie des Notes', icon: FileText },
+          { href: '/dashboard/notes/moyennes', label: 'Moyennes', icon: Calculator },
+          { href: '/dashboard/notes/calculs', label: 'Calculs & Rangs', icon: Play },
+          { href: '/dashboard/notes/matrices', label: 'Matrices', icon: GanttChartSquare },
+          { href: '/dashboard/notes/bulletins-classe', label: 'Bulletins classe', icon: FileDown },
+          { href: '/dashboard/notes/bulletins-eleve', label: 'Bulletins élèves', icon: User },
+          { href: '/dashboard/notes/verrouillage', label: 'Verrouillage', icon: Lock },
+        ]
+      },
+      { 
+        href: '/dashboard/documents/attestation', 
+        label: 'Documents & Fiches', 
+        icon: Folder, 
+        permission: 'viewUsers',
+        subLinks: [
+          { href: '/dashboard/documents/attestation', label: 'Attestations', icon: FileText },
+          { href: '/dashboard/documents/cartes', label: 'Cartes Scolaires', icon: CreditCard },
+          { href: '/dashboard/documents/fiche', label: 'Fiches Scolaires', icon: FileText },
+          { href: '/dashboard/documents/honneur', label: "Tableau d'honneur", icon: Star },
+          { href: '/dashboard/documents/majors', label: 'Majors de classe', icon: Trophy },
+          { href: '/dashboard/documents/listes-classe', label: 'Listes nominatives', icon: List },
+          { href: '/dashboard/documents/trombinoscope', label: 'Trombinoscope', icon: Image },
+          { href: '/dashboard/documents/recapitulatif', label: 'Récapitulatif', icon: Columns },
+        ]
+      },
+      { href: '/dashboard/pedagogie/matieres', label: 'Matières & Mentions', icon: BookOpen, permission: 'manageClasses' },
     ]
   },
   {
-    group: "Pédagogie",
-    icon: GraduationCap,
-    links: [
-      { href: '/dashboard/pedagogie/structure', label: 'Structure Scolaire', icon: School, permission: 'manageClasses' },
-      { href: '/dashboard/pedagogie/transition', label: 'Passage de Classe', icon: UserPlus, permission: 'manageClasses' },
-      { href: '/dashboard/emploi-du-temps', label: 'Emploi du temps', icon: CalendarClock, permission: 'manageSchedule' },
-      { href: '/dashboard/notes', label: 'Saisie des Notes', icon: FileText, permission: 'manageGrades' },
-      { href: '/dashboard/absences', label: 'Gestion des Absences', icon: UserX, permission: 'manageAttendance' },
-      { href: '/dashboard/bibliotheque', label: 'Bibliothèque', icon: BookOpen, permission: 'manageLibrary' },
-    ]
-  },
-  {
-    group: "Finance",
+    group: "Comptabilité",
     icon: Wallet,
     links: [
-      { href: '/dashboard/inscription', label: 'Inscriptions', icon: UserPlus, permission: 'manageUsers' },
-      { href: '/dashboard/frais-scolarite', label: 'Frais de scolarité', icon: GraduationCap, permission: 'manageBilling' },
-      { href: '/dashboard/paiements', label: 'Suivi des Paiements', icon: Wallet, permission: 'manageBilling' },
-      { href: '/dashboard/comptabilite', label: 'Comptabilité', icon: Landmark, permission: 'manageBilling' },
+      { 
+        href: '/dashboard/inscription', 
+        label: 'Inscriptions & Tarifs', 
+        icon: UserPlus, 
+        permission: 'manageBilling',
+        subLinks: [
+          { href: '/dashboard/inscription', label: 'Inscriptions', icon: UserPlus },
+          { href: '/dashboard/paiements', label: 'Versements', icon: CreditCard },
+          { href: '/dashboard/frais-scolarite', label: 'Frais & Tarifs', icon: ReceiptText },
+        ]
+      },
+      { href: '/dashboard/comptabilite', label: 'Caisse & Dépenses', icon: Landmark, permission: 'manageBilling' },
+      { 
+        href: '/dashboard/rapports-paiements', 
+        label: 'Rapports Financiers', 
+        icon: BarChart3, 
+        permission: 'manageBilling',
+        subLinks: [
+          { href: '/dashboard/rapports-paiements/aujourd-hui', label: "Aujourd'hui", icon: History },
+          { href: '/dashboard/rapports-paiements/tous', label: 'Journal des Paiements', icon: List },
+          { href: '/dashboard/rapports-paiements/par-classe', label: 'Par classe', icon: School },
+          { href: '/dashboard/rapports-paiements/par-periode', label: 'Par période', icon: CalendarClock },
+          { href: '/dashboard/rapports-paiements/tous-rapports', label: 'Rapports avancés', icon: ReceiptText },
+        ]
+      },
     ]
   },
   {
     group: "RH & Paie",
     icon: Briefcase,
     links: [
-      { href: '/dashboard/rh/dashboard', label: 'Tableau de bord', icon: LayoutDashboard, permission: 'viewUsers', module: 'rh' },
-      { href: '/dashboard/rh/personnel', label: 'Personnel', icon: Users, permission: 'viewUsers', module: 'rh' },
-      { href: '/dashboard/rh/paie', label: 'Paie', icon: Banknote, permission: 'manageBilling', module: 'rh' },
-      { href: '/dashboard/rh/conges', label: 'Congés', icon: CalendarClock, permission: 'manageUsers', module: 'rh' },
-    ]
-  },
-  {
-    group: "Immobilier",
-    icon: LandPlot,
-    links: [
-      { href: '/dashboard/immobilier/dashboard', label: 'Vue d\'ensemble', icon: LayoutDashboard, permission: 'manageInventory', module: 'immobilier' },
-      { href: '/dashboard/immobilier/batiments', label: 'Bâtiments & Salles', icon: Building, permission: 'manageRooms', module: 'immobilier' },
-      { href: '/dashboard/immobilier/inventaire', label: 'Inventaire', icon: GanttChartSquare, permission: 'manageInventory', module: 'immobilier' },
-      { href: '/dashboard/immobilier/maintenance', label: 'Maintenance', icon: Wrench, permission: 'manageInventory', module: 'immobilier' },
-      { href: '/dashboard/immobilier/reservations', label: 'Réservations', icon: CalendarClock, permission: 'manageRooms', module: 'immobilier' },
-      { href: '/dashboard/immobilier/cles', label: 'Clés', icon: KeyRound, permission: 'manageInventory', module: 'immobilier' },
+      { 
+        href: '/dashboard/rh/personnel', 
+        label: 'Personnel & Paie', 
+        icon: Briefcase, 
+        permission: 'viewUsers',
+        subLinks: [
+          { href: '/dashboard/rh/personnel', label: 'Enseignants', icon: GraduationCap },
+          { href: '/dashboard/rh/administration', label: 'Habilitations', icon: Shield },
+          { href: '/dashboard/rh/paie', label: 'Salaires & Paie', icon: Banknote },
+        ]
+      },
     ]
   },
   {
@@ -148,8 +235,6 @@ export const NAV_LINKS: NavGroup[] = [
   }
 ];
 
-// Sous-liens de la page Paramètres — utilisés à la fois par la sidebar
-// principale (sous Paramètres) et par l'aside in-page (parametres/layout.tsx).
 export const parametresSubLinks = [
   { href: '/dashboard/parametres', label: 'Général', icon: Settings, permission: 'manageSettings' as PermissionKey },
   { href: '/dashboard/parametres/fiche-etablissement', label: 'Fiche Établissement', icon: Building, permission: 'manageSettings' as PermissionKey },
@@ -163,7 +248,6 @@ export const parametresSubLinks = [
   { href: '/dashboard/parametres/donnees', label: 'Maintenance Données', icon: Database, permission: 'manageSettings' as PermissionKey },
 ];
 
-// Ajout conceptuel des sous-liens. La logique de rendu est dans le layout respectif.
 export const transportSubLinks = [
   { href: '/dashboard/transport/dashboard', label: 'Tableau de bord', icon: LayoutDashboard, permission: 'manageTransport' as PermissionKey, module: 'transport' as Module },
   { href: '/dashboard/transport/bus', label: 'Bus', icon: Bus, permission: 'manageTransport' as PermissionKey, module: 'transport' as Module },

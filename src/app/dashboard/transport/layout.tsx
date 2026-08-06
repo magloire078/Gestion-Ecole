@@ -9,7 +9,7 @@ import { ModuleAccessGuard } from '@/components/layout/module-access-guard';
 export default function TransportLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
 
-    const transportNavLinks = NAV_LINKS.find(g => g.group === 'Vie Scolaire')?.links.filter(
+    const transportNavLinks = NAV_LINKS.find(g => g.group === 'Gestion des élèves')?.links.filter(
         l => l.href.startsWith('/dashboard/transport')
     ) || [];
 
