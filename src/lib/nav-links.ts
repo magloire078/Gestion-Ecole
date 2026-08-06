@@ -126,6 +126,21 @@ export const NAV_LINKS: NavGroup[] = [
           { href: '/dashboard/internat', label: 'Internat', icon: Bed, permission: 'manageInternat', module: 'internat' },
           { href: '/dashboard/activites/dashboard', label: 'Activités', icon: Trophy, permission: 'manageActivities', module: 'activites' },
         ]
+      },
+      {
+        href: '/dashboard/immobilier/dashboard',
+        label: 'Immobilier & Locaux',
+        icon: Building,
+        permission: 'manageInventory',
+        module: 'immobilier',
+        subLinks: [
+          { href: '/dashboard/immobilier/dashboard', label: 'Vue d\'ensemble', icon: LayoutDashboard },
+          { href: '/dashboard/immobilier/batiments', label: 'Bâtiments & Salles', icon: Building, permission: 'manageRooms' },
+          { href: '/dashboard/immobilier/inventaire', label: 'Inventaire', icon: GanttChartSquare },
+          { href: '/dashboard/immobilier/maintenance', label: 'Maintenance', icon: Wrench },
+          { href: '/dashboard/immobilier/reservations', label: 'Réservations', icon: CalendarClock, permission: 'manageRooms' },
+          { href: '/dashboard/immobilier/cles', label: 'Clés', icon: KeyRound },
+        ]
       }
     ]
   },
