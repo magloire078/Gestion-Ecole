@@ -97,10 +97,8 @@ export const NAV_LINKS: NavGroup[] = [
         permission: 'viewUsers',
         subLinks: [
           { href: '/dashboard/dossiers-eleves', label: 'Dossiers Élèves', icon: Users },
-          { href: '/dashboard/dossiers-eleves/import-export', label: 'Import / Export', icon: Database },
           { href: '/dashboard/dossiers-eleves/attribution', label: 'Affectations', icon: School },
-          { href: '/dashboard/dossiers-eleves/presences', label: 'Présences', icon: CalendarClock },
-          { href: '/dashboard/dossiers-eleves/imprimer', label: 'Impression listes', icon: Printer },
+          { href: '/dashboard/absences', label: 'Présences', icon: CalendarClock },
         ]
       },
       { 
@@ -151,18 +149,14 @@ export const NAV_LINKS: NavGroup[] = [
       { href: '/dashboard/classes', label: 'Classes', icon: School, permission: 'manageClasses' },
       { href: '/dashboard/emploi-du-temps', label: 'Emplois du temps', icon: CalendarClock, permission: 'manageSchedule' },
       { 
-        href: '/dashboard/notes/fiche', 
+        href: '/dashboard/notes', 
         label: 'Carnet de Notes', 
         icon: FileText, 
         permission: 'manageGrades',
         subLinks: [
-          { href: '/dashboard/notes/fiche', label: 'Saisie des Notes', icon: FileText },
-          { href: '/dashboard/notes/moyennes', label: 'Moyennes', icon: Calculator },
-          { href: '/dashboard/notes/calculs', label: 'Calculs & Rangs', icon: Play },
-          { href: '/dashboard/notes/matrices', label: 'Matrices', icon: GanttChartSquare },
-          { href: '/dashboard/notes/bulletins-classe', label: 'Bulletins classe', icon: FileDown },
-          { href: '/dashboard/notes/bulletins-eleve', label: 'Bulletins élèves', icon: User },
-          { href: '/dashboard/notes/verrouillage', label: 'Verrouillage', icon: Lock },
+          { href: '/dashboard/notes', label: 'Saisie des Notes', icon: FileText },
+          { href: '/dashboard/notes/moyennes', label: 'Moyennes par Matière', icon: Calculator },
+          { href: '/dashboard/pedagogie/bulletins', label: 'Bulletins & Calculs', icon: Play },
         ]
       },
       { 
@@ -181,7 +175,7 @@ export const NAV_LINKS: NavGroup[] = [
           { href: '/dashboard/documents/recapitulatif', label: 'Récapitulatif', icon: Columns },
         ]
       },
-      { href: '/dashboard/pedagogie/matieres', label: 'Matières & Mentions', icon: BookOpen, permission: 'manageClasses' },
+      { href: '/dashboard/pedagogie/structure', label: 'Structure & Matières', icon: BookOpen, permission: 'manageClasses' },
     ]
   },
   {
@@ -200,19 +194,7 @@ export const NAV_LINKS: NavGroup[] = [
         ]
       },
       { href: '/dashboard/comptabilite', label: 'Caisse & Dépenses', icon: Landmark, permission: 'manageBilling' },
-      { 
-        href: '/dashboard/rapports-paiements', 
-        label: 'Rapports Financiers', 
-        icon: BarChart3, 
-        permission: 'manageBilling',
-        subLinks: [
-          { href: '/dashboard/rapports-paiements/aujourd-hui', label: "Aujourd'hui", icon: History },
-          { href: '/dashboard/rapports-paiements/tous', label: 'Journal des Paiements', icon: List },
-          { href: '/dashboard/rapports-paiements/par-classe', label: 'Par classe', icon: School },
-          { href: '/dashboard/rapports-paiements/par-periode', label: 'Par période', icon: CalendarClock },
-          { href: '/dashboard/rapports-paiements/tous-rapports', label: 'Rapports avancés', icon: ReceiptText },
-        ]
-      },
+      { href: '/dashboard/rapports-paiements', label: 'Rapports Financiers', icon: BarChart3, permission: 'manageBilling' },
     ]
   },
   {
