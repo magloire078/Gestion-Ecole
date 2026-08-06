@@ -14,6 +14,7 @@ import { SUBSCRIPTION_PLANS } from '@/lib/subscription-plans';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnimatedHighlight } from '@/components/ui/animated-highlight';
 import { LiveChat } from './live-chat';
+import { IntroSpot } from './intro-spot';
 import { COUNTRIES, DEFAULT_COUNTRY, type CountryCode, getCountryByCode } from '@/lib/countries-data';
 import { formatCurrency } from '@/lib/currency-utils';
 
@@ -77,6 +78,7 @@ export function LandingPageV2() {
 
   return (
     <div className="bg-premium min-h-screen transition-colors duration-500 overflow-x-hidden">
+      <IntroSpot />
       {/* Abstract 3D Background Elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute top-[10%] left-[-5%] w-64 h-64 bg-primary/10 rounded-full blur-3xl floating" />
