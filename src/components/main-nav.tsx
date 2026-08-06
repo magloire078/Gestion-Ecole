@@ -207,14 +207,14 @@ export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscriptio
                                 <div className="space-y-1">
                                     {visibleLinks.map((link) => {
                                         if (link.isSeparator) {
-                                            return <div key="separator" className="my-2 border-t border-white/10" />;
+                                            return <div key="separator" className="my-2 border-t border-border/60" />;
                                         }
                                         const isParentActive = pathname.startsWith(link.href) && link.href !== '/dashboard';
                                         return (
                                             <div key={link.href} className="space-y-1">
                                                 <NavLink {...link} collapsed={false} pathname={pathname} hasUnreadMessages={hasUnreadChats && link.label === 'Support'} />
                                                 {link.subLinks && isParentActive && (
-                                                    <ul className="ml-9 border-l border-white/10 pl-3 space-y-0.5">
+                                                    <ul className="ml-9 border-l border-border/60 pl-3 space-y-0.5">
                                                         {link.subLinks.map(sub => {
                                                             const isSubActive = pathname === sub.href;
                                                             const SubIcon = sub.icon;
