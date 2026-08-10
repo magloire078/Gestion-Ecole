@@ -151,6 +151,26 @@ export class SchoolCreationService {
         // On ne bloque pas la réussite de la création pour une erreur d'email
       }
 
+      // 6. Notifier le Super-Admin (+225 0707942880) sur WhatsApp
+      try {
+        fetch('/api/admin/notifications/notify-school-created', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            schoolName: data.name,
+            schoolId,
+            schoolCode,
+            directorName: `${data.directorFirstName} ${data.directorLastName}`.trim(),
+            directorEmail: data.directorEmail,
+            directorPhone: data.phone,
+            country: data.country,
+            address: data.address,
+          }),
+        }).catch(err => console.warn('[SchoolCreation] WhatsApp admin notify failed:', err));
+      } catch (adminNotifyErr) {
+        console.warn('[SchoolCreation] WhatsApp admin notify skipped:', adminNotifyErr);
+      }
+
       return {
         success: true,
         schoolId,

@@ -132,9 +132,6 @@ export async function processSubscriptionPayment(
             href: "/dashboard/settings",
             isRead: false,
             createdAt: FieldValue.serverTimestamp(),
-            // We can leave userId empty or find director ID if needed, 
-            // but the NotificationsPanel usually filters by userId.
-            // Let's assume we want to notify whoever is the director.
         };
         
         // Find director's UID
@@ -150,6 +147,25 @@ export async function processSubscriptionPayment(
         }
     } catch (notifyError) {
         console.error(`[PaymentProcessing] Error sending subscription notification:`, notifyError);
+    }
+
+    // Notifier immédiatement le Super-Admin (+225 0707942880) par WhatsApp / SMS
+    try {
+        const { notifyAdminSubscriptionPayment } = await import('./admin-notifier');
+        await notifyAdminSubscriptionPayment({
+            schoolName: schoolData.name || 'École',
+            schoolId,
+            planName,
+            durationMonths,
+            paymentProvider,
+            amountPaid,
+            currency,
+            directorName: `${schoolData.directorFirstName || ''} ${schoolData.directorLastName || ''}`.trim(),
+            directorEmail: schoolData.directorEmail,
+            directorPhone: schoolData.directorPhone,
+        });
+    } catch (adminNotifyErr) {
+        console.error(`[PaymentProcessing] Error sending super-admin WhatsApp alert:`, adminNotifyErr);
     }
 
     console.log(`[PaymentProcessing] Successfully updated subscription for school ${schoolId}.`);
