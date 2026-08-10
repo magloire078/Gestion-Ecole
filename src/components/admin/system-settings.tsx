@@ -34,6 +34,7 @@ export const SystemSettings = () => {
     const [isSaving, setIsSaving] = useState(false);
 
     const [adminNotificationPhone, setAdminNotificationPhone] = useState('+2250707942880');
+    const [adminWebhookUrl, setAdminWebhookUrl] = useState('');
     const [isTestingWhatsApp, setIsTestingWhatsApp] = useState(false);
 
     useEffect(() => {
@@ -43,6 +44,9 @@ export const SystemSettings = () => {
             if (settingsData.adminNotificationPhone) {
                 setAdminNotificationPhone(settingsData.adminNotificationPhone);
             }
+            if (settingsData.adminWebhookUrl) {
+                setAdminWebhookUrl(settingsData.adminWebhookUrl);
+            }
             if (settingsData.paymentProviders) {
                 setPaymentProviders(prev => ({ ...prev, ...settingsData.paymentProviders }));
             }
@@ -51,7 +55,7 @@ export const SystemSettings = () => {
 
     const handleSave = async () => {
         setIsSaving(true);
-        const dataToSave = { maintenanceMode, registrationEnabled, paymentProviders, adminNotificationPhone };
+        const dataToSave = { maintenanceMode, registrationEnabled, paymentProviders, adminNotificationPhone, adminWebhookUrl };
         try {
             await setDoc(settingsRef, dataToSave, { merge: true });
             toast({ title: "Paramètres sauvegardés", description: "Les paramètres système ont été mis à jour." });
@@ -241,7 +245,24 @@ export const SystemSettings = () => {
                                     </Button>
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    Format recommandé : <code>+2250707942880</code> (Côte d'Ivoire).
+                                    Numéro actif : <code>+225 0707942880</code> (Côte d'Ivoire).
+                                </p>
+                            </div>
+
+                            <div className="space-y-2 pt-2 border-t">
+                                <Label htmlFor="admin-webhook" className="font-semibold flex items-center gap-2">
+                                    <Key className="h-4 w-4 text-indigo-600" />
+                                    URL du Webhook WhatsApp (Make, Zapier, n8n, Whapi, CallMeBot...)
+                                </Label>
+                                <Input
+                                    id="admin-webhook"
+                                    value={adminWebhookUrl}
+                                    onChange={(e) => setAdminWebhookUrl(e.target.value)}
+                                    placeholder="https://hook.eu1.make.com/... ou https://api.callmebot.com/..."
+                                    className="font-mono text-sm rounded-xl max-w-2xl"
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    Collez l'URL de votre webhook. Chaque événement lui enverra un payload JSON avec le message formaté et le numéro <code>+225 0707942880</code>.
                                 </p>
                             </div>
 

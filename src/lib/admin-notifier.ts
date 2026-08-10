@@ -41,7 +41,20 @@ export async function sendAdminWhatsAppMessage(message: string): Promise<{ succe
     let channel = 'none';
 
     // 1. Essai via Custom Webhook (Zapier, Make, n8n, CallMeBot, Whapi, etc.)
-    const webhookUrl = process.env.ADMIN_WHATSAPP_WEBHOOK_URL || process.env.ADMIN_NOTIFICATION_WEBHOOK_URL;
+    let webhookUrl = process.env.ADMIN_WHATSAPP_WEBHOOK_URL || process.env.ADMIN_NOTIFICATION_WEBHOOK_URL;
+    
+    // Si pas de variable d'env, vérifier dans Firestore system_settings/default
+    if (!webhookUrl) {
+        try {
+            const settingsSnap = await getAdminDb().doc('system_settings/default').get();
+            if (settingsSnap.exists) {
+                webhookUrl = settingsSnap.data()?.adminWebhookUrl;
+            }
+        } catch (dbErr) {
+            console.warn('[AdminNotifier] Could not read system_settings for webhook:', dbErr);
+        }
+    }
+
     if (webhookUrl && webhookUrl.startsWith('http')) {
         try {
             const resp = await fetch(webhookUrl, {
@@ -59,6 +72,8 @@ export async function sendAdminWhatsAppMessage(message: string): Promise<{ succe
                 console.log('[AdminNotifier] Notification sent via custom WhatsApp Webhook.');
                 sent = true;
                 channel = 'webhook';
+            } else {
+                console.warn('[AdminNotifier] Webhook returned status:', resp.status);
             }
         } catch (webhookErr) {
             console.error('[AdminNotifier] Error sending via Webhook:', webhookErr);
