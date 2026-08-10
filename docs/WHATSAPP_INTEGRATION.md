@@ -44,6 +44,27 @@ WhatsApp_INSTANCE_NAME=gerecole_support
 WhatsApp_GROUP_ID=120363123456789@g.us
 ```
 
+### 3. Alertes admin (nouvelle inscription, abonnement, renouvellement)
+
+En plus du chat support, les Cloud Functions `onSchoolRegistered` et
+`onSubscriptionChanged` (`functions/src/index.ts`) envoient une alerte
+WhatsApp aux super-admins à chaque nouvelle inscription, activation
+d'abonnement, changement de plan ou renouvellement. Ces fonctions
+tournent sur Firebase Functions (pas Vercel) : les variables ci-dessus
+(`EVOLUTION_API_URL`, `EVOLUTION_API_KEY`, `WhatsApp_INSTANCE_NAME`)
+doivent donc aussi être définies côté Firebase (fichier `functions/.env`
+ou secrets Firebase), en plus de Vercel.
+
+Par défaut ces alertes admin partent vers `WhatsApp_GROUP_ID`. Pour les
+recevoir sur un numéro individuel plutôt que dans le groupe support,
+ajoutez (côté Firebase Functions uniquement) :
+
+```bash
+# Numéro individuel (indicatif pays inclus, sans '+' ni espaces) recevant
+# les alertes admin. Si absent, repli sur WhatsApp_GROUP_ID.
+ADMIN_ALERT_WHATSAPP_NUMBER=2250707942880
+```
+
 ### 2. Configuration du Webhook (Evolution API)
 
 Dans votre instance Evolution API, configurez le webhook pour l'instance `gerecole_support` :
