@@ -13,13 +13,12 @@ import { doc, writeBatch, collection, query, where, getDocs, getDoc, updateDoc }
 import { Logo } from '@/components/logo';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from "@/components/ui/badge";
-import type { staff as Staff, user_root, parent as Parent, parent_session } from '@/lib/data-types';
+import type { user_root, parent as Parent, parent_session } from '@/lib/data-types';
 import { Loader2, PlayCircle, School, Users, Heart, ArrowRight, CheckCircle2, Rocket, Sparkles } from 'lucide-react';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import { DEMO_DIRECTOR_EMAIL, DEMO_SCHOOL_NAME } from '@/lib/demo-data';
 import { SchoolCreationService } from '@/services/school-creation';
 import { seedDemoData } from '@/services/demo-seeding';
-import { getStaffByEmail } from '@/services/staff-services';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { AnimatedHighlight } from '@/components/ui/animated-highlight';
@@ -219,7 +218,7 @@ export default function OnboardingPage() {
   }
 
   const handleJoinSchool = async () => {
-    if (!user || !user.uid || !user.displayName || !user.email) {
+    if (!user || !user.uid || !user.authUser) {
       toast({ variant: 'destructive', title: 'Erreur', description: 'Informations manquantes.' });
       return;
     }
@@ -229,64 +228,32 @@ export default function OnboardingPage() {
     }
     setIsProcessing(true);
     try {
-      const schoolsRef = collection(firestore, 'ecoles');
-      const q = query(schoolsRef, where("schoolCode", "==", schoolCode.trim().toUpperCase()));
-      const querySnapshot = await getDocs(q);
-      if (querySnapshot.empty) {
-        toast({ variant: 'destructive', title: 'Code Invalide', description: 'Aucun établissement trouvé.' });
+      // La recherche par code et la création du profil personnel se font
+      // côté serveur (SDK admin) : un utilisateur qui rejoint une école n'est
+      // pas encore membre, donc les règles Firestore lui interdisent de lire
+      // /ecoles ou /ecoles/{id}/personnel directement depuis le client.
+      const idToken = await user.authUser.getIdToken();
+      const response = await fetch('/api/onboarding/join-school', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ schoolCode: schoolCode.trim(), role }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        toast({
+          variant: 'destructive',
+          title: response.status === 404 ? 'Code Invalide' : 'Erreur',
+          description: result.error || 'Impossible de rejoindre cet établissement.',
+        });
         setIsProcessing(false);
         return;
       }
-      const schoolDoc = querySnapshot.docs[0];
-      const schoolId = schoolDoc.id;
 
-      // --- Reconciliation Logic ---
-      // Check if a profile with this email already exists (random ID profile)
-      const existingStaff = await getStaffByEmail(schoolId, user.email);
-      
-      const nameParts = user.displayName.split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
-      
-      const batch = writeBatch(firestore);
-      const staffProfileRef = doc(firestore, `ecoles/${schoolId}/personnel/${user.uid}`);
-      
-      // Prepare data, merging from existing profile if found
-      const staffProfileData: Omit<Staff, 'id'> = {
-        ...existingStaff, // Spread existing data first
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL || existingStaff?.photoURL || '',
-        schoolId: schoolId,
-        role: (existingStaff?.role || role) as any,
-        firstName: existingStaff?.firstName || firstName,
-        lastName: existingStaff?.lastName || lastName,
-        hireDate: existingStaff?.hireDate || new Date().toISOString().split('T')[0],
-        baseSalary: existingStaff?.baseSalary || 0,
-        status: 'Actif',
-        isAdmin: user.profile?.isAdmin || existingStaff?.isAdmin || false,
-      };
-
-      // 1. Create/Update the profile using UID as document ID
-      batch.set(staffProfileRef, staffProfileData);
-
-      // 2. If an old document existed (with a different ID), delete it
-      if (existingStaff && existingStaff.id !== user.uid) {
-        const oldStaffRef = doc(firestore, `ecoles/${schoolId}/personnel/${existingStaff.id}`);
-        batch.delete(oldStaffRef);
-      }
-
-      // 3. Update user's root document
-      const userRootRef = doc(firestore, `users/${user.uid}`);
-      const userRootSnap = await getDoc(userRootRef);
-      const currentSchools = userRootSnap.exists() ? (userRootSnap.data() as user_root).schools || {} : {};
-      const updatedSchools = { ...currentSchools, [schoolId]: staffProfileData.role };
-      batch.set(userRootRef, { schools: updatedSchools, activeSchoolId: schoolId }, { merge: true });
-
-      await batch.commit();
       await reloadUser();
-      toast({ title: 'Bienvenue !', description: `Vous avez rejoint ${schoolDoc.data().name}.` });
+      toast({ title: 'Bienvenue !', description: `Vous avez rejoint ${result.schoolName}.` });
       router.replace('/dashboard');
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Erreur', description: error.message });
