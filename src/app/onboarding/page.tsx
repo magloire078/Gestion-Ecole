@@ -9,11 +9,9 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from '@/hooks/use-user';
 import { useFirestore } from "@/firebase";
-import { doc, writeBatch, collection, query, where, getDocs, getDoc, updateDoc } from "firebase/firestore";
 import { Logo } from '@/components/logo';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from "@/components/ui/badge";
-import type { user_root, parent as Parent, parent_session } from '@/lib/data-types';
 import { Loader2, PlayCircle, School, Users, Heart, ArrowRight, CheckCircle2, Rocket, Sparkles } from 'lucide-react';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import { DEMO_DIRECTOR_EMAIL, DEMO_SCHOOL_NAME } from '@/lib/demo-data';
@@ -261,43 +259,32 @@ export default function OnboardingPage() {
   };
 
   const handleParentJoin = async () => {
-    if (!user || !user.uid) return;
+    if (!user || !user.uid || !user.authUser) return;
     if (!parentAccessCode.trim()) return;
     setIsProcessing(true);
     try {
-      const sessionsRef = collection(firestore, 'sessions_parents');
-      const q = query(sessionsRef, where("accessCode", "==", parentAccessCode.trim()), where("isActive", "==", true));
-      const querySnapshot = await getDocs(q);
-      if (querySnapshot.empty) {
-        toast({ variant: 'destructive', title: 'Code Invalide', description: 'Code incorrect ou expiré.' });
+      // Comme pour la jonction staff : l'écriture de users/{uid}.schools est
+      // réservée au serveur (SDK admin), les règles Firestore l'interdisent
+      // désormais depuis le client.
+      const idToken = await user.authUser.getIdToken();
+      const response = await fetch('/api/onboarding/join-parent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ accessCode: parentAccessCode.trim() }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        toast({
+          variant: 'destructive',
+          title: response.status === 404 ? 'Code Invalide' : 'Erreur',
+          description: result.error || 'Échec de la liaison.',
+        });
         setIsProcessing(false);
         return;
       }
-      const sessionDoc = querySnapshot.docs[0];
-      const sessionData = sessionDoc.data() as parent_session;
-      const schoolId = sessionData.schoolId!;
-      const studentIds = sessionData.studentIds!;
-      const batch = writeBatch(firestore);
-      const userRootRef = doc(firestore, `users/${user.uid}`);
-      const userRootSnap = await getDoc(userRootRef);
-      const currentSchools = userRootSnap.exists() ? (userRootSnap.data() as user_root).schools || {} : {};
-      const updatedSchools = { ...currentSchools, [schoolId]: 'parent' };
-      batch.set(userRootRef, { schools: updatedSchools, activeSchoolId: schoolId }, { merge: true });
-      const parentProfileRef = doc(firestore, `ecoles/${schoolId}/parents/${user.uid}`);
-      const parentProfileSnap = await getDoc(parentProfileRef);
-      const existingStudentIds = parentProfileSnap.exists() ? (parentProfileSnap.data() as Parent).studentIds || [] : [];
-      const newStudentIds = [...new Set([...existingStudentIds, ...studentIds])];
-      batch.set(parentProfileRef, { uid: user.uid, email: user.email, displayName: user.displayName, photoURL: user.photoURL, schoolId: schoolId, studentIds: newStudentIds }, { merge: true });
-      for (const studentId of studentIds) {
-        const studentRef = doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`);
-        const studentSnap = await getDoc(studentRef);
-        if (studentSnap.exists()) {
-          const parentIds = [...new Set([...(studentSnap.data().parentIds || []), user.uid])];
-          batch.update(studentRef, { parentIds: parentIds });
-        }
-      }
-      batch.update(sessionDoc.ref, { isActive: false });
-      await batch.commit();
       await reloadUser();
       toast({ title: 'Accès parent activé!', description: 'Redirection...' });
       router.replace('/dashboard');
