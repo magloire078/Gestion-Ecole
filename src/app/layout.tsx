@@ -6,6 +6,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { UserProvider } from '@/providers/user-provider';
 import { SchoolProvider } from '@/providers/school-provider';
 import { MobileBridge } from '@/components/mobile-bridge';
+import { ServiceWorkerRegister } from '@/components/service-worker-register';
 import { Toaster } from '@/components/ui/toaster';
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
@@ -23,7 +24,7 @@ const outfit = Outfit({
 });
 
 export const viewport: Viewport = {
-  themeColor: '#FFFFFF',
+  themeColor: '#0C365A',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -34,14 +35,22 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: 'GèreEcole - Gestion scolaire simplifiée',
   description: 'La solution complète pour gérer les élèves, les notes, les paiements et la communication scolaire.',
+  manifest: '/manifest.json',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
       { url: '/favicon.png', type: 'image/png', sizes: '32x32' },
+      { url: '/icons/icon-192.png', type: 'image/png', sizes: '192x192' },
+      { url: '/icons/icon-512.png', type: 'image/png', sizes: '512x512' },
     ],
     apple: [
-      { url: '/favicon.png', sizes: '180x180', type: 'image/png' },
+      { url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
     ],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'GèreEcole',
   },
 };
 
@@ -58,6 +67,7 @@ export default function RootLayout({
           <UserProvider>
             <SchoolProvider>
               <MobileBridge />
+              <ServiceWorkerRegister />
               {children}
               <Toaster />
               <Analytics />

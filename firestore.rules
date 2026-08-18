@@ -219,15 +219,30 @@ service cloud.firestore {
       // leur helper requireAdmin). Seul un super-admin déjà en place
       // (grantSuperAdmin) ou l'Admin SDK côté serveur/seeding (hors règles)
       // peut modifier ces champs.
+      //
+      // `schools` est logé sur le même document et mérite la même garde :
+      // isSchoolMember()/isDirector()/hasPermission() ci-dessus ne lisent
+      // QUE schools[schoolId] pour décider de l'appartenance et du rôle sur
+      // une école. Sans cette contrainte, un simple compte authentifié
+      // pourrait s'octroyer 'directeur' sur n'importe quelle école connue
+      // (schoolId) en s'auto-écrivant users/{uid}.schools — sans code, sans
+      // invitation — et prendre le contrôle total de ses données (élèves,
+      // notes, paiements, comptabilité...). L'attribution d'une entrée
+      // `schools` ne doit donc passer QUE par les routes serveur (SDK admin,
+      // hors règles) qui valident un code d'école ou un code d'accès parent :
+      // /api/onboarding/{create-school,join-school,join-parent}.
       function usersNoSelfEscalation() {
         return request.resource.data.get('isSuperAdmin', false) == false
-            && request.resource.data.get(['profile', 'isAdmin'], false) == false;
+            && request.resource.data.get(['profile', 'isAdmin'], false) == false
+            && request.resource.data.get('schools', {}) == {};
       }
       function usersKeepsPrivileges() {
         return request.resource.data.get('isSuperAdmin', false)
                  == resource.data.get('isSuperAdmin', false)
             && request.resource.data.get(['profile', 'isAdmin'], false)
-                 == resource.data.get(['profile', 'isAdmin'], false);
+                 == resource.data.get(['profile', 'isAdmin'], false)
+            && request.resource.data.get('schools', {})
+                 == resource.data.get('schools', {});
       }
 
       allow read, delete: if request.auth.uid == userId || isSuperAdmin();
