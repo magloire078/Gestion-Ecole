@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
                         <p>Nous sommes ravis de vous compter parmi nous. Votre école <strong>${name}</strong> a été créée avec succès sur GèreEcole.</p>
                         <p>Vous pouvez dès maintenant commencer à configurer vos classes, ajouter votre personnel et inscrire vos premiers élèves.</p>
                         <div style="margin: 20px 0;">
-                            <a href="https://gereecole.com/dashboard" style="background-color: #2D9CDB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Accéder à mon tableau de bord</a>
+                            <a href="https://www.gerecole.com/dashboard" style="background-color: #2D9CDB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Accéder à mon tableau de bord</a>
                         </div>
                         <p>Si vous avez besoin d'aide, n'hésitez pas à consulter notre centre d'aide ou à contacter notre support.</p>
                         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />

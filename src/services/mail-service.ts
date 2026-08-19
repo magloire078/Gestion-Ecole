@@ -55,7 +55,7 @@ export class MailService {
             <p>Nous sommes ravis de vous compter parmi nous. Votre école <strong>${schoolName}</strong> a été créée avec succès sur GèreEcole.</p>
             <p>Vous pouvez dès maintenant commencer à configurer vos classes, ajouter votre personnel et inscrire vos premiers élèves.</p>
             <div style="margin: 20px 0;">
-              <a href="https://gereecole.com/dashboard" style="background-color: #2D9CDB; color: white; padding: 10px 20px; text-decoration: none; rounded: 5px; font-weight: bold;">Accéder à mon tableau de bord</a>
+              <a href="https://www.gerecole.com/dashboard" style="background-color: #2D9CDB; color: white; padding: 10px 20px; text-decoration: none; rounded: 5px; font-weight: bold;">Accéder à mon tableau de bord</a>
             </div>
             <p>Si vous avez besoin d'aide, n'hésitez pas à consulter notre centre d'aide ou à contacter notre support.</p>
             <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
@@ -84,7 +84,7 @@ export class MailService {
               <p>Nous avons remarqué que l'installation de votre établissement n'est pas encore terminée.</p>
               <p>Terminer la configuration vous permettra de profiter pleinement de toutes les fonctionnalités : gestion des stocks, paie du personnel, et suivi pédagogique.</p>
               <div style="margin: 30px 0; text-align: center;">
-                <a href="https://gereecole.com/onboarding" style="background-color: #2D9CDB; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Terminer mon installation</a>
+                <a href="https://www.gerecole.com/onboarding" style="background-color: #2D9CDB; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Terminer mon installation</a>
               </div>
               <p>C'est gratuit et cela ne prend que quelques minutes.</p>
               <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
@@ -119,7 +119,7 @@ export class MailService {
               </div>
               <p>Veuillez prévoir un réapprovisionnement pour éviter toute rupture de service.</p>
               <div style="margin: 30px 0; text-align: center;">
-                <a href="https://gereecole.com/dashboard/stocks" style="background-color: #0C365A; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Gérer l'inventaire</a>
+                <a href="https://www.gerecole.com/dashboard/stocks" style="background-color: #0C365A; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Gérer l'inventaire</a>
               </div>
               <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
               <p style="font-size: 0.8em; color: #777; text-align: center;">Système automatique GèreEcole</p>
@@ -153,7 +153,7 @@ export class MailService {
               <p>Si cette absence était prévue, nous vous prions de bien vouloir régulariser le justificatif via l'application ou au secrétariat.</p>
               <p>Dans le cas contraire, merci de contacter immédiatement l'établissement.</p>
               <div style="margin: 30px 0; text-align: center;">
-                <a href="https://gereecole.com/parent" style="background-color: #2D9CDB; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Justifier l'absence</a>
+                <a href="https://www.gerecole.com/parent" style="background-color: #2D9CDB; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Justifier l'absence</a>
               </div>
               <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
               <p style="font-size: 0.8em; color: #777; text-align: center;">Administration ${schoolName}</p>
@@ -185,7 +185,7 @@ export class MailService {
               </div>
               <p>Nous vous prions de bien vouloir procéder au règlement dans les meilleurs délais afin de garantir la continuité du suivi pédagogique de votre enfant.</p>
               <div style="margin: 30px 0; text-align: center;">
-                <a href="https://gereecole.com/dashboard/paiements" style="background-color: #0C365A; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Régulariser maintenant</a>
+                <a href="https://www.gerecole.com/dashboard/paiements" style="background-color: #0C365A; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Régulariser maintenant</a>
               </div>
               <p>Si un paiement a été effectué récemment, merci de ne pas tenir compte de ce message et de nous transmettre le justificatif.</p>
               <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
@@ -221,7 +221,7 @@ export class MailService {
               </div>
               <p>Merci de votre confiance.</p>
               <div style="margin: 30px 0; text-align: center;">
-                <a href="https://gereecole.com/dashboard/comptabilite" style="background-color: #0C365A; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Voir mon historique</a>
+                <a href="https://www.gerecole.com/dashboard/comptabilite" style="background-color: #0C365A; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Voir mon historique</a>
               </div>
               <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
               <p style="font-size: 0.8em; color: #777; text-align: center;">Service Comptabilité - GèreEcole</p>
@@ -254,7 +254,7 @@ export class MailService {
               </div>
               <p>Nous lui souhaitons beaucoup de succès dans cette épreuve !</p>
               <div style="margin: 30px 0; text-align: center;">
-                <a href="https://gereecole.com/dashboard/activites" style="background-color: #0C365A; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Détails de l'activité</a>
+                <a href="https://www.gerecole.com/dashboard/activites" style="background-color: #0C365A; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Détails de l'activité</a>
               </div>
               <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
               <p style="font-size: 0.8em; color: #777; text-align: center;">Service Pédagogique - ${schoolName}</p>
@@ -291,7 +291,7 @@ export class MailService {
               ${isWinner ? '<p style="text-align: center; font-weight: bold; color: #f59e0b;">Félicitations pour cette excellente performance ! 🎊</p>' : ''}
               <p>L'ensemble de l'équipe pédagogique félicite tous les participants pour leurs efforts.</p>
               <div style="margin: 30px 0; text-align: center;">
-                <a href="https://gereecole.com/dashboard/activites" style="background-color: #0C365A; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Voir tous les résultats</a>
+                <a href="https://www.gerecole.com/dashboard/activites" style="background-color: #0C365A; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Voir tous les résultats</a>
               </div>
               <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
               <p style="font-size: 0.8em; color: #777; text-align: center;">Direction ${schoolName}</p>
@@ -323,7 +323,7 @@ export class MailService {
               </div>
               <p>Vous avez maintenant accès à toutes les fonctionnalités de votre nouveau plan.</p>
               <div style="margin: 30px 0; text-align: center;">
-                <a href="https://gereecole.com/dashboard" style="background-color: #2D9CDB; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Accéder au Dashboard</a>
+                <a href="https://www.gerecole.com/dashboard" style="background-color: #2D9CDB; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Accéder au Dashboard</a>
               </div>
               <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
               <p style="font-size: 0.8em; color: #777; text-align: center;">L'équipe GèreEcole</p>
@@ -394,7 +394,7 @@ export class MailService {
               </div>
 
               <div style="margin: 30px 0; text-align: center;">
-                <a href="https://gereecole.com/dashboard/comptabilite" style="background-color: #0C365A; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Gérer la comptabilité complète</a>
+                <a href="https://www.gerecole.com/dashboard/comptabilite" style="background-color: #0C365A; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Gérer la comptabilité complète</a>
               </div>
               
               <hr style="border: none; border-top: 1px solid #edf2f7; margin: 30px 0;" />

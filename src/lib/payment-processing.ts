@@ -106,7 +106,7 @@ export async function processSubscriptionPayment(
                                 </div>
                                 <p>Vous avez maintenant accès à toutes les fonctionnalités de votre nouveau plan.</p>
                                 <div style="margin: 30px 0; text-align: center;">
-                                    <a href="https://gereecole.com/dashboard" style="background-color: #2D9CDB; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Accéder au Dashboard</a>
+                                    <a href="https://www.gerecole.com/dashboard" style="background-color: #2D9CDB; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Accéder au Dashboard</a>
                                 </div>
                                 <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
                                 <p style="font-size: 0.8em; color: #777; text-align: center;">L'équipe GèreEcole</p>
@@ -287,7 +287,7 @@ export async function processTuitionPayment(
                                         </div>
                                         <p>Merci de votre confiance.</p>
                                         <div style="margin: 30px 0; text-align: center;">
-                                            <a href="https://gereecole.com/dashboard/comptabilite" style="background-color: #0C365A; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Voir mon historique</a>
+                                            <a href="https://www.gerecole.com/dashboard/comptabilite" style="background-color: #0C365A; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Voir mon historique</a>
                                         </div>
                                         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
                                         <p style="font-size: 0.8em; color: #777; text-align: center;">Service Comptabilité - GèreEcole</p>

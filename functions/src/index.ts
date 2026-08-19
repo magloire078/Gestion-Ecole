@@ -131,7 +131,7 @@ function baseTemplate(title: string, bodyHtml: string, cta: string): string {
                 <h2 style="color: #0C365A;">${title}</h2>
                 ${bodyHtml}
                 <div style="margin: 30px 0; text-align: center;">
-                    <a href="https://gereecole.com/dashboard/parametres/abonnement" style="background-color: #2D9CDB; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">${cta}</a>
+                    <a href="https://www.gerecole.com/dashboard/parametres/abonnement" style="background-color: #2D9CDB; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">${cta}</a>
                 </div>
                 <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
                 <p style="font-size: 0.8em; color: #777; text-align: center;">L'équipe GèreEcole</p>
