@@ -74,6 +74,9 @@
     "xlsx": "^0.18.5",
     "zod": "^3.23.8"
   },
+  "overrides": {
+    "tar": "^7.5.22"
+  },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
     "@genkit-ai/core": "^1.23.0",
