@@ -6,16 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "mobile:sync": "npm run build && npx cap sync",
-    "mobile:assets": "npx @capacitor/assets generate --android --ios"
+    "lint": "next lint"
   },
   "dependencies": {
-    "@capacitor/android": "^8.0.2",
-    "@capacitor/cli": "^8.0.2",
-    "@capacitor/core": "^8.0.2",
-    "@capacitor/ios": "^8.0.2",
-    "@capacitor/splash-screen": "^8.0.1",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -74,11 +67,7 @@
     "xlsx": "^0.18.5",
     "zod": "^3.23.8"
   },
-  "overrides": {
-    "tar": "^7.5.22"
-  },
   "devDependencies": {
-    "@capacitor/assets": "^3.0.5",
     "@genkit-ai/core": "^1.23.0",
     "@genkit-ai/firebase": "^1.23.0",
     "@genkit-ai/google-cloud": "^1.23.0",
