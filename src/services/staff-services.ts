@@ -8,13 +8,10 @@ import {
     getDocs,
     orderBy,
     serverTimestamp,
-    writeBatch,
-    getDoc,
-    deleteField,
     where,
 } from 'firebase/firestore';
 import { firebaseFirestore as db } from '@/firebase/config';
-import type { staff as Staff, user_root } from '@/lib/data-types';
+import type { staff as Staff } from '@/lib/data-types';
 
 const COLLECTION_NAME = 'personnel';
 
@@ -51,45 +48,25 @@ export const StaffService = {
         }
     },
 
-    deleteStaffMember: async (schoolId: string, staffId: string) => {
-        try {
-            if (!schoolId || !staffId) {
-                throw new Error("L'ID de l'école et du membre du personnel sont requis.");
-            }
-
-            const staffRef = doc(db, `ecoles/${schoolId}/${COLLECTION_NAME}/${staffId}`);
-            const userRootRef = doc(db, `users/${staffId}`);
-
-            const batch = writeBatch(db);
-
-            // 1. Delete staff profile from school subcollection
-            batch.delete(staffRef);
-
-            // 2. Update user's root document to remove school affiliation
-            // Note: This assumes the user document exists. 
-            // If the staff member was just a profile without a user account, this might throw if not handled, 
-            // but writeBatch operations are generally safe. However, reading first is safer for logic.
-            const userRootSnap = await getDoc(userRootRef);
-            if (userRootSnap.exists()) {
-                const userData = userRootSnap.data() as user_root;
-
-                const updateData: { [key: string]: any } = {
-                    [`schools.${schoolId}`]: deleteField()
-                };
-
-                // If the active school is the one being removed, find a new one to set as active.
-                if (userData.activeSchoolId === schoolId) {
-                    const remainingSchoolIds = Object.keys(userData.schools || {}).filter(id => id !== schoolId);
-                    updateData.activeSchoolId = remainingSchoolIds.length > 0 ? remainingSchoolIds[0] : null;
-                }
-                batch.update(userRootRef, updateData);
-            }
-
-            await batch.commit();
-
-        } catch (error) {
-            console.error('Error deleting staff member:', error);
-            throw error;
+    deleteStaffMember: async (schoolId: string, staffId: string, idToken: string) => {
+        if (!schoolId || !staffId) {
+            throw new Error("L'ID de l'école et du membre du personnel sont requis.");
+        }
+        // Retirer un membre touche aussi son document users/{staffId} — celui
+        // d'un AUTRE utilisateur que l'appelant, ce que les règles Firestore
+        // interdisent depuis le client. Passe donc par une route serveur
+        // (SDK admin) qui revérifie la permission manageUsers elle-même.
+        const response = await fetch('/api/staff/remove', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${idToken}`,
+            },
+            body: JSON.stringify({ schoolId, staffId }),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.error || 'Impossible de supprimer le membre du personnel.');
         }
     },
 

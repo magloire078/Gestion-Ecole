@@ -118,19 +118,18 @@ export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscriptio
             return true;
         }
 
-        // If subscription is expired, only allow access to Dashboard and Subscription
-        if (!isSubscriptionActive) {
-            const allowedHrefs = ['/dashboard', '/dashboard/parametres/abonnement'];
-            return false; // We will handle this in the filtering logic below
-        }
-
         // A user must have the base permission AND the module activated (if applicable)
         const permissionGranted = permission ? !!userPermissions[permission] : true;
         if (!permissionGranted) {
             return false;
         }
 
+        // Les modules complémentaires (payants) restent réservés à un
+        // abonnement actif. Un abonnement expiré ne bloque plus le reste du
+        // menu : le compte est simplement traité comme le plan Essentiel
+        // (fonctionnalités de base conservées, modules payants suspendus).
         if (module) {
+            if (!isSubscriptionActive) return false;
             const isPremium = subscription?.plan === 'Premium';
             const isModuleActive = subscription?.activeModules?.includes(module);
 
@@ -145,17 +144,7 @@ export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscriptio
     const isLinkVisible = (link: any) => {
         if (isSuperAdmin) return true;
         if (link.isSeparator) return true;
-        
-        // Base access (permissions + modules)
-        if (!hasAccess(link.permission, link.module)) return false;
-
-        // Subscription validity guard
-        if (!isSubscriptionActive) {
-            const allowedHrefs = ['/dashboard', '/dashboard/parametres/abonnement'];
-            return allowedHrefs.includes(link.href);
-        }
-
-        return true;
+        return hasAccess(link.permission, link.module);
     };
 
     if (collapsed) {
