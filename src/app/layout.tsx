@@ -5,7 +5,6 @@ import './globals.css';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { UserProvider } from '@/providers/user-provider';
 import { SchoolProvider } from '@/providers/school-provider';
-import { MobileBridge } from '@/components/mobile-bridge';
 import { ServiceWorkerRegister } from '@/components/service-worker-register';
 import { Toaster } from '@/components/ui/toaster';
 import { Analytics } from "@vercel/analytics/next"
@@ -66,7 +65,6 @@ export default function RootLayout({
         <FirebaseClientProvider>
           <UserProvider>
             <SchoolProvider>
-              <MobileBridge />
               <ServiceWorkerRegister />
               {children}
               <Toaster />

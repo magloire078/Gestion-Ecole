@@ -52,13 +52,22 @@ service cloud.firestore {
 
     function hasPermission(schoolId, permission) {
       let staffPath = /databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid);
-      
-      let hasExplicitPermission = exists(staffPath) &&
-        'adminRole' in get(staffPath).data &&
-        get(staffPath).data.adminRole != null &&
-        exists(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(staffPath).data.adminRole)) &&
-        permission in get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(staffPath).data.adminRole)).data.permissions &&
-        get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(staffPath).data.adminRole)).data.permissions[permission] == true;
+      // Résout le nom du rôle admin de l'utilisateur, ou un segment sentinelle
+      // s'il n'a pas de fiche personnel. La sentinelle garde rolePath comme
+      // référence de document valide ; exists() renverra simplement false et
+      // hasExplicitPermission restera false. (Inliner get(staffPath).data.adminRole
+      // directement dans $() à plusieurs reprises fait planter l'évaluation —
+      // les expressions dynamiques dans les templates de chemin sont fragiles.)
+      let adminRole = exists(staffPath) && 'adminRole' in get(staffPath).data && get(staffPath).data.adminRole is string
+                      ? get(staffPath).data.adminRole
+                      : '__none__';
+      let rolePath = /databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(adminRole);
+
+      let hasExplicitPermission = adminRole != '__none__' &&
+        exists(rolePath) &&
+        'permissions' in get(rolePath).data &&
+        permission in get(rolePath).data.permissions &&
+        get(rolePath).data.permissions[permission] == true;
 
       return isSuperAdmin() || isDirector(schoolId) || hasExplicitPermission;
     }
