@@ -7,6 +7,8 @@ export type user_root = {
     schools?: { [key: string]: string };
     activeSchoolId?: string;
     isSuperAdmin?: boolean;
+    /** Accès restreint réservé aux commerciaux : uniquement le pipeline prospects, pas le reste de l'espace admin. */
+    commercialAccess?: boolean;
 };
 
 export type school = {
@@ -870,6 +872,8 @@ export interface UserProfile extends staff {
     permissions?: Partial<admin_role['permissions']>;
     isAdmin?: boolean;
     isSuperAdmin?: boolean;
+    /** Accès restreint réservé aux commerciaux : uniquement le pipeline prospects, pas le reste de l'espace admin. */
+    isCommercial?: boolean;
 }
 
 export type classe = class_type;

@@ -2,8 +2,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useUser } from '@/firebase';
 import {
     ShieldCheck,
     BarChart3,
@@ -84,8 +85,24 @@ export default function SystemAdminLayout({
     children: React.ReactNode;
 }) {
     const pathname = usePathname();
+    const router = useRouter();
+    const { user } = useUser();
     const [activeTheme, setActiveTheme] = useState(themes[0]);
     const [showThemePicker, setShowThemePicker] = useState(false);
+
+    // Un accès "commercial" est restreint au pipeline prospects : pas de
+    // vue d'ensemble, abonnements, autres écoles, etc. Un super-admin voit
+    // tout comme avant.
+    const isCommercialOnly = !!user?.profile?.isCommercial && !user?.profile?.isAdmin;
+    const visibleNavLinks = isCommercialOnly
+        ? adminNavLinks.filter(link => link.href === '/admin/system/prospects')
+        : adminNavLinks;
+
+    useEffect(() => {
+        if (isCommercialOnly && pathname !== '/admin/system/prospects') {
+            router.replace('/admin/system/prospects');
+        }
+    }, [isCommercialOnly, pathname, router]);
 
     useEffect(() => {
         const savedThemeId = localStorage.getItem('admin-theme');
@@ -116,7 +133,7 @@ export default function SystemAdminLayout({
             </div>
 
             <nav className="flex-1 overflow-y-auto p-4 space-y-1.5 mt-4">
-                {adminNavLinks.map(link => {
+                {visibleNavLinks.map(link => {
                     const isActive = pathname === link.href;
                     return (
                         <Link
