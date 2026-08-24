@@ -153,6 +153,44 @@ describe('users/{uid}.schools — tenant takeover escalation', () => {
   });
 });
 
+describe('users/{uid}.commercialAccess — restricted-role escalation', () => {
+  test('user cannot create their doc with commercialAccess=true', async () => {
+    const ctx = env.authenticatedContext('newUser');
+    await assertFails(
+      setDoc(doc(ctx.firestore(), 'users/newUser'), {
+        commercialAccess: true,
+      }),
+    );
+  });
+
+  test('user cannot self-grant commercialAccess by updating', async () => {
+    const ctx = env.authenticatedContext('normalUser');
+    await assertFails(
+      updateDoc(doc(ctx.firestore(), 'users/normalUser'), {
+        commercialAccess: true,
+      }),
+    );
+  });
+
+  test('user can update unrelated fields while leaving commercialAccess untouched', async () => {
+    const ctx = env.authenticatedContext('normalUser');
+    await assertSucceeds(
+      updateDoc(doc(ctx.firestore(), 'users/normalUser'), {
+        displayName: 'Nouveau nom',
+      }),
+    );
+  });
+
+  test('super admin can grant commercialAccess on behalf of a user', async () => {
+    const ctx = env.authenticatedContext('superAdmin');
+    await assertSucceeds(
+      updateDoc(doc(ctx.firestore(), 'users/normalUser'), {
+        commercialAccess: true,
+      }),
+    );
+  });
+});
+
 describe('server-only collections', () => {
   test('no client can read processedWebhooks', async () => {
     const ctx = env.authenticatedContext('superAdmin');
