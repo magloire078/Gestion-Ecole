@@ -32,19 +32,26 @@ export async function GET(request: NextRequest) {
 
     const db = getAdminDb();
 
-    const [pendingSnap, decidedSnap] = await Promise.all([
-        db.collection('decision_queue')
-            .where('status', '==', 'pending')
-            .orderBy('createdAt', 'desc')
-            .limit(100)
-            .get(),
-        // Les docs en attente n'ont pas de champ decidedAt : les trier dessus
-        // renvoie donc uniquement l'historique, sans index composite.
-        db.collection('decision_queue')
-            .orderBy('decidedAt', 'desc')
-            .limit(50)
-            .get(),
-    ]);
+    let pendingSnap: FirebaseFirestore.QuerySnapshot;
+    let decidedSnap: FirebaseFirestore.QuerySnapshot;
+    try {
+        [pendingSnap, decidedSnap] = await Promise.all([
+            db.collection('decision_queue')
+                .where('status', '==', 'pending')
+                .orderBy('createdAt', 'desc')
+                .limit(100)
+                .get(),
+            // Les docs en attente n'ont pas de champ decidedAt : les trier dessus
+            // renvoie donc uniquement l'historique, sans index composite.
+            db.collection('decision_queue')
+                .orderBy('decidedAt', 'desc')
+                .limit(50)
+                .get(),
+        ]);
+    } catch (err) {
+        console.error('[Admin Decisions] Firestore query failed', err);
+        return NextResponse.json({ error: 'Impossible de charger la file de décisions.' }, { status: 500 });
+    }
 
     return NextResponse.json({
         generatedAt: new Date().toISOString(),
