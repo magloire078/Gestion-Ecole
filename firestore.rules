@@ -140,9 +140,16 @@ service cloud.firestore {
     }
     
     match /sessions_parents/{sessionId} {
-      allow create: if true; 
-      allow read: if true;
-      allow update, delete: if isSuperAdmin();
+      // La création reste ouverte (le staff génère un code depuis le client
+      // sans lien de permission direct ici — ParentAccessGenerator). En
+      // revanche `allow read: if true` rendait TOUS les codes d'accès
+      // parents énumérables via un simple listing de la collection, y
+      // compris sans authentification. Aucun code client ne lit réellement
+      // cette collection : la validation d'un code se fait côté serveur
+      // (SDK admin, hors règles) via /api/onboarding/join-parent. La lecture
+      // est donc verrouillée comme l'écriture.
+      allow create: if true;
+      allow read, update, delete: if isSuperAdmin();
     }
 
     match /mail/{mailId} {
