@@ -100,3 +100,36 @@ describe('parent-of-student access', () => {
     );
   });
 });
+
+describe('isParentOfStudent — orphaned reference (deleted student)', () => {
+  // Firestore does not cascade-delete subcollections: a note/absence/
+  // incident can outlive the student doc it points to. isParentOfStudent()
+  // used to receive an already-resolved get() result, so looking up a
+  // student that no longer exists threw and denied the read with an error
+  // instead of a clean `false` — this locks in the exists()-guarded fix.
+  beforeEach(async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore() as any;
+      // Note under a student id that has no ecoles/schoolA/eleves doc.
+      await setDoc(doc(db, 'ecoles/schoolA/eleves/deletedStudent/notes/n1'), {
+        schoolId: 'schoolA',
+        subject: 'Maths',
+        grade: 12,
+      });
+    });
+  });
+
+  test('a non-member cannot read a note pointing at a deleted student (denied, not an error)', async () => {
+    const ctx = env.authenticatedContext('parent1');
+    await assertFails(
+      getDoc(doc(ctx.firestore(), 'ecoles/schoolA/eleves/deletedStudent/notes/n1')),
+    );
+  });
+
+  test('a school member can still read it regardless (isSchoolMember short-circuits)', async () => {
+    const ctx = env.authenticatedContext('directorA');
+    await assertSucceeds(
+      getDoc(doc(ctx.firestore(), 'ecoles/schoolA/eleves/deletedStudent/notes/n1')),
+    );
+  });
+});
