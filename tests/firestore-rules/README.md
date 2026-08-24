@@ -3,7 +3,7 @@
 Ces tests vérifient que les règles de sécurité Firestore garantissent :
 
 1. **Isolation multi-tenant** — un utilisateur de l'école A ne peut ni lire ni écrire sur l'école B
-2. **Anti-élévation de privilège** — un utilisateur ne peut pas se promouvoir `isSuperAdmin`/`profile.isAdmin`, ni s'octroyer un rôle sur une école via `users/{uid}.schools`
+2. **Anti-élévation de privilège** — un utilisateur ne peut pas se promouvoir `isSuperAdmin`/`profile.isAdmin`, ni s'octroyer un rôle sur une école via `users/{uid}.schools`, ni s'octroyer l'accès commercial via `users/{uid}.commercialAccess`
 3. **Accès parent** — un parent n'accède qu'à son propre enfant (fiche, notes)
 4. **Codes d'accès parents** (`sessions_parents`) — création/lecture ouvertes (le code est le secret), mise à jour réservée au super-admin
 5. **Collections server-only** — `processedWebhooks`, `mail` lecture/écriture bloquées côté client

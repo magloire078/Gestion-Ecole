@@ -240,10 +240,16 @@ service cloud.firestore {
       // `schools` ne doit donc passer QUE par les routes serveur (SDK admin,
       // hors règles) qui valident un code d'école ou un code d'accès parent :
       // /api/onboarding/{create-school,join-school,join-parent}.
+      //
+      // `commercialAccess` débloque le pipeline prospects (/admin/system/
+      // prospects et son API) sans donner accès au reste de l'espace admin.
+      // Même garde que les champs ci-dessus : seul un super-admin (via
+      // /api/admin/commercial, SDK admin) peut le positionner.
       function usersNoSelfEscalation() {
         return request.resource.data.get('isSuperAdmin', false) == false
             && request.resource.data.get(['profile', 'isAdmin'], false) == false
-            && request.resource.data.get('schools', {}) == {};
+            && request.resource.data.get('schools', {}) == {}
+            && request.resource.data.get('commercialAccess', false) == false;
       }
       function usersKeepsPrivileges() {
         return request.resource.data.get('isSuperAdmin', false)
@@ -251,7 +257,9 @@ service cloud.firestore {
             && request.resource.data.get(['profile', 'isAdmin'], false)
                  == resource.data.get(['profile', 'isAdmin'], false)
             && request.resource.data.get('schools', {})
-                 == resource.data.get('schools', {});
+                 == resource.data.get('schools', {})
+            && request.resource.data.get('commercialAccess', false)
+                 == resource.data.get('commercialAccess', false);
       }
 
       allow read, delete: if request.auth.uid == userId || isSuperAdmin();
