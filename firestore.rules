@@ -511,19 +511,19 @@ service cloud.firestore {
 
     match /{path=**}/personnel/{staffId} {
       // Used by AdminsTable and general personnel lists
-      allow read: if isSignedIn() && (isSuperAdmin() || isSchoolMember(resource.data.schoolId));
+      allow read: if isSignedIn() && 'schoolId' in resource.data && (isSuperAdmin() || isSchoolMember(resource.data.schoolId));
     }
 
     match /{path=**}/dossier_medical/{dossierId} {
-      allow read: if isSignedIn() && (hasPermission(resource.data.schoolId, 'manageMedical') || isSchoolMember(resource.data.schoolId));
+      allow read: if isSignedIn() && 'schoolId' in resource.data && (hasPermission(resource.data.schoolId, 'manageMedical') || isSchoolMember(resource.data.schoolId));
     }
 
     match /{path=**}/consultations/{consultationId} {
-      allow read: if isSignedIn() && (hasPermission(resource.data.schoolId, 'manageMedical') || isSchoolMember(resource.data.schoolId));
+      allow read: if isSignedIn() && 'schoolId' in resource.data && (hasPermission(resource.data.schoolId, 'manageMedical') || isSchoolMember(resource.data.schoolId));
     }
 
     match /{path=**}/vaccins/{vaccinId} {
-      allow read: if isSignedIn() && (hasPermission(resource.data.schoolId, 'manageMedical') || isSchoolMember(resource.data.schoolId));
+      allow read: if isSignedIn() && 'schoolId' in resource.data && (hasPermission(resource.data.schoolId, 'manageMedical') || isSchoolMember(resource.data.schoolId));
     }
   }
 }
