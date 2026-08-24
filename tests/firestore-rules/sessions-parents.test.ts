@@ -1,16 +1,11 @@
 /**
- * Parent access codes (sessions_parents). Current rules: creation and read
- * are open to anyone (including unauthenticated clients) — the code itself
- * is the secret, validated server-side by /api/onboarding/join-parent.
- * Only a super-admin can update or delete a session document directly from
- * the client.
- *
- * NOTE: `allow read: if true` on this collection also permits listing every
- * session document (not just get-by-id), which effectively makes all parent
- * access codes enumerable by anyone. That's a separate finding from what
- * these tests protect against (regressions to the current, already-fairly-
- * open behavior) — flagged for a deliberate follow-up decision rather than
- * changed here.
+ * Parent access codes (sessions_parents). Creation stays open to anyone
+ * (ParentAccessGenerator writes from the client with no permission check on
+ * this collection). Read/update/delete are locked to super-admin: no client
+ * code actually reads this collection directly (validating a code happens
+ * server-side, Admin SDK, via /api/onboarding/join-parent) — `allow read:
+ * if true` used to make every parent access code enumerable via a plain
+ * collection listing, even unauthenticated. Locked down to match write.
  */
 import {
   afterAll,
@@ -59,7 +54,7 @@ beforeEach(async () => {
   });
 });
 
-describe('sessions_parents create/read', () => {
+describe('sessions_parents create', () => {
   test('any signed-in user can create a session doc', async () => {
     const ctx = env.authenticatedContext('outsider');
     await assertSucceeds(
@@ -81,9 +76,32 @@ describe('sessions_parents create/read', () => {
       }),
     );
   });
+});
 
-  test('any signed-in user can read a session doc by id', async () => {
+describe('sessions_parents read', () => {
+  test('a regular signed-in user cannot read a session doc', async () => {
     const ctx = env.authenticatedContext('outsider');
+    await assertFails(
+      getDoc(doc(ctx.firestore(), 'sessions_parents/existing')),
+    );
+  });
+
+  test('a director cannot read a session doc either', async () => {
+    const ctx = env.authenticatedContext('directorA');
+    await assertFails(
+      getDoc(doc(ctx.firestore(), 'sessions_parents/existing')),
+    );
+  });
+
+  test('unauthenticated cannot read a session doc', async () => {
+    const ctx = env.unauthenticatedContext();
+    await assertFails(
+      getDoc(doc(ctx.firestore(), 'sessions_parents/existing')),
+    );
+  });
+
+  test('super admin can read a session doc', async () => {
+    const ctx = env.authenticatedContext('superAdmin');
     await assertSucceeds(
       getDoc(doc(ctx.firestore(), 'sessions_parents/existing')),
     );
