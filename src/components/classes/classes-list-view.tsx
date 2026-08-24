@@ -15,6 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import Link from 'next/link';
 import type { classe as Classe } from '@/lib/data-types';
 import { useUser } from '@/firebase';
+import { cn } from '@/lib/utils';
 
 interface ClassesListViewProps {
     cycleId: string;
@@ -76,7 +77,18 @@ export function ClassesListView({ cycleId, searchQuery, onEdit }: ClassesListVie
                             filteredClasses.map((classe) => (
                                 <TableRow key={classe.id}>
                                     <TableCell className="font-medium">{classe.name}</TableCell>
-                                    <TableCell>{classe.studentCount} / {classe.maxStudents}</TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-1.5 font-mono text-xs">
+                                            <span className={cn(
+                                                "font-bold",
+                                                (classe.studentCount || 0) >= (classe.maxStudents || 30) ? "text-rose-600 font-extrabold" : "text-indigo-600"
+                                            )}>
+                                                {classe.studentCount || 0}
+                                            </span>
+                                            <span className="text-slate-400">/</span>
+                                            <span className="text-slate-500">{classe.maxStudents || 30}</span>
+                                        </div>
+                                    </TableCell>
                                     <TableCell>{classe.mainTeacherName || 'N/A'}</TableCell>
                                     <TableCell>
                                         <Badge variant={classe.status === 'active' ? 'secondary' : 'outline'}>{classe.status}</Badge>

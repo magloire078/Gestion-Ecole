@@ -102,60 +102,67 @@ const RegularDashboard = () => {
   return (
     <div className="space-y-4">
       {/* Premium Banner with Mesh Gradient and Glassmorphism */}
-      <div className="relative w-full h-36 md:h-52 overflow-hidden rounded-xl shadow-2xl border border-white/10 group">
+      <div className="relative w-full min-h-[170px] md:h-56 overflow-hidden rounded-2xl shadow-2xl border border-white/10 group bg-slate-950">
         {/* Animated Mesh Gradient Background */}
-        <div className="absolute inset-0 bg-[#0a0a0b]" />
-        <div className="absolute top-0 -left-20 w-96 h-96 bg-blue-600 rounded-full mix-blend-screen filter blur-[100px] opacity-30 animate-blob" />
-        <div className="absolute bottom-0 -right-20 w-96 h-96 bg-indigo-600 rounded-full mix-blend-screen filter blur-[100px] opacity-30 animate-blob animation-delay-2000" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-500/10 via-transparent to-transparent animate-[spin_30s_linear_infinite]" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-[#0a0b10] via-[#0f111a] to-[#0a0b10] z-0" />
+        <div className="absolute top-0 -left-16 w-96 h-96 bg-indigo-600 rounded-full mix-blend-screen filter blur-[120px] opacity-25 animate-blob" />
+        <div className="absolute bottom-0 -right-16 w-96 h-96 bg-blue-600 rounded-full mix-blend-screen filter blur-[120px] opacity-25 animate-blob animation-delay-2000" />
         
         {/* Glass Content Overlay */}
-        <div className="absolute inset-0 z-20 flex flex-col justify-center px-6 md:px-12 backdrop-blur-[1px]">
+        <div className="absolute inset-0 z-10 flex flex-col justify-center px-6 md:px-12 py-6 backdrop-blur-[2px]">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
+            className="max-w-[70%] space-y-3"
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-200/80">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200/90">
                 Année en cours : {effectiveAcademicYear}
               </span>
             </div>
             
-            <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter mb-3 drop-shadow-2xl">
-              Tableau de <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-300">Bord</span>
+            <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight drop-shadow-md">
+              Tableau de <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-blue-400 to-emerald-400">Bord</span>
             </h1>
             
-            <p className="text-blue-100/70 text-lg md:text-xl font-medium max-w-2xl leading-relaxed mb-4">
+            <p className="text-slate-300 text-sm md:text-base font-semibold max-w-xl leading-relaxed tracking-wide">
               {schoolData?.name || 'Gérez votre établissement avec une excellence technologique.'}
             </p>
 
-            <div className="flex items-center gap-4 text-sm font-medium text-white/60">
+            <div className="inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-slate-400 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl backdrop-blur-md">
               <div className="flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-indigo-400" />
-                {currentTime.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+                <span>{currentTime.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
               </div>
-              <div className="w-1 h-1 rounded-full bg-white/20" />
-              <div className="flex items-center gap-1.5 tabular-nums">
-                <span className="text-white/80">{currentTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+              <span className="text-white/20">•</span>
+              <div className="tabular-nums font-mono text-indigo-300">
+                {currentTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </div>
             </div>
           </motion.div>
         </div>
 
-        <div className="absolute top-0 right-0 p-4 md:p-6 z-20 hidden md:block transition-opacity duration-300 hover:scale-105">
-          <SafeImage
-            src={schoolData?.mainLogoUrl || "/custom-assets/banner.png"}
-            alt="School Logo"
-            width={120}
-            height={120}
-            className="rounded-xl shadow-xl object-cover"
-          />
-        </div>
+        {/* Floating Glassmorphic Logo Container */}
+        {schoolData?.mainLogoUrl && (
+          <div className="absolute top-1/2 -translate-y-1/2 right-6 md:right-12 z-20 hidden sm:block transition-all duration-300 hover:scale-105">
+            <div className="p-2 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-2xl">
+              <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-xl overflow-hidden bg-white flex items-center justify-center p-1">
+                <SafeImage
+                  src={schoolData.mainLogoUrl}
+                  alt="Logo École"
+                  width={112}
+                  height={112}
+                  className="max-w-full max-h-full object-contain rounded-lg"
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex justify-end">

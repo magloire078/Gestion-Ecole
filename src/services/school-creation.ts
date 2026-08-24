@@ -64,6 +64,30 @@ export class SchoolCreationService {
       if (!response.ok) {
         return { success: false, error: result.error || "La création de l'école a échoué." };
       }
+
+      // Le profil personnel du directeur et l'email de bienvenue sont déjà
+      // créés côté serveur par /api/onboarding/create-school ci-dessus. Il
+      // ne reste que la notification WhatsApp au super-admin, propre au
+      // client (fire-and-forget, ne doit pas faire échouer la création).
+      try {
+        fetch('/api/admin/notifications/notify-school-created', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            schoolName: data.name,
+            schoolId: result.schoolId,
+            schoolCode: result.schoolCode,
+            directorName: `${data.directorFirstName} ${data.directorLastName}`.trim(),
+            directorEmail: data.directorEmail,
+            directorPhone: data.phone,
+            country: data.country,
+            address: data.address,
+          }),
+        }).catch(err => console.warn('[SchoolCreation] WhatsApp admin notify failed:', err));
+      } catch (adminNotifyErr) {
+        console.warn('[SchoolCreation] WhatsApp admin notify skipped:', adminNotifyErr);
+      }
+
       return { success: true, schoolId: result.schoolId, schoolCode: result.schoolCode };
     } catch (error: any) {
       console.error('Error creating school: ', error);

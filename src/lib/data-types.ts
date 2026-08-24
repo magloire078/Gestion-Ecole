@@ -232,6 +232,8 @@ export type staff = {
     CG?: string;
     Cle_RIB?: string;
     CNPS?: boolean;
+    cni?: string;
+    autorisationEnseigner?: string;
 };
 
 export type staff_leave = {
@@ -262,7 +264,7 @@ export type student = {
     matricule: string;
     firstName: string;
     lastName: string;
-    status: "Actif" | "En attente" | "Transféré" | "Diplômé" | "Radié";
+    status: "Actif" | "En attente" | "Transféré" | "Diplômé" | "Radié" | "Supprimé";
     dateOfBirth: string;
     placeOfBirth: string;
     gender: "Masculin" | "Féminin";
@@ -294,6 +296,10 @@ export type student = {
     updatedBy?: string;
     inscriptionYear?: number;
     enrollments?: student_enrollment[];
+    academicYear?: string;
+    nationality?: string;
+    statusAff?: 'Affecté' | 'Non-Affecté';
+    isRepeater?: boolean;
     id?: string;
 };
 
@@ -522,6 +528,13 @@ export type fee = {
     installments: string;
     details?: string;
     academicYear?: string;
+    inscription?: string;
+    scolarite?: string;
+    annexes?: string;
+    amountAff?: string;
+    inscriptionAff?: string;
+    scolariteAff?: string;
+    annexesAff?: string;
     id?: string;
 };
 

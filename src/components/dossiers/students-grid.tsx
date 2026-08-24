@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MoreHorizontal, Edit, UserX, UserCheck, Printer, Eye, CreditCard, FileText, CalendarDays, FileSignature, Cake, VenetianMask, Lock } from 'lucide-react';
+import { MoreHorizontal, Edit, UserX, UserCheck, Printer, Eye, CreditCard, FileText, CalendarDays, FileSignature, Cake, VenetianMask, Camera, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -142,6 +142,9 @@ const StudentCard = ({ student, onEdit, onArchive, onRestore, actionType, isLock
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             {actionType === 'active' && <DropdownMenuItem onClick={() => onEdit(student)}><Edit className="mr-2 h-4 w-4" /> Modifier</DropdownMenuItem>}
+                            <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/photos?classId=${student.classId || ''}`)}>
+                                <Camera className="mr-2 h-4 w-4" /> Photos de la classe
+                            </DropdownMenuItem>
                             <DropdownMenuSub>
                                 <DropdownMenuSubTrigger><Printer className="mr-2 h-4 w-4" /> Imprimer</DropdownMenuSubTrigger>
                                 <DropdownMenuPortal>

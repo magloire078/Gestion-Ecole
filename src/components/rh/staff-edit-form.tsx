@@ -40,6 +40,8 @@ const staffSchema = z.object({
     subject: z.string().optional(),
     classId: z.string().optional(),
     adminRole: z.string().optional(),
+    cni: z.string().optional(),
+    autorisationEnseigner: z.string().optional(),
     // --- Payroll fields ---
     situationMatrimoniale: z.string().optional(),
     enfants: z.coerce.number().min(0).optional(),
@@ -96,11 +98,13 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, sub
                 hireDate: editingStaff.hireDate && isValid(parseISO(editingStaff.hireDate))
                     ? format(parseISO(editingStaff.hireDate), 'yyyy-MM-dd')
                     : todayDateString,
-                baseSalary: editingStaff.baseSalary || 0
+                baseSalary: editingStaff.baseSalary || 0,
+                cni: editingStaff.cni || '',
+                autorisationEnseigner: editingStaff.autorisationEnseigner || '',
             }
             : {
                 firstName: '', lastName: '', role: 'enseignant', email: '', phone: '', uid: '', photoURL: '', baseSalary: 0, hireDate: todayDateString, subject: '', classId: '', adminRole: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
-                contractType: 'Titulaire', hourlyRate: 0, baseHours: 0
+                contractType: 'Titulaire', hourlyRate: 0, baseHours: 0, cni: '', autorisationEnseigner: ''
             },
     });
 
@@ -138,7 +142,9 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, sub
             baseSalary: values.baseSalary || 0,
             contractType: values.contractType as Staff['contractType'],
             hourlyRate: values.hourlyRate || 0,
-            baseHours: values.baseHours || 0
+            baseHours: values.baseHours || 0,
+            cni: values.cni || '',
+            autorisationEnseigner: values.autorisationEnseigner || ''
         };
 
         try {
@@ -314,6 +320,10 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, sub
                                 <div className="grid grid-cols-2 gap-4">
                                     <FormField control={form.control} name="situationMatrimoniale" render={({ field }) => (<FormItem><FormLabel>Situation Matrimoniale</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="Célibataire">Célibataire</SelectItem><SelectItem value="Marié(e)">Marié(e)</SelectItem><SelectItem value="Divorcé(e)">Divorcé(e)</SelectItem><SelectItem value="Veuf(ve)">Veuf(ve)</SelectItem></SelectContent></Select></FormItem>)} />
                                     <FormField control={form.control} name="enfants" render={({ field }) => (<FormItem><FormLabel>Enfants à charge</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <FormField control={form.control} name="cni" render={({ field }) => (<FormItem><FormLabel>N° CNI / Attestation</FormLabel><FormControl><Input placeholder="Ex: C01234567" {...field} /></FormControl></FormItem>)} />
+                                    <FormField control={form.control} name="autorisationEnseigner" render={({ field }) => (<FormItem><FormLabel>N° Autorisation d&apos;enseigner</FormLabel><FormControl><Input placeholder="Ex: AUT-2025-88" {...field} /></FormControl></FormItem>)} />
                                 </div>
                                 <FormField control={form.control} name="categorie" render={({ field }) => (<FormItem><FormLabel>Catégorie</FormLabel><FormControl><Input placeholder="Ex: Catégorie 7" {...field} /></FormControl></FormItem>)} />
                                 <h4 className="font-semibold text-sm pt-2">Informations CNPS</h4>
