@@ -16,9 +16,23 @@ import { getStorage, FirebaseStorage } from 'firebase/storage';
 // On utilise .trim() et on retire tout espace/retour à la ligne pour éviter les erreurs de copier-coller dans Vercel
 const clean = (val: string | undefined) => val?.trim()?.replace(/[\s\n\r]/g, '') || '';
 
+// authDomain = domaine courant de l'app (first-party) sur les environnements
+// déployés. Combiné au proxy /__/auth/* de next.config.js, cela évite les
+// cookies tiers et fait fonctionner la connexion Google sur mobile (le
+// signInWithRedirect échouait silencieusement quand authDomain
+// = greecole.firebaseapp.com différait du domaine de l'app). En SSR et en
+// local (localhost), on retombe sur la variable d'environnement classique.
+const resolveAuthDomain = () => {
+  const envDomain = clean(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN);
+  if (typeof window === 'undefined') return envDomain;
+  const host = window.location.host; // inclut le port éventuel
+  const isLocalhost = /^(localhost|127\.0\.0\.1|\[::1\])/.test(window.location.hostname);
+  return isLocalhost || !host ? envDomain : host;
+};
+
 export const firebaseConfig = {
   apiKey: clean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY),
-  authDomain: clean(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN),
+  authDomain: resolveAuthDomain(),
   projectId: clean(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID),
   storageBucket: clean(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "greecole.appspot.com"),
   messagingSenderId: clean(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID),

@@ -60,6 +60,26 @@ const nextConfig = {
     }
     return config;
   },
+  // Proxy du gestionnaire d'authentification Firebase sur NOTRE domaine.
+  // Objectif : rendre l'auth Google « first-party » pour qu'elle fonctionne sur
+  // mobile (Safari/Chrome bloquent les cookies tiers, ce qui casse
+  // signInWithRedirect quand authDomain = greecole.firebaseapp.com diffère du
+  // domaine de l'app). En servant /__/auth/* depuis le domaine courant et en
+  // réglant authDomain sur ce même domaine (voir src/firebase/config.ts), les
+  // cookies de session redeviennent first-party. Voir la doc Firebase
+  // « redirect-best-practices » (self-hosting du helper de connexion).
+  async rewrites() {
+    return [
+      {
+        source: '/__/auth/:path*',
+        destination: 'https://greecole.firebaseapp.com/__/auth/:path*',
+      },
+      {
+        source: '/__/firebase/:path*',
+        destination: 'https://greecole.firebaseapp.com/__/firebase/:path*',
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;
