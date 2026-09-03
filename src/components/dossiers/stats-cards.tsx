@@ -15,13 +15,13 @@ interface StatCardProps {
 
 const StatCard = ({ title, value, icon: Icon, description, loading }: StatCardProps) => (
     <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
-            <Icon className="h-4 w-4 text-muted-foreground" />
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-1.5 sm:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium">{title}</CardTitle>
+            <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
         </CardHeader>
-        <CardContent>
-            {loading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{value}</div>}
-            {description && !loading && <p className="text-xs text-muted-foreground">{description}</p>}
+        <CardContent className="p-4 pt-0">
+            {loading ? <Skeleton className="h-7 w-1/2" /> : <div className="text-xl sm:text-2xl font-bold">{value}</div>}
+            {description && !loading && <p className="text-[11px] sm:text-xs text-muted-foreground truncate">{description}</p>}
         </CardContent>
     </Card>
 );
@@ -39,7 +39,7 @@ interface StudentsStatsCardsProps {
 
 export function StudentsStatsCards({ stats, isLoading }: StudentsStatsCardsProps) {
     return (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 print:hidden">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 print:hidden">
             <StatCard title="Élèves affichés" value={stats.total} icon={Users} loading={isLoading} description="Basé sur les filtres actifs" />
             <StatCard title="Garçons / Filles" value={`${stats.boys} / ${stats.girls}`} icon={Users} loading={isLoading} />
             <StatCard title="Classes" value={stats.classes} icon={School} loading={isLoading} description={`${stats.classes} classes au total.`} />
