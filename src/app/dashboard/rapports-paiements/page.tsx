@@ -21,6 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { student as Student, niveau as Niveau, class_type as Class, accountingTransaction as Transaction } from '@/lib/data-types';
+import { PointFinancierClasse } from '@/components/rapports/point-financier-classe';
 
 export default function PaymentReportsPage() {
   const firestore = useFirestore();
@@ -127,6 +128,9 @@ export default function PaymentReportsPage() {
           </TabsTrigger>
           <TabsTrigger value="par-niveau" className="rounded-lg text-xs font-bold px-4 py-2">
             Par niveau scolaire
+          </TabsTrigger>
+          <TabsTrigger value="par-classe" className="rounded-lg text-xs font-bold px-4 py-2">
+            Par classe (détail élèves)
           </TabsTrigger>
         </TabsList>
 
@@ -272,6 +276,15 @@ export default function PaymentReportsPage() {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* ONGLET 3: Point financier par classe (état détaillé élève par élève) */}
+        <TabsContent value="par-classe" className="space-y-4 focus-visible:ring-0">
+          <div>
+            <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">Point financier par classe</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">État détaillé par élève : scolarité totale, versé, reste et statut de règlement.</p>
+          </div>
+          <PointFinancierClasse students={students} />
         </TabsContent>
       </Tabs>
 
