@@ -112,7 +112,7 @@ function TuitionPaymentPageContent() {
                             <CreditCard className="h-8 w-8" />
                         </div>
                     </div>
-                    <CardTitle className="text-3xl font-black tracking-tight text-slate-900">Paiement de Scolarité</CardTitle>
+                    <CardTitle className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Paiement de Scolarité</CardTitle>
                     <CardDescription className="text-base">
                         Réglement pour <span className="font-bold text-slate-900">{student.firstName} {student.lastName}</span>
                     </CardDescription>

@@ -181,7 +181,7 @@ export const FullAuditLog = () => {
                   >
                     <TableCell className="px-6 py-4">
                       <div className="flex flex-col">
-                        <span className="text-xs font-black text-[#0C365A] font-outfit uppercase tracking-tighter">
+                        <span className="text-xs font-black text-[#0C365A] dark:text-blue-300 font-outfit uppercase tracking-tighter">
                           {log.timestamp ? (
                             (() => {
                               try {
