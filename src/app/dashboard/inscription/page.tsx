@@ -1,79 +1,173 @@
-
-
 'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-import { useCollection, useFirestore, useUser, useStorage } from "@/firebase";
-import { collection, addDoc, serverTimestamp, writeBatch, doc, increment, query, where } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { ArrowRight, ArrowLeft, User, Users, GraduationCap, Upload, X, Loader2, AlertCircle, CheckCircle2, QrCode, Copy, Check, Printer } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import { useCollection, useFirestore } from '@/firebase';
+import { collection, query, where, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import {
+  UserPlus,
+  Table as TableIcon,
+  RefreshCw,
+  Search,
+  Users,
+  Coins,
+  Receipt,
+  Trash2,
+  Undo2,
+  Edit,
+  QrCode,
+  Copy,
+  Check,
+  Printer,
+  X
+} from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useSchoolData } from '@/hooks/use-school-data';
+import { formatCurrency } from '@/lib/currency-utils';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import QRCode from 'react-qr-code';
-import { useSchoolData } from '@/hooks/use-school-data';
-import { useForm, useWatch } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import type { class_type as Class, fee as Fee, niveau as Niveau } from '@/lib/data-types';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { cn } from '@/lib/utils';
-import { Skeleton } from '@/components/ui/skeleton';
-import { v4 as uuidv4 } from 'uuid';
-import { ImageUploader } from '@/components/image-uploader';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import Link from 'next/link';
-import { getTuitionInfoForClass } from '@/lib/school-utils';
-import { StudentService } from '@/services/student-services';
-import { formatCurrency } from '@/lib/currency-utils';
 
+// Importer nos nouveaux modals
+import { RegistrationModal } from '@/components/inscription/registration-modal';
+import { BulkRegistrationModal } from '@/components/inscription/bulk-registration-modal';
+import { ReRegistrationModal } from '@/components/inscription/re-registration-modal';
+import type { student as Student, class_type as Class, fee as Fee, niveau as Niveau } from '@/lib/data-types';
 
-const registrationSchema = z.object({
-  // Step 1
-  lastName: z.string().min(1, { message: "Le nom de famille est requis." }),
-  firstName: z.string().min(1, { message: "Le prénom est requis." }),
-  photoUrl: z.string().optional(),
-  matricule: z.string().optional().or(z.literal('')),
-  dateOfBirth: z.string().optional().or(z.literal('')),
-  placeOfBirth: z.string().optional().or(z.literal('')),
-  gender: z.enum(['Masculin', 'Féminin'], { required_error: "Le sexe est requis." }),
-  address: z.string().optional(),
-
-  // Step 2
-  previousSchool: z.string().optional(),
-  classId: z.string().min(1, { message: "La classe souhaitée est requise." }),
-  status: z.enum(['Actif', 'En attente'], { required_error: "Le statut est requis." }),
-
-  // Step 3
-  parent1LastName: z.string().min(1, { message: "Le nom du parent 1 est requis." }),
-  parent1FirstName: z.string().min(1, { message: "Le prénom du parent 1 est requis." }),
-  parent1Contact: z.string().min(1, { message: "Le contact du parent 1 est requis." }),
-  parent2LastName: z.string().optional(),
-  parent2FirstName: z.string().optional(),
-  parent2Contact: z.string().optional(),
-});
-
-type RegistrationFormValues = z.infer<typeof registrationSchema>;
-
-const step1Fields: (keyof RegistrationFormValues)[] = ['lastName', 'firstName', 'matricule', 'dateOfBirth', 'placeOfBirth', 'gender', 'address', 'photoUrl'];
-const step2Fields: (keyof RegistrationFormValues)[] = ['previousSchool', 'classId', 'status'];
-const step3Fields: (keyof RegistrationFormValues)[] = ['parent1LastName', 'parent1FirstName', 'parent1Contact', 'parent2LastName', 'parent2FirstName', 'parent2Contact'];
-
-export default function RegistrationPage() {
+export default function InscriptionDashboard() {
   const firestore = useFirestore();
-  const router = useRouter();
   const { toast } = useToast();
-  const { schoolId, schoolData, loading: schoolDataLoading } = useSchoolData();
-  const { user } = useUser();
+  const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
 
-  const [step, setStep] = useState(1);
+  // États pour l'ouverture des modals
+  const [isUnitaryOpen, setIsUnitaryOpen] = useState(false);
+  const [isBulkOpen, setIsBulkOpen] = useState(false);
+  const [isReRegistrationOpen, setIsReRegistrationOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // Recherche & pagination
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const currentYear = schoolData?.currentAcademicYear || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
+  
+  // Calculer l'année précédente N-1
+  const prevYear = useMemo(() => {
+    const parts = currentYear.split('-');
+    if (parts.length === 2) {
+      const start = parseInt(parts[0]) - 1;
+      const end = parseInt(parts[1]) - 1;
+      return `${start}-${end}`;
+    }
+    return `${new Date().getFullYear() - 1}-${new Date().getFullYear()}`;
+  }, [currentYear]);
+
+  // Chargement des données nécessaires
+  const classesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
+  const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
+  const classes = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
+
+  const feesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/frais_scolarite`)) : null, [firestore, schoolId]);
+  const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
+  const fees = useMemo(() => feesData?.map(d => ({ id: d.id, ...d.data() } as Fee)) || [], [feesData]);
+
+  const niveauxQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [firestore, schoolId]);
+  const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
+  const niveaux = useMemo(() => niveauxData?.map(d => ({ id: d.id, ...d.data() } as Niveau)) || [], [niveauxData]);
+
+  // Récupérer TOUS les élèves (limité pour éviter des lectures massives, mais suffisant pour la démo/dashboard)
+  const elevesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [firestore, schoolId]);
+  const { data: elevesData, loading: elevesLoading } = useCollection(elevesQuery);
+  const eleves = useMemo(() => elevesData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [elevesData]);
+
+  // Filtration des élèves par onglets
+  const currentStudents = useMemo(() => {
+    return eleves.filter(e => e.academicYear === currentYear && e.status !== 'Supprimé');
+  }, [eleves, currentYear]);
+
+  const prevStudents = useMemo(() => {
+    return eleves.filter(e => e.academicYear === prevYear && e.status !== 'Supprimé');
+  }, [eleves, prevYear]);
+
+  const deletedStudents = useMemo(() => {
+    return eleves.filter(e => e.status === 'Supprimé');
+  }, [eleves]);
+
+  // Filtre de recherche
+  const filterBySearch = (list: Student[]) => {
+    if (!searchTerm) return list;
+    const term = searchTerm.toLowerCase();
+    return list.filter(e => 
+      e.lastName.toLowerCase().includes(term) || 
+      e.firstName.toLowerCase().includes(term) ||
+      e.matricule?.toLowerCase().includes(term) ||
+      e.class?.toLowerCase().includes(term)
+    );
+  };
+
+  const filteredCurrent = useMemo(() => filterBySearch(currentStudents), [currentStudents, searchTerm]);
+  const filteredPrev = useMemo(() => filterBySearch(prevStudents), [prevStudents, searchTerm]);
+  const filteredDeleted = useMemo(() => filterBySearch(deletedStudents), [deletedStudents, searchTerm]);
+
+  // Agrégation des indicateurs de la comptabilité pour l'année courante
+  const stats = useMemo(() => {
+    let totalScolarites = 0;
+    let totalPaid = 0;
+    let totalRemaining = 0;
+
+    currentStudents.forEach(e => {
+      const fee = e.tuitionFee || 0;
+      const due = e.amountDue || 0;
+      totalScolarites += fee;
+      totalRemaining += due;
+      totalPaid += (fee - due);
+    });
+
+    return {
+      count: currentStudents.length,
+      totalScolarites,
+      totalPaid,
+      totalRemaining
+    };
+  }, [currentStudents]);
+
+  // Supprimer un élève (Mise à jour du statut)
+  const handleDeleteStudent = async (studentId: string) => {
+    if (!schoolId) return;
+    try {
+      const docRef = doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`);
+      await updateDoc(docRef, { status: 'Supprimé' });
+      toast({
+        title: "Élève mis à la corbeille",
+        description: "Vous pouvez restaurer ce dossier depuis l'onglet Corbeille.",
+      });
+    } catch (err) {
+      console.error(err);
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible de supprimer le dossier." });
+    }
+  };
+
+  // Restaurer un élève de la corbeille
+  const handleRestoreStudent = async (studentId: string) => {
+    if (!schoolId) return;
+    try {
+      const docRef = doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`);
+      await updateDoc(docRef, { status: 'Actif' });
+      toast({
+        title: "Élève restauré !",
+        description: "Le dossier a été replacé dans la liste active.",
+      });
+    } catch (err) {
+      console.error(err);
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible de restaurer le dossier." });
+    }
+  };
+
+  // QR Code Public Inscription
   const registrationLink = typeof window !== 'undefined' && schoolId
     ? `${window.location.origin}/parent-access/register?schoolId=${schoolId}` 
     : '';
@@ -123,359 +217,407 @@ export default function RegistrationPage() {
     printWindow.document.close();
   };
 
-  const classesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
-  const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
-  const classes: (Class & { id: string })[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class & { id: string })) || [], [classesData]);
-
-  const feesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/frais_scolarite`)) : null, [firestore, schoolId]);
-  const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
-  const fees: Fee[] = useMemo(() => feesData?.map(d => ({ id: d.id, ...d.data() } as Fee)) || [], [feesData]);
-
-  const niveauxQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [firestore, schoolId]);
-  const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
-  const niveaux: (Niveau & { id: string })[] = useMemo(() => niveauxData?.map(d => ({ id: d.id, ...d.data() } as Niveau & { id: string })) || [], [niveauxData]);
-
-  const form = useForm<RegistrationFormValues>({
-    resolver: zodResolver(registrationSchema),
-    defaultValues: {
-      lastName: '',
-      firstName: '',
-      matricule: '',
-      photoUrl: '',
-      dateOfBirth: '',
-      placeOfBirth: '',
-      gender: undefined,
-      address: '',
-      previousSchool: '',
-      classId: '',
-      status: 'Actif',
-      parent1LastName: '',
-      parent1FirstName: '',
-      parent1Contact: '',
-      parent2LastName: '',
-      parent2FirstName: '',
-      parent2Contact: '',
-    }
-  });
-
-  const watchedClassId = useWatch({ control: form.control, name: 'classId' });
-
-  const { fee: tuitionFeeForSelectedClass } = getTuitionInfoForClass(watchedClassId, classes, niveaux, fees);
-
-  const handleNextStep = async () => {
-    let fieldsToValidate: (keyof RegistrationFormValues)[] = [];
-    if (step === 1) fieldsToValidate = step1Fields;
-    if (step === 2) fieldsToValidate = step2Fields;
-
-    const isValid = await form.trigger(fieldsToValidate);
-    if (isValid) {
-      setStep(s => Math.min(s + 1, 3));
-    }
-  };
-
-  const handlePrevStep = () => setStep(s => Math.max(s - 1, 1));
-
-  const onSubmit = async (values: RegistrationFormValues) => {
-    if (!schoolId) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "ID de l'école non trouvé. Veuillez rafraîchir la page.",
-      });
-      return;
-    }
-    if (!user || !user.uid) {
-      toast({ variant: "destructive", title: "Erreur", description: "Utilisateur non authentifié." });
-      return;
-    }
-
-    form.clearErrors();
-
-    const selectedClassInfo = classes.find(c => c.id === values.classId);
-    const selectedNiveauInfo = niveaux.find(n => n.id === selectedClassInfo?.niveauId);
-
-    const { fee: tuitionFee } = getTuitionInfoForClass(values.classId, classes, niveaux, fees);
-    const currentAcademicYear = schoolData?.currentAcademicYear || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
-
-    const studentData = {
-      schoolId,
-      matricule: values.matricule || '',
-      lastName: values.lastName,
-      firstName: values.firstName,
-      dateOfBirth: values.dateOfBirth || '',
-      placeOfBirth: values.placeOfBirth || '',
-      gender: values.gender,
-      address: values.address || '',
-      previousSchool: values.previousSchool || '',
-      photoURL: values.photoUrl || `https://picsum.photos/seed/${values.matricule || 'placeholder'}/200`,
-      status: values.status,
-      classId: values.classId,
-      class: selectedClassInfo?.name || 'N/A',
-      cycle: selectedClassInfo?.cycleId || 'N/A',
-      grade: selectedNiveauInfo?.name || 'N/A',
-      parent1LastName: values.parent1LastName,
-      parent1FirstName: values.parent1FirstName,
-      parent1Contact: values.parent1Contact,
-      parent2LastName: values.parent2LastName || '',
-      parent2FirstName: values.parent2FirstName || '',
-      parent2Contact: values.parent2Contact || '',
-      parentIds: [], // Initialise le champ parentIds
-      tuitionFee: tuitionFee,
-      discountAmount: 0,
-      discountReason: '',
-      amountDue: tuitionFee,
-      tuitionStatus: (tuitionFee > 0 ? 'Partiel' : 'Soldé') as "Partiel" | "Soldé",
-      feedback: '',
-      inscriptionYear: parseInt(currentAcademicYear.split('-')[0]),
-    };
-
-    try {
-      const newStudentId = await StudentService.createStudent(schoolId, studentData, user.uid);
-
-      if (schoolData?.directorId) {
-        const notificationsCollectionRef = collection(firestore, `ecoles/${schoolId}/notifications`);
-        const notificationData = {
-          userId: schoolData.directorId,
-          title: `Nouvelle pré-inscription`,
-          content: `L'élève ${values.firstName} ${values.lastName} attend une validation.`,
-          href: `/dashboard/dossiers-eleves/${newStudentId}`,
-          isRead: false,
-          createdAt: serverTimestamp(),
-        };
-        await addDoc(notificationsCollectionRef, notificationData);
-      }
-
-      toast({
-        title: "Inscription réussie",
-        description: `${values.firstName} ${values.lastName} a été inscrit(e) avec succès.`,
-      });
-      // Petit délai pour laisser le toast respirer et éviter les port errors
-      setTimeout(() => {
-        router.push(`/dashboard/dossiers-eleves`);
-      }, 500);
-    } catch (serverError: any) {
-      console.error("Error creating student:", serverError);
-      const isLimitError = serverError?.message?.startsWith('LIMIT_REACHED');
-      toast({
-        variant: "destructive",
-        title: isLimitError ? "Limite d'élèves atteinte" : "Erreur",
-        description: isLimitError
-          ? serverError.message.replace('LIMIT_REACHED: ', '')
-          : "Impossible d'enregistrer l'inscription. Vérifiez vos permissions et réessayez.",
-      });
-    }
-  };
-
-  const isLoading = schoolDataLoading || feesLoading || classesLoading || niveauxLoading;
+  const isLoading = schoolLoading || elevesLoading || classesLoading || feesLoading || niveauxLoading;
 
   if (isLoading) {
     return (
-      <div className="max-w-3xl mx-auto space-y-6">
-        <Skeleton className="h-10 w-1/3" />
-        <Skeleton className="h-96 w-full" />
+      <div className="space-y-6">
+        <div className="h-10 w-1/4 bg-slate-100 animate-pulse rounded-xl" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-2xl" />)}
+        </div>
+        <Skeleton className="h-96 w-full rounded-2xl" />
       </div>
     );
   }
 
-  const { formState: { isSubmitting } } = form;
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      
+      {/* En-tête de la Page */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-lg font-semibold md:text-2xl">Nouvelle Inscription</h1>
-          <p className="text-muted-foreground">Suivez les étapes pour inscrire un nouvel élève.</p>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Inscriptions & Admissions</h1>
+          <p className="text-sm text-slate-500 font-medium">
+            Gérez la rentrée scolaire de vos élèves, inscrivez en lot ou réinscrivez depuis les archives.
+          </p>
         </div>
-        {schoolId && (
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button className="rounded-xl transition-all hover:scale-105 active:scale-95 bg-indigo-600 hover:bg-indigo-700 text-white gap-2 self-start sm:self-center">
-                <QrCode className="h-4 w-4" /> QR Code Inscription Parent
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md rounded-2xl bg-white border border-white shadow-2xl">
-              <DialogHeader>
-                <DialogTitle className="text-xl font-black text-slate-900 tracking-tight">QR Code d&apos;Inscription</DialogTitle>
-                <DialogDescription>
-                  Permettez aux parents d&apos;inscrire leur enfant et payer en ligne en scannant ce code QR.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="flex flex-col items-center justify-center space-y-4 py-4">
-                <div id="parent-qr-code" className="p-4 bg-white border border-slate-200 rounded-2xl shadow-md">
-                  <QRCode 
-                    value={registrationLink} 
-                    size={200}
-                    className="h-auto max-w-full w-full"
-                  />
-                </div>
-                <div className="w-full space-y-2">
-                  <p className="text-xs font-black uppercase tracking-widest text-slate-400">Lien direct d&apos;inscription</p>
-                  <div className="flex items-center gap-2">
-                    <Input 
-                      readOnly 
+
+        {/* Boutons d'actions supérieurs */}
+        <div className="grid grid-cols-2 sm:flex sm:flex-row sm:flex-wrap lg:flex-nowrap gap-2 items-center w-full sm:w-auto">
+          {schoolId && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="w-full sm:w-auto rounded-xl border-slate-200/80 hover:bg-slate-50 gap-2 transition-all hover:scale-105 active:scale-95">
+                  <QrCode className="h-4 w-4 text-slate-600" /> Inscription En Ligne
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md rounded-2xl bg-white border border-white shadow-2xl">
+                <DialogHeader>
+                  <DialogTitle className="text-xl font-black text-slate-900 tracking-tight">QR Code d&apos;Inscription</DialogTitle>
+                  <DialogDescription>
+                    Permettez aux parents de procéder à la pré-inscription et au règlement depuis leur smartphone.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex flex-col items-center justify-center space-y-4 py-4">
+                  <div id="parent-qr-code" className="p-4 bg-white border border-slate-200 rounded-2xl shadow-md">
+                    <QRCode 
                       value={registrationLink} 
-                      className="rounded-xl font-mono text-xs bg-slate-50 border-slate-200"
+                      size={200}
+                      className="h-auto max-w-full w-full"
                     />
-                    <Button 
-                      size="icon" 
-                      variant="outline" 
-                      onClick={handleCopyLink}
-                      className="rounded-xl transition-all hover:scale-105 active:scale-95 shrink-0"
-                    >
-                      {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
-                    </Button>
+                  </div>
+                  <div className="w-full space-y-2">
+                    <p className="text-xs font-black uppercase tracking-widest text-slate-400">Lien direct d&apos;inscription</p>
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        readOnly 
+                        value={registrationLink} 
+                        className="rounded-xl font-mono text-xs bg-slate-50 border-slate-200"
+                      />
+                      <Button 
+                        size="icon" 
+                        variant="outline" 
+                        onClick={handleCopyLink}
+                        className="rounded-xl transition-all hover:scale-105 active:scale-95 shrink-0"
+                      >
+                        {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="flex justify-end gap-2 border-t pt-4">
-                <Button 
-                  variant="outline" 
-                  onClick={handlePrintQRCode} 
-                  className="rounded-xl gap-2 transition-all hover:scale-105 active:scale-95 text-slate-600"
-                >
-                  <Printer className="h-4 w-4" /> Imprimer le QR Code
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
+                <div className="flex justify-end gap-2 border-t pt-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={handlePrintQRCode} 
+                    className="rounded-xl gap-2 transition-all hover:scale-105 active:scale-95 text-slate-600"
+                  >
+                    <Printer className="h-4 w-4" /> Imprimer le QR Code
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+
+          <Button 
+            onClick={() => setIsUnitaryOpen(true)}
+            className="w-full sm:w-auto rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white gap-2 transition-all hover:scale-105 active:scale-95"
+          >
+            <UserPlus className="h-4 w-4" /> Nouvelle Inscription
+          </Button>
+
+          <Button 
+            onClick={() => setIsBulkOpen(true)}
+            className="w-full sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white gap-2 transition-all hover:scale-105 active:scale-95"
+          >
+            <TableIcon className="h-4 w-4" /> Saisie en Lot
+          </Button>
+
+          <Button 
+            onClick={() => setIsReRegistrationOpen(true)}
+            className="w-full sm:w-auto rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100/70 border border-indigo-100 gap-2 transition-all hover:scale-105 active:scale-95"
+          >
+            <RefreshCw className="h-4 w-4" /> Réinscrire
+          </Button>
+        </div>
       </div>
 
-      <Card className="max-w-3xl mx-auto">
-        <CardHeader>
-          <CardTitle>Formulaire d&apos;Inscription</CardTitle>
-          <CardDescription>
-            Étape {step} sur 3 - Frais de scolarité pour la classe sélectionnée :
-            <span className="font-bold text-primary"> {formatCurrency(tuitionFeeForSelectedClass)}</span>
-          </CardDescription>
-          {tuitionFeeForSelectedClass === 0 && watchedClassId && (
-            <Alert variant="destructive" className="mt-2">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Aucun frais de scolarité n&apos;a été défini pour ce niveau. L&apos;élève sera inscrit avec un solde de {formatCurrency(0)}.
-                <Button variant="link" asChild className="p-0 h-auto ml-1"><Link href="/dashboard/frais-scolarite">Définir les frais maintenant.</Link></Button>
-              </AlertDescription>
-            </Alert>
-          )}
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {step === 1 && (
-                <div className="space-y-4 animate-in fade-in-50">
-                  <div className="flex items-center gap-2 text-lg font-semibold text-primary"><User className="h-5 w-5" />Informations de l&apos;Élève</div>
+      {/* Cartes d'indicateurs de performance (Stats) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="rounded-2xl border-none shadow-md bg-white/40 backdrop-blur-xl border border-white/60">
+          <CardContent className="p-6 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400">Élèves Inscrits</p>
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight mt-1">{stats.count}</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Année scolaire {currentYear}</p>
+            </div>
+            <div className="h-12 w-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+              <Users className="h-6 w-6" />
+            </div>
+          </CardContent>
+        </Card>
 
-                  <div className="flex flex-col sm:flex-row items-center gap-6">
-                    <FormField control={form.control} name="photoUrl" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Photo</FormLabel>
-                        <FormControl>
-                          <ImageUploader
-                            onUploadComplete={(url) => field.onChange(url)}
-                            storagePath={`ecoles/${schoolId}/student-photos/`}
-                            currentImageUrl={field.value}
-                            resizeWidth={400}
-                          >
-                            <Avatar className="h-24 w-24">
-                              <AvatarImage src={field.value || undefined} alt="Photo de l'élève" />
-                              <AvatarFallback className="flex flex-col items-center justify-center space-y-1">
-                                <Upload className="h-6 w-6 text-muted-foreground" />
-                                <span className="text-xs text-muted-foreground">Ajouter</span>
-                              </AvatarFallback>
-                            </Avatar>
-                          </ImageUploader>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <div className="flex-1 w-full space-y-4">
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Ex: GUEYE" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Prénom(s)</FormLabel><FormControl><Input placeholder="Ex: Adama" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                      </div>
-                      <FormField control={form.control} name="matricule" render={({ field }) => (<FormItem><FormLabel>Numéro Matricule (optionnel)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    </div>
-                  </div>
+        <Card className="rounded-2xl border-none shadow-md bg-white/40 backdrop-blur-xl border border-white/60">
+          <CardContent className="p-6 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400">Total Scolarités</p>
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight mt-1 font-mono">{formatCurrency(stats.totalScolarites)}</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Attendu pour l&apos;année</p>
+            </div>
+            <div className="h-12 w-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+              <Receipt className="h-6 w-6" />
+            </div>
+          </CardContent>
+        </Card>
 
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="dateOfBirth" render={({ field }) => (<FormItem><FormLabel>Date de naissance (optionnel)</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="placeOfBirth" render={({ field }) => (<FormItem><FormLabel>Lieu de naissance (optionnel)</FormLabel><FormControl><Input placeholder="Ex: Dakar" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  </div>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="gender" render={({ field }) => (<FormItem><FormLabel>Sexe</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner le sexe" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Masculin">Masculin</SelectItem><SelectItem value="Féminin">Féminin</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="address" render={({ field }) => (<FormItem><FormLabel>Adresse (optionnel)</FormLabel><FormControl><Input placeholder="Ex: Cité Keur Gorgui, Villa 123" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  </div>
-                </div>
-              )}
+        <Card className="rounded-2xl border-none shadow-md bg-white/40 backdrop-blur-xl border border-white/60">
+          <CardContent className="p-6 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400">Total Encaissé</p>
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight mt-1 font-mono">{formatCurrency(stats.totalPaid)}</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Montant perçu en versements</p>
+            </div>
+            <div className="h-12 w-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+              <Coins className="h-6 w-6" />
+            </div>
+          </CardContent>
+        </Card>
 
-              {step === 2 && (
-                <div className="space-y-4 animate-in fade-in-50">
-                  <div className="flex items-center gap-2 text-lg font-semibold text-primary"><GraduationCap className="h-5 w-5" />Informations Scolaires</div>
-                  <FormField control={form.control} name="previousSchool" render={({ field }) => (<FormItem><FormLabel>Ancien établissement (si applicable)</FormLabel><FormControl><Input placeholder="Ex: Lycée Lamine Gueye" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="classId" render={({ field }) => (<FormItem><FormLabel>Classe souhaitée</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={classesLoading ? "Chargement..." : "Sélectionner une classe"} /></SelectTrigger></FormControl><SelectContent>{classes.map(c => <SelectItem key={c.id} value={c.id!}>{c.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>Statut de l&apos;inscription</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un statut" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Actif">Actif / Inscrit</SelectItem><SelectItem value="En attente">En attente / Pré-inscrit</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
-                  </div>
-                </div>
-              )}
+        <Card className="rounded-2xl border-none shadow-md bg-white/40 backdrop-blur-xl border border-white/60">
+          <CardContent className="p-6 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400">Restes à Payer</p>
+              <h3 className="text-2xl font-black text-rose-600 tracking-tight mt-1 font-mono">{formatCurrency(stats.totalRemaining)}</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Solde restant à recouvrer</p>
+            </div>
+            <div className="h-12 w-12 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600 shrink-0">
+              <Coins className="h-6 w-6" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-              {step === 3 && (
-                <div className="space-y-4 animate-in fade-in-50">
-                  <div className="flex items-center gap-2 text-lg font-semibold text-primary"><Users className="h-5 w-5" />Informations des Parents/Tuteurs</div>
-                  <div className="p-4 border rounded-lg space-y-4">
-                    <h4 className="font-medium">Parent 1</h4>
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      <FormField control={form.control} name="parent1LastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Nom du parent 1" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                      <FormField control={form.control} name="parent1FirstName" render={({ field }) => (<FormItem><FormLabel>Prénom(s)</FormLabel><FormControl><Input placeholder="Prénom(s) du parent 1" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    </div>
-                    <FormField control={form.control} name="parent1Contact" render={({ field }) => (<FormItem><FormLabel>Contact (Téléphone)</FormLabel><FormControl><Input placeholder="Numéro de téléphone" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  </div>
-                  <div className="p-4 border rounded-lg space-y-4">
-                    <h4 className="font-medium">Parent 2 (optionnel)</h4>
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      <FormField control={form.control} name="parent2LastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Nom du parent 2" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                      <FormField control={form.control} name="parent2FirstName" render={({ field }) => (<FormItem><FormLabel>Prénom(s)</FormLabel><FormControl><Input placeholder="Prénom(s) du parent 2" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    </div>
-                    <FormField control={form.control} name="parent2Contact" render={({ field }) => (<FormItem><FormLabel>Contact (Téléphone)</FormLabel><FormControl><Input placeholder="Numéro de téléphone" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  </div>
-                </div>
-              )}
+      {/* Tableau de bord interactif avec onglets */}
+      <Tabs defaultValue="inscrits" className="w-full">
+        
+        {/* Barre d'outils (Onglets + Recherche) */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+          <TabsList className="bg-slate-100 rounded-xl p-1 self-start">
+            <TabsTrigger value="inscrits" className="rounded-lg text-xs font-bold px-4 py-2">
+              Élèves Inscrits ({currentStudents.length})
+            </TabsTrigger>
+            <TabsTrigger value="precedent" className="rounded-lg text-xs font-bold px-4 py-2">
+              Fichier Précédent ({prevYear}) ({prevStudents.length})
+            </TabsTrigger>
+            <TabsTrigger value="corbeille" className="rounded-lg text-xs font-bold px-4 py-2">
+              Corbeille ({deletedStudents.length})
+            </TabsTrigger>
+          </TabsList>
 
-              <div className="flex justify-between pt-4">
-                {step > 1 ? (
-                  <Button type="button" variant="outline" onClick={handlePrevStep} disabled={isSubmitting} className="rounded-xl transition-all hover:scale-105 active:scale-95">
-                    <span className="flex items-center gap-2"><ArrowLeft className="mr-2 h-4 w-4" /> Précédent</span>
-                  </Button>
-                ) : (
-                  <Button type="button" variant="ghost" onClick={() => router.push('/dashboard/dossiers-eleves')} disabled={isSubmitting} className="text-slate-500 hover:text-slate-700 rounded-xl transition-all hover:scale-105 active:scale-95">
-                    <span className="flex items-center gap-2"><X className="mr-2 h-4 w-4" /> Annuler</span>
-                  </Button>
-                )}
-                {step < 3 ? (
-                  <Button type="button" onClick={handleNextStep} className="rounded-xl transition-all hover:scale-105 active:scale-95">
-                    <span className="flex items-center gap-2">Suivant <ArrowRight className="ml-2 h-4 w-4" /></span>
-                  </Button>
-                ) : (
-                  <Button type="submit" disabled={isSubmitting} className="gap-2">
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Inscription en cours...
-                      </>
-                    ) : (
-                      <>
-                        Soumettre l&apos;Inscription
-                        <CheckCircle2 className="ml-2 h-4 w-4" />
-                      </>
-                    )}
-                  </Button>
-                )}
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+          <div className="relative w-full lg:max-w-xs shrink-0">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <Input
+              placeholder="Rechercher élève, classe..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 rounded-xl border-slate-200/80 bg-white"
+            />
+          </div>
+        </div>
+
+        {/* CONTENU : Onglet 1 - Élèves Inscrits */}
+        <TabsContent value="inscrits" className="border-none p-0 mt-0 focus-visible:ring-0">
+          <Card className="rounded-2xl border-none shadow-md overflow-hidden bg-white/70 backdrop-blur-xl">
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader className="bg-slate-50/70 border-b">
+                  <TableRow>
+                    <TableHead className="w-[80px] text-xs font-black uppercase tracking-widest text-slate-400">Photo</TableHead>
+                    <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Matricule</TableHead>
+                    <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Nom & Prénoms</TableHead>
+                    <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Classe</TableHead>
+                    <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Sexe</TableHead>
+                    <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Date Nais.</TableHead>
+                    <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Statut CI</TableHead>
+                    <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Redoub.</TableHead>
+                    <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Scolarité (F)</TableHead>
+                    <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Reste (F)</TableHead>
+                    <TableHead className="w-[100px] text-center"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredCurrent.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={11} className="text-center py-12 text-slate-400">
+                        Aucun élève trouvé pour cette recherche.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredCurrent.map(student => (
+                      <TableRow key={student.id} className="hover:bg-slate-50/40">
+                        <TableCell>
+                          <Avatar className="h-9 w-9 ring-1 ring-slate-100">
+                            <AvatarImage src={student.photoURL} alt={student.firstName} />
+                            <AvatarFallback className="bg-slate-50 text-[10px]">{student.lastName.slice(0,2)}</AvatarFallback>
+                          </Avatar>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs font-bold text-slate-500">{student.matricule}</TableCell>
+                        <TableCell className="font-bold text-slate-900">{student.lastName} {student.firstName}</TableCell>
+                        <TableCell className="font-medium text-slate-600">{student.class}</TableCell>
+                        <TableCell className="text-xs font-semibold text-slate-500">{student.gender}</TableCell>
+                        <TableCell className="text-xs text-slate-500 font-mono">{student.dateOfBirth}</TableCell>
+                        <TableCell className="text-xs">
+                          <span className={student.statusAff === 'Affecté' ? 'text-indigo-600 font-bold' : 'text-slate-600'}>
+                            {student.statusAff || 'Non-Affecté'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-xs">{student.isRepeater ? 'Oui' : 'Non'}</TableCell>
+                        <TableCell className="font-mono text-xs">{formatCurrency(student.tuitionFee)}</TableCell>
+                        <TableCell className="font-mono text-xs font-bold text-rose-600">{formatCurrency(student.amountDue)}</TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex justify-end gap-2 pr-2">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => student.id && handleDeleteStudent(student.id)}
+                              className="text-rose-600 hover:bg-rose-50 rounded-xl h-8 w-8"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* CONTENU : Onglet 2 - Fichier Précédent */}
+        <TabsContent value="precedent" className="border-none p-0 mt-0 focus-visible:ring-0">
+          <Card className="rounded-2xl border-none shadow-md overflow-hidden bg-white/70 backdrop-blur-xl">
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader className="bg-slate-50/70 border-b">
+                  <TableRow>
+                    <TableHead className="w-[80px] text-xs font-black uppercase tracking-widest text-slate-400">Photo</TableHead>
+                    <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Matricule</TableHead>
+                    <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Nom & Prénoms</TableHead>
+                    <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Classe Précédente</TableHead>
+                    <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Sexe</TableHead>
+                    <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Nationalité</TableHead>
+                    <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Statut CI</TableHead>
+                    <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Parent Contact</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredPrev.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-12 text-slate-400">
+                        Aucun élève trouvé de l&apos;année précédente ({prevYear}).
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredPrev.map(student => (
+                      <TableRow key={student.id} className="hover:bg-slate-50/40">
+                        <TableCell>
+                          <Avatar className="h-9 w-9 ring-1 ring-slate-100">
+                            <AvatarImage src={student.photoURL} alt={student.firstName} />
+                            <AvatarFallback className="bg-slate-50 text-[10px]">{student.lastName.slice(0,2)}</AvatarFallback>
+                          </Avatar>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs font-bold text-slate-500">{student.matricule}</TableCell>
+                        <TableCell className="font-bold text-slate-900">{student.lastName} {student.firstName}</TableCell>
+                        <TableCell className="font-medium text-slate-600">{student.class}</TableCell>
+                        <TableCell className="text-xs font-semibold text-slate-500">{student.gender}</TableCell>
+                        <TableCell className="text-xs font-medium text-slate-600">{student.nationality || 'Ivoirienne'}</TableCell>
+                        <TableCell className="text-xs">{student.statusAff || 'Non-Affecté'}</TableCell>
+                        <TableCell className="font-mono text-xs font-medium text-slate-500">{student.parent1Contact}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* CONTENU : Onglet 3 - Corbeille */}
+        <TabsContent value="corbeille" className="border-none p-0 mt-0 focus-visible:ring-0">
+          <Card className="rounded-2xl border-none shadow-md overflow-hidden bg-white/70 backdrop-blur-xl">
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader className="bg-slate-50/70 border-b">
+                  <TableRow>
+                    <TableHead className="w-[80px] text-xs font-black uppercase tracking-widest text-slate-400">Photo</TableHead>
+                    <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Matricule</TableHead>
+                    <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Nom & Prénoms</TableHead>
+                    <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Classe</TableHead>
+                    <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Sexe</TableHead>
+                    <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Année Acad.</TableHead>
+                    <TableHead className="w-[100px] text-center"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredDeleted.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-12 text-slate-400">
+                        La corbeille est vide.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredDeleted.map(student => (
+                      <TableRow key={student.id} className="hover:bg-slate-50/40">
+                        <TableCell>
+                          <Avatar className="h-9 w-9 grayscale opacity-60">
+                            <AvatarImage src={student.photoURL} alt={student.firstName} />
+                            <AvatarFallback className="bg-slate-50 text-[10px]">{student.lastName.slice(0,2)}</AvatarFallback>
+                          </Avatar>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs font-bold text-slate-400">{student.matricule}</TableCell>
+                        <TableCell className="font-bold text-slate-400 line-through">{student.lastName} {student.firstName}</TableCell>
+                        <TableCell className="font-medium text-slate-400">{student.class}</TableCell>
+                        <TableCell className="text-xs text-slate-400">{student.gender}</TableCell>
+                        <TableCell className="text-xs text-slate-400">{student.academicYear}</TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex justify-end gap-2 pr-2">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => student.id && handleRestoreStudent(student.id)}
+                              className="text-indigo-600 hover:bg-indigo-50 rounded-xl h-8 w-8"
+                              title="Restaurer"
+                            >
+                              <Undo2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Modals intégrés */}
+      {schoolId && (
+        <>
+          <RegistrationModal
+            isOpen={isUnitaryOpen}
+            onClose={() => setIsUnitaryOpen(false)}
+            onSuccess={() => {}}
+            schoolId={schoolId}
+            schoolData={schoolData}
+            classes={classes}
+            niveaux={niveaux}
+            fees={fees}
+          />
+          <BulkRegistrationModal
+            isOpen={isBulkOpen}
+            onClose={() => setIsBulkOpen(false)}
+            onSuccess={() => {}}
+            schoolId={schoolId}
+            schoolData={schoolData}
+            classes={classes}
+            niveaux={niveaux}
+            fees={fees}
+          />
+          <ReRegistrationModal
+            isOpen={isReRegistrationOpen}
+            onClose={() => setIsReRegistrationOpen(false)}
+            onSuccess={() => {}}
+            schoolId={schoolId}
+            schoolData={schoolData}
+            classes={classes}
+          />
+        </>
+      )}
+
     </div>
   );
 }
-

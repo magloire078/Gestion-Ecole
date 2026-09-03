@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useTransition, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Edit, Trash2, Search, Users, Shield, ShieldCheck, UserCheck, MoreVertical, LayoutGrid, List } from 'lucide-react';
@@ -42,6 +42,20 @@ export default function RolesPage() {
     const [roleToDelete, setRoleToDelete] = useState<(AdminRole & { id: string }) | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
+    const [isPending, startTransition] = useTransition();
+    const [shouldRenderForm, setShouldRenderForm] = useState(false);
+
+    useEffect(() => {
+        if (isFormOpen) {
+            const timer = setTimeout(() => {
+                setShouldRenderForm(true);
+            }, 100);
+            return () => clearTimeout(timer);
+        } else {
+            setShouldRenderForm(false);
+        }
+    }, [isFormOpen]);
+
     // Fetch Roles
     const rolesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/admin_roles`)) : null, [firestore, schoolId]);
     const { data: rolesData, loading: rolesLoading } = useCollection(rolesQuery);
@@ -72,13 +86,17 @@ export default function RolesPage() {
     }, [staff]);
 
     const handleOpenForm = (role: (AdminRole & { id: string }) | null) => {
-        setEditingRole(role);
-        setIsFormOpen(true);
+        startTransition(() => {
+            setEditingRole(role);
+            setIsFormOpen(true);
+        });
     };
 
     const handleFormSave = () => {
-        setIsFormOpen(false);
-        setEditingRole(null);
+        startTransition(() => {
+            setIsFormOpen(false);
+            setEditingRole(null);
+        });
     };
 
     const handleOpenDeleteDialog = (role: AdminRole & { id: string }) => {
@@ -293,12 +311,36 @@ export default function RolesPage() {
                             {editingRole ? `Ajustez les accès pour "${editingRole.name}".` : "Définissez les responsabilités et les accès."}
                         </DialogDescription>
                     </DialogHeader>
-                    <RoleForm
-                        key={editingRole?.id || 'new-role'}
-                        schoolId={schoolId!}
-                        role={editingRole}
-                        onSave={handleFormSave}
-                    />
+                    {!shouldRenderForm ? (
+                        <div className="space-y-6 py-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Skeleton className="h-4 w-24" />
+                                    <Skeleton className="h-10 w-full" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Skeleton className="h-4 w-24" />
+                                    <Skeleton className="h-10 w-full" />
+                                </div>
+                            </div>
+                            <div className="space-y-4">
+                                <Skeleton className="h-6 w-48" />
+                                <Skeleton className="h-12 w-full" />
+                                <div className="space-y-2">
+                                    <Skeleton className="h-16 w-full" />
+                                    <Skeleton className="h-16 w-full" />
+                                    <Skeleton className="h-16 w-full" />
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <RoleForm
+                            key={editingRole?.id || 'new-role'}
+                            schoolId={schoolId!}
+                            role={editingRole}
+                            onSave={handleFormSave}
+                        />
+                    )}
                 </DialogContent>
             </Dialog>
 

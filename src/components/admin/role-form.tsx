@@ -10,7 +10,7 @@ import { useFirestore } from '@/firebase';
 import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
 import type { admin_role as AdminRole } from '@/lib/data-types';
 import { useToast } from '@/hooks/use-toast';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { DialogFooter } from '../ui/dialog';
 import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
@@ -44,9 +44,22 @@ export function RoleForm({ schoolId, role, onSave }: RoleFormProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>(permissionCategories[0].id);
+
+  const defaultPermissions = useMemo(() => {
+    return allPermissionsList.reduce((acc, p) => {
+        acc[p.id] = role?.permissions?.[p.id] || false;
+        return acc;
+    }, {} as Record<string, boolean>);
+  }, [role]);
 
   const form = useForm<RoleFormValues>({
     resolver: zodResolver(roleFormSchema),
+    defaultValues: {
+      name: role?.name || '',
+      description: role?.description || '',
+      permissions: defaultPermissions,
+    }
   });
 
   useEffect(() => {
@@ -86,8 +99,8 @@ export function RoleForm({ schoolId, role, onSave }: RoleFormProps) {
     
     const collectionRef = collection(firestore, `ecoles/${schoolId}/admin_roles`);
     const promise = role 
-        ? setDoc(doc(collectionRef, role.id), dataToSave, { merge: true })
-        : addDoc(collectionRef, dataToSave);
+    ? setDoc(doc(collectionRef, role.id), dataToSave, { merge: true })
+    : addDoc(collectionRef, dataToSave);
         
     try {
         await promise;
@@ -115,7 +128,7 @@ export function RoleForm({ schoolId, role, onSave }: RoleFormProps) {
              <FormField control={form.control} name="description" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Description</FormLabel>
-                  <FormControl><Input placeholder="Bève description des responsabilités" {...field} /></FormControl>
+                  <FormControl><Input placeholder="Brève description des responsabilités" {...field} /></FormControl>
                 </FormItem>
             )}/>
         </div>
@@ -125,7 +138,7 @@ export function RoleForm({ schoolId, role, onSave }: RoleFormProps) {
             <h3 className="text-lg font-semibold">Configuration des Permissions</h3>
           </div>
           
-          <Tabs defaultValue={permissionCategories[0].id} className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid grid-cols-3 md:grid-cols-5 h-auto p-1 bg-muted">
               {permissionCategories.map(cat => {
                 const Icon = categoryIcons[cat.id];
@@ -141,62 +154,66 @@ export function RoleForm({ schoolId, role, onSave }: RoleFormProps) {
 
             {permissionCategories.map(cat => (
               <TabsContent key={cat.id} value={cat.id} className="space-y-4 pt-4 border rounded-md p-4 mt-2">
-                <div className="flex justify-between items-center mb-4 pb-2 border-b">
-                  <div className="space-y-0.5">
-                    <h4 className="font-medium">{cat.label}</h4>
-                    <p className="text-xs text-muted-foreground">Définissez les accès pour cette catégorie.</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => handleSelectAllCategory(cat.id, true)}
-                      className="h-8 text-xs"
-                    >
-                      <CheckSquare className="mr-2 h-3 w-3" /> Tout
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => handleSelectAllCategory(cat.id, false)}
-                      className="h-8 text-xs"
-                    >
-                      <Square className="mr-2 h-3 w-3" /> Aucun
-                    </Button>
-                  </div>
-                </div>
+                {activeTab === cat.id && (
+                  <>
+                    <div className="flex justify-between items-center mb-4 pb-2 border-b">
+                      <div className="space-y-0.5">
+                        <h4 className="font-medium">{cat.label}</h4>
+                        <p className="text-xs text-muted-foreground">Définissez les accès pour cette catégorie.</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleSelectAllCategory(cat.id, true)}
+                          className="h-8 text-xs"
+                        >
+                          <CheckSquare className="mr-2 h-3 w-3" /> Tout
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleSelectAllCategory(cat.id, false)}
+                          className="h-8 text-xs"
+                        >
+                          <Square className="mr-2 h-3 w-3" /> Aucun
+                        </Button>
+                      </div>
+                    </div>
 
-                <ScrollArea className="h-64">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pr-4">
-                    {allPermissionsList.filter(p => p.category === cat.id).map((permission) => (
-                      <FormField
-                        key={permission.id}
-                        control={form.control}
-                        name={`permissions.${permission.id}`}
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3 hover:bg-accent/50 transition-colors">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel className="text-sm font-medium cursor-pointer">
-                                {permission.label}
-                              </FormLabel>
-                              <p className="text-[10px] text-muted-foreground line-clamp-2">
-                                {permission.desc}
-                              </p>
-                            </div>
-                          </FormItem>
-                        )}
-                      />
-                    ))}
-                  </div>
-                </ScrollArea>
+                    <ScrollArea className="h-64">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pr-4">
+                        {allPermissionsList.filter(p => p.category === cat.id).map((permission) => (
+                          <FormField
+                            key={permission.id}
+                            control={form.control}
+                            name={`permissions.${permission.id}`}
+                            render={({ field }) => (
+                              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3 hover:bg-accent/50 transition-colors">
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                                <div className="space-y-1 leading-none">
+                                  <FormLabel className="text-sm font-medium cursor-pointer">
+                                    {permission.label}
+                                  </FormLabel>
+                                  <p className="text-[10px] text-muted-foreground line-clamp-2">
+                                    {permission.desc}
+                                  </p>
+                                </div>
+                              </FormItem>
+                            )}
+                          />
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </>
+                )}
               </TabsContent>
             ))}
           </Tabs>

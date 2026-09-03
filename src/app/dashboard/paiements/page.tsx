@@ -1,406 +1,573 @@
 'use client';
-// Force TS check
 
+import { useState, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import { useCollection, useFirestore, useUser } from '@/firebase';
+import { collection, query, where, doc, writeBatch, serverTimestamp, getDoc, getDocs } from 'firebase/firestore';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import type { student as Student, class_type as Class } from "@/lib/data-types";
-import { useState, useMemo } from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { MessageSquare, Search, Loader2, Download, Users } from "lucide-react";
-import { TuitionStatusBadge } from "@/components/tuition-status-badge";
-import { useCollection, useFirestore } from "@/firebase";
-import { collection, query } from "firebase/firestore";
+  PlusCircle,
+  Search,
+  Loader2,
+  Printer,
+  Calendar,
+  Filter,
+  DollarSign,
+  TrendingUp,
+  Receipt,
+  Trash2,
+  User,
+  CheckCircle
+} from 'lucide-react';
+import { formatCurrency } from '@/lib/currency-utils';
+import { useSchoolData } from '@/hooks/use-school-data';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { Skeleton } from "@/components/ui/skeleton";
-import { useSchoolData } from "@/hooks/use-school-data";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { formatCurrency } from "@/lib/currency-utils";
-import { motion, AnimatePresence } from "framer-motion";
-export default function PaymentsPage() {
-    const firestore = useFirestore();
-    const { schoolId, schoolName, loading: schoolDataLoading } = useSchoolData();
-    const { toast } = useToast();
+import type { student as Student, class_type as Class, accountingTransaction as Transaction } from '@/lib/data-types';
 
-    const studentsQuery = useMemo(() => schoolId ? collection(firestore, `ecoles/${schoolId}/eleves`) : null, [firestore, schoolId]);
-    const classesQuery = useMemo(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
+export default function PaymentsJournalPage() {
+  const firestore = useFirestore();
+  const { toast } = useToast();
+  const { user } = useUser();
+  const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
 
-    const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
-    const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
+  // Dialog versement
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'Espèces' | 'Chèque' | 'Virement Bancaire' | 'Paiement Mobile'>('Espèces');
+  const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [paymentNotes, setPaymentNotes] = useState('Versement scolarité');
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
 
-    const students: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
-    const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
+  // Filtres
+  const [searchTerm, setSearchTerm] = useState('');
+  const [periodFilter, setPeriodFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
 
-    const [selectedClass, setSelectedClass] = useState<string>('all');
-    const [selectedStatus, setSelectedStatus] = useState<string>('all');
-    const [searchTerm, setSearchTerm] = useState('');
+  const currentYear = schoolData?.currentAcademicYear || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
 
-    const [isGeneratingReminder, setIsGeneratingReminder] = useState(false);
+  // Requête des élèves (pour sélection dans le modal d'encaissement et jointure de noms)
+  const studentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), where('status', '==', 'Actif')) : null, [firestore, schoolId]);
+  const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
+  const students = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
 
-    const filteredStudents = useMemo(() => {
-        return students.filter(student => {
-            const classMatch = selectedClass === 'all' || student.classId === selectedClass;
-            const statusMatch = selectedStatus === 'all' || student.tuitionStatus === selectedStatus;
-            const searchMatch = searchTerm === '' ||
-                `${student.firstName} ${student.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                student.matricule?.toLowerCase().includes(searchTerm.toLowerCase());
-            return classMatch && statusMatch && searchMatch;
-        });
-    }, [students, selectedClass, selectedStatus, searchTerm]);
+  // Requête des transactions de caisse (Revenus uniquement)
+  const transactionsQuery = useMemo(() => {
+    return schoolId 
+      ? query(
+          collection(firestore, `ecoles/${schoolId}/comptabilite`),
+          where('type', '==', 'Revenu')
+        )
+      : null;
+  }, [firestore, schoolId]);
+  const { data: transactionsData, loading: transactionsLoading } = useCollection(transactionsQuery);
+  const transactions = useMemo(() => {
+    const list = transactionsData?.map(d => ({ id: d.id, ...d.data() } as Transaction & { id: string })) || [];
+    // Trier chronologiquement (plus récent en premier)
+    return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [transactionsData]);
 
-    const totalDue = useMemo(() => {
-        return filteredStudents.reduce((acc, student) => acc + (student.amountDue || 0), 0);
-    }, [filteredStudents]);
+  // Calcul des statistiques de période sur les revenus chargés
+  const stats = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    
+    let todayCollected = 0;
+    let monthCollected = 0;
+    let totalAnnual = 0;
 
-    const isLoading = schoolDataLoading || studentsLoading || classesLoading;
+    transactions.forEach(t => {
+      const amount = t.amount || 0;
+      const tDate = new Date(t.date);
+      
+      if (t.date === todayStr) {
+        todayCollected += amount;
+      }
+      if (tDate >= firstDayOfMonth) {
+        monthCollected += amount;
+      }
+      totalAnnual += amount;
+    });
 
-
-    const handleExportCSV = () => {
-        if (filteredStudents.length === 0) return;
-
-        const headers = ["Matricule", "Nom", "Prénom", "Classe", "Statut", "Montant Payé", "Solde Dû"];
-        const rows = filteredStudents.map(s => [
-            s.matricule || '',
-            s.lastName,
-            s.firstName,
-            s.class || '',
-            s.tuitionStatus || 'Partiel',
-            ((s.tuitionFee || 0) - (s.amountDue || 0)).toString(),
-            (s.amountDue || 0).toString()
-        ]);
-
-        const csvContent = "\ufeff" + [headers, ...rows].map(e => e.join(",")).join("\n");
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", `paiements_${selectedClass !== 'all' ? classes.find(c => c.id === selectedClass)?.name : 'tous'}_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        toast({ title: "Export réussi", description: "Le fichier CSV a été téléchargé." });
+    return {
+      todayCollected,
+      monthCollected,
+      totalAnnual
     };
+  }, [transactions]);
 
-    async function handleSendReminder(student: Student) {
-        if (!schoolId || !schoolName) {
-            toast({ variant: 'destructive', title: 'Erreur', description: 'Données de l\'école non disponibles.' });
-            return;
-        }
+  // Filtrage selon la période choisie et la recherche
+  const filteredTransactions = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    
+    // Début de semaine (Lundi)
+    const firstDayOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 1));
+    firstDayOfWeek.setHours(0, 0, 0, 0);
 
-        const parentEmail = student.parent1Email || student.parent2Email;
-        if (!parentEmail) {
-            toast({
-                variant: 'destructive',
-                title: 'Email manquant',
-                description: 'Aucune adresse email n\'est enregistrée pour les parents de cet élève.'
-            });
-            return;
-        }
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-        setIsGeneratingReminder(true);
-        try {
-            const { MailService } = await import('@/services/mail-service');
-            const mailService = new MailService(firestore);
+    return transactions.filter(t => {
+      // 1. Filtre temporel
+      if (periodFilter === 'today' && t.date !== todayStr) return false;
+      if (periodFilter === 'week' && new Date(t.date) < firstDayOfWeek) return false;
+      if (periodFilter === 'month' && new Date(t.date) < firstDayOfMonth) return false;
 
-            const parentName = student.parent1FirstName ? `${student.parent1FirstName} ${student.parent1LastName}` : "Cher Parent";
+      // 2. Filtre de recherche (nom de l'élève ou description)
+      if (searchTerm) {
+        const studentInfo = students.find(s => s.id === t.studentId);
+        const fullName = studentInfo ? `${studentInfo.firstName} ${studentInfo.lastName}`.toLowerCase() : '';
+        const search = searchTerm.toLowerCase();
+        
+        const nameMatch = fullName.includes(search);
+        const descMatch = t.description?.toLowerCase().includes(search);
+        const classMatch = studentInfo?.class?.toLowerCase().includes(search);
+        
+        return nameMatch || descMatch || classMatch;
+      }
 
-            const result = await mailService.sendTuitionReminder(
-                parentEmail,
-                parentName,
-                `${student.firstName} ${student.lastName}`,
-                student.amountDue || 0,
-                schoolName
-            );
+      return true;
+    });
+  }, [transactions, periodFilter, searchTerm, students]);
 
-            if (result.success) {
-                toast({
-                    title: "Rappel envoyé",
-                    description: `L'email de relance a été envoyé à ${parentEmail}.`
-                });
-            } else {
-                throw new Error("Échec de l'envoi");
-            }
-        } catch (e) {
-            console.error("Failed to send reminder:", e);
-            toast({
-                variant: 'destructive',
-                title: 'Erreur',
-                description: 'Impossible d\'envoyer le rappel par email.'
-            });
-        } finally {
-            setIsGeneratingReminder(false);
-        }
+  // Saisir un versement
+  const handleRegisterPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!schoolId || !selectedStudentId || !paymentAmount || !user) return;
+
+    const amount = parseFloat(paymentAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Veuillez saisir un montant supérieur à 0.' });
+      return;
     }
 
-    async function handleMassReminder() {
-        if (!schoolId || !schoolName) return;
+    setIsSubmittingPayment(true);
+    const batch = writeBatch(firestore);
 
-        const lateStudents = filteredStudents.filter(s => s.amountDue && s.amountDue > 0 && (s.parent1Email || s.parent2Email));
+    try {
+      const studentDocRef = doc(firestore, `ecoles/${schoolId}/eleves/${selectedStudentId}`);
+      const studentSnap = await getDoc(studentDocRef);
+      
+      if (!studentSnap.exists()) {
+        throw new Error("L'élève n'existe pas.");
+      }
 
-        if (lateStudents.length === 0) {
-            toast({ title: "Info", description: "Aucun élève avec un solde dû et un email valide n'a été trouvé." });
-            return;
-        }
+      const studentData = studentSnap.data() as Student;
+      const currentDue = studentData.amountDue || 0;
 
-        if (!confirm(`Voulez-vous envoyer un rappel par email aux parents de ${lateStudents.length} élèves ?`)) {
-            return;
-        }
+      if (amount > currentDue) {
+        toast({
+          variant: 'destructive',
+          title: 'Montant excessif',
+          description: `Le montant versé (${formatCurrency(amount)}) dépasse le solde restant dû (${formatCurrency(currentDue)}).`
+        });
+        setIsSubmittingPayment(false);
+        return;
+      }
 
-        setIsGeneratingReminder(true);
-        let sentCount = 0;
-        let errorCount = 0;
+      const newDue = Math.max(0, currentDue - amount);
+      const newStatus = newDue <= 0 ? 'Soldé' : 'Partiel';
 
-        try {
-            const { MailService } = await import('@/services/mail-service');
-            const mailService = new MailService(firestore);
+      // 1. Mettre à jour le solde sur le dossier de l'élève
+      batch.update(studentDocRef, {
+        amountDue: newDue,
+        tuitionStatus: newStatus,
+        updatedAt: new Date().toISOString()
+      });
 
-            for (const student of lateStudents) {
-                const parentEmail = (student.parent1Email || student.parent2Email)!;
-                const parentName = student.parent1FirstName ? `${student.parent1FirstName} ${student.parent1LastName}` : "Cher Parent";
+      // 2. Enregistrer le versement dans la sous-collection `paiements` de l'élève
+      const payRef = doc(collection(firestore, `ecoles/${schoolId}/eleves/${selectedStudentId}/paiements`));
+      const receiptRef = `REC-${Date.now().toString().slice(-6)}`;
+      
+      batch.set(payRef, {
+        schoolId,
+        studentId: selectedStudentId,
+        date: paymentDate,
+        amount: amount,
+        description: paymentNotes,
+        payerFirstName: studentData.parent1FirstName || 'Parent',
+        payerLastName: studentData.parent1LastName || studentData.lastName,
+        method: paymentMethod,
+        academicYear: currentYear,
+        reference: receiptRef,
+        createdAt: new Date().toISOString()
+      });
 
-                const result = await mailService.sendTuitionReminder(
-                    parentEmail,
-                    parentName,
-                    `${student.firstName} ${student.lastName}`,
-                    student.amountDue || 0,
-                    schoolName
-                );
+      // 3. Enregistrer l'écriture de caisse dans `comptabilite`
+      const transRef = doc(collection(firestore, `ecoles/${schoolId}/comptabilite`));
+      batch.set(transRef, {
+        schoolId,
+        date: paymentDate,
+        description: `${paymentNotes} - ${studentData.firstName} ${studentData.lastName}`,
+        category: 'Scolarité',
+        type: 'Revenu',
+        amount: amount,
+        studentId: selectedStudentId,
+        academicYear: currentYear,
+        createdAt: new Date().toISOString()
+      });
 
-                if (result.success) sentCount++;
-                else errorCount++;
-            }
+      await batch.commit();
 
-            toast({
-                title: "Relance groupée terminée",
-                description: `${sentCount} emails envoyés avec succès. ${errorCount} échecs.`
-            });
-        } catch (e) {
-            console.error("Mass reminder failed:", e);
-            toast({ variant: 'destructive', title: 'Erreur', description: 'Une erreur est survenue lors de la relance groupée.' });
-        } finally {
-            setIsGeneratingReminder(false);
-        }
+      toast({
+        title: "Paiement validé !",
+        description: `Reçu ${receiptRef} créé pour un montant de ${formatCurrency(amount)}.`
+      });
+
+      // Reset form
+      setIsPaymentDialogOpen(false);
+      setSelectedStudentId('');
+      setPaymentAmount('');
+      setPaymentNotes('Versement scolarité');
+    } catch (err: any) {
+      console.error(err);
+      toast({ variant: 'destructive', title: 'Erreur', description: err?.message || 'Impossible d\'enregistrer le paiement.' });
+    } finally {
+      setIsSubmittingPayment(false);
+    }
+  };
+
+  // Supprimer/Annuler un paiement
+  const handleDeleteTransaction = async (trans: Transaction & { id: string }) => {
+    if (!schoolId || !trans.id) return;
+
+    if (!confirm("Voulez-vous vraiment annuler ce versement ? Le montant sera rajouté au reste à payer de l'élève.")) {
+      return;
     }
 
+    const batch = writeBatch(firestore);
+    try {
+      // 1. Si la transaction est rattachée à un élève, on rajoute la dette
+      if (trans.studentId) {
+        const studentDocRef = doc(firestore, `ecoles/${schoolId}/eleves/${trans.studentId}`);
+        const studentSnap = await getDoc(studentDocRef);
+        
+        if (studentSnap.exists()) {
+          const studentData = studentSnap.data() as Student;
+          const currentDue = studentData.amountDue || 0;
+          const newDue = currentDue + (trans.amount || 0);
+          
+          batch.update(studentDocRef, {
+            amountDue: newDue,
+            tuitionStatus: 'Partiel',
+            updatedAt: new Date().toISOString()
+          });
+        }
+      }
 
+      // 2. Supprimer la transaction de caisse
+      const transDocRef = doc(firestore, `ecoles/${schoolId}/comptabilite/${trans.id}`);
+      batch.delete(transDocRef);
+
+      await batch.commit();
+      toast({ title: "Versement annulé !", description: "Le montant a été débité et la dette de l'élève a été réajustée." });
+    } catch (err: any) {
+      console.error(err);
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'annuler ce versement.' });
+    }
+  };
+
+  const isLoading = schoolLoading || transactionsLoading || studentsLoading;
+
+  if (isLoading) {
     return (
-        <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="space-y-4"
-        >
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                <div className="space-y-1">
-                    <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-600 dark:from-white dark:via-indigo-200 dark:to-slate-300 bg-clip-text text-transparent">Suivi des Paiements</h1>
-                    <p className="text-slate-500 max-w-2xl text-sm font-medium">Gestion centralisée et analytique des flux de scolarité.</p>
-                </div>
-                <div className="flex flex-wrap gap-2 md:gap-3 w-full md:w-auto">
-                    <Button
-                        variant="outline"
-                        onClick={handleExportCSV}
-                        disabled={isLoading || filteredStudents.length === 0}
-                        className="flex-1 md:flex-none rounded-xl border-white/60 dark:border-slate-700 bg-white/40 dark:bg-slate-800/40 backdrop-blur-md hover:bg-white/60 dark:hover:bg-slate-800/60 shadow-sm font-bold h-11"
-                    >
-                        <Download className="mr-2 h-4 w-4" /> Exporter CSV
-                    </Button>
-                    {selectedClass !== 'all' && filteredStudents.some(s => s.amountDue && s.amountDue > 0) && (
-                        <Button
-                            variant="secondary"
-                            onClick={handleMassReminder}
-                            disabled={isGeneratingReminder}
-                            className="flex-1 md:flex-none rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100 font-bold h-11"
-                        >
-                            {isGeneratingReminder ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Users className="mr-2 h-4 w-4" />}
-                            Relancer la classe
-                        </Button>
-                    )}
-                </div>
-            </div>
-
-            <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <Card className="md:col-span-1 bg-white/40 backdrop-blur-xl border border-white/60 shadow-xl shadow-slate-200/40 rounded-xl overflow-hidden border-t-white/80 transition-all duration-500 hover:shadow-2xl hover:shadow-rose-100/50 group">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Total dû (filtré)</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex flex-col">
-                                <div className="text-3xl font-black text-rose-600 tracking-tighter">
-                                    {isLoading ? <Skeleton className="h-10 w-48 rounded-lg" /> : formatCurrency(totalDue)}
-                                </div>
-                                <div className="mt-2 flex items-center gap-2">
-                                    <div className="h-1.5 flex-1 bg-slate-100 rounded-full overflow-hidden">
-                                        <motion.div 
-                                            initial={{ width: 0 }}
-                                            animate={{ width: "100%" }}
-                                            transition={{ duration: 1.5, ease: "easeOut" }}
-                                            className="h-full bg-rose-500/30"
-                                        />
-                                    </div>
-                                    <span className="text-[10px] font-bold text-rose-500">ATTENTION</span>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <div className="md:col-span-3 bg-white/30 backdrop-blur-lg border border-white/40 p-6 rounded-xl shadow-xl shadow-slate-200/30 flex flex-col md:flex-row items-center gap-4">
-                        <div className="relative w-full">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                            <Input
-                                type="search"
-                                placeholder="Chercher par nom ou matricule..."
-                                className="pl-11 w-full bg-white/50 border-white/60 rounded-xl h-12 focus:ring-indigo-500 font-medium"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                        <div className="flex gap-3 w-full md:w-auto">
-                            <Select value={selectedClass} onValueChange={setSelectedClass} disabled={isLoading}>
-                                <SelectTrigger className="w-full md:w-[200px] bg-white/50 border-white/60 rounded-xl h-12 font-bold text-slate-700">
-                                    <SelectValue placeholder="Toutes les classes" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl border-white/40">
-                                    <SelectItem value="all">Toutes les classes</SelectItem>
-                                    {classes.map(cls => (
-                                        <SelectItem key={cls.id} value={cls.id!} className="font-medium">{cls.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <Select value={selectedStatus} onValueChange={setSelectedStatus} disabled={isLoading}>
-                                <SelectTrigger className="w-full md:w-[200px] bg-white/50 border-white/60 rounded-xl h-12 font-bold text-slate-700">
-                                    <SelectValue placeholder="Tous les statuts" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl border-white/40">
-                                    <SelectItem value="all">Tous les statuts</SelectItem>
-                                    <SelectItem value="Soldé">Soldé</SelectItem>
-                                    <SelectItem value="En retard">En retard</SelectItem>
-                                    <SelectItem value="Partiel">Partiel</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                </div>
-
-                <Card className="bg-white/40 backdrop-blur-xl border border-white/60 shadow-2xl shadow-slate-200/50 rounded-xl overflow-hidden border-t-white/80">
-                    <CardContent className="p-0">
-                        <Table>
-                            <TableHeader className="bg-slate-50/40">
-                                <TableRow className="border-b-slate-100/50 hover:bg-transparent">
-                                    <TableHead className="font-black text-slate-500 uppercase text-[10px] tracking-[0.2em] pl-10 h-16">Nom de l&apos;Élève</TableHead>
-                                    <TableHead className="font-black text-slate-500 uppercase text-[10px] tracking-[0.2em] h-16">Classe</TableHead>
-                                    <TableHead className="font-black text-slate-500 uppercase text-[10px] tracking-[0.2em] text-center h-16">Statut du Paiement</TableHead>
-                                    <TableHead className="font-black text-slate-500 uppercase text-[10px] tracking-[0.2em] text-right h-16">Montant Payé</TableHead>
-                                    <TableHead className="font-black text-slate-500 uppercase text-[10px] tracking-[0.2em] text-right h-16">Solde Dû</TableHead>
-                                    <TableHead className="font-black text-slate-500 uppercase text-[10px] tracking-[0.2em] text-right pr-10 h-16">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {isLoading ? (
-                                    [...Array(5)].map((_, i) => (
-                                        <TableRow key={i} className="h-20">
-                                            <TableCell className="pl-10"><Skeleton className="h-6 w-32 rounded-lg" /></TableCell>
-                                            <TableCell><Skeleton className="h-6 w-20 rounded-lg" /></TableCell>
-                                            <TableCell className="text-center"><Skeleton className="h-8 w-24 mx-auto rounded-full" /></TableCell>
-                                            <TableCell className="text-right"><Skeleton className="h-6 w-24 ml-auto rounded-lg" /></TableCell>
-                                            <TableCell className="text-right"><Skeleton className="h-6 w-24 ml-auto rounded-lg" /></TableCell>
-                                            <TableCell className="pr-10 text-right"><Skeleton className="h-10 w-24 ml-auto rounded-xl" /></TableCell>
-                                        </TableRow>
-                                    ))
-                                ) : filteredStudents.length > 0 ? (
-                                    <AnimatePresence mode="popLayout">
-                                        {filteredStudents.map((student, idx) => (
-                                            <motion.tr 
-                                                key={student.id}
-                                                initial={{ opacity: 0, x: -10 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                exit={{ opacity: 0, scale: 0.95 }}
-                                                transition={{ duration: 0.3, delay: idx * 0.05 }}
-                                                className="group hover:bg-indigo-50/30 transition-all duration-300 border-b border-slate-50/50 last:border-0 h-20"
-                                            >
-                                                <TableCell className="pl-10">
-                                                    <Link href={`/dashboard/dossiers-eleves/${student.id}`} className="font-black text-slate-800 hover:text-indigo-600 transition-colors tracking-tight">
-                                                        {student.firstName} {student.lastName}
-                                                    </Link>
-                                                    <p className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-wider">{student.matricule || 'Sans matricule'}</p>
-                                                </TableCell>
-                                                <TableCell className="font-bold text-slate-600">{student.class}</TableCell>
-                                                <TableCell className="text-center">
-                                                    <TuitionStatusBadge
-                                                        status={student.tuitionStatus || 'Partiel'}
-                                                    />
-                                                </TableCell>
-                                                <TableCell className="text-right font-black text-emerald-600 tracking-tighter">
-                                                    {formatCurrency((student.tuitionFee || 0) - (student.amountDue || 0))}
-                                                </TableCell>
-                                                <TableCell className="text-right font-black text-rose-600 tracking-tighter">
-                                                    {formatCurrency(student.amountDue || 0)}
-                                                </TableCell>
-                                                <TableCell className="pr-10 text-right">
-                                                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                                                        {student.amountDue && student.amountDue > 0 && (
-                                                            <Button 
-                                                                variant="ghost" 
-                                                                size="sm" 
-                                                                onClick={() => handleSendReminder(student)} 
-                                                                disabled={isGeneratingReminder}
-                                                                className="h-9 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white transition-all font-bold"
-                                                            >
-                                                                <MessageSquare className="mr-2 h-4 w-4" />
-                                                                Relancer
-                                                            </Button>
-                                                        )}
-                                                        <Button 
-                                                            variant="ghost" 
-                                                            size="sm" 
-                                                            asChild
-                                                            className="h-9 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-900 hover:text-white transition-all font-bold"
-                                                        >
-                                                            <Link href={`/dashboard/dossiers-eleves/${student.id}?tab=payments`}>
-                                                                Gérer
-                                                            </Link>
-                                                        </Button>
-                                                    </div>
-                                                </TableCell>
-                                            </motion.tr>
-                                        ))}
-                                    </AnimatePresence>
-                                ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={6} className="h-64">
-                                            <div className="flex flex-col items-center justify-center text-center">
-                                                <div className="p-6 bg-slate-50 rounded-xl mb-4">
-                                                    <Search className="h-12 w-12 text-slate-300" />
-                                                </div>
-                                                <h4 className="text-xl font-black text-slate-900 tracking-tight">Aucun résultat</h4>
-                                                <p className="text-slate-500 max-w-[280px] mt-2 font-medium">
-                                                    Nous n&apos;avons trouvé aucun élève correspondant à vos critères de recherche.
-                                                </p>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
-            </div>
-        </motion.div>
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-1/4" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+        <Skeleton className="h-96 w-full" />
+      </div>
     );
-}
+  }
 
+  return (
+    <div className="space-y-6">
+      
+      {/* En-tête */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Journal des Paiements & Reçus</h1>
+          <p className="text-sm text-slate-500 font-medium">
+            Historique complet des versements d&apos;écolage perçus pour l&apos;année {currentYear}.
+          </p>
+        </div>
+
+        <Button 
+          onClick={() => setIsPaymentDialogOpen(true)}
+          className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white gap-2 transition-all hover:scale-105 active:scale-95"
+        >
+          <PlusCircle className="h-4 w-4" /> Enregistrer un Versement
+        </Button>
+      </div>
+
+      {/* Cartes d'indicateurs de trésorerie courante */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="rounded-2xl border-none shadow-md bg-white/40 backdrop-blur-xl border border-white/60">
+          <CardContent className="p-6 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400">Encaissé Aujourd&apos;hui</p>
+              <h3 className="text-2xl font-black text-emerald-600 tracking-tight mt-1 font-mono">{formatCurrency(stats.todayCollected)}</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Clôture journalière</p>
+            </div>
+            <div className="h-12 w-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+              <TrendingUp className="h-6 w-6" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border-none shadow-md bg-white/40 backdrop-blur-xl border border-white/60">
+          <CardContent className="p-6 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400">Encaissé ce Mois</p>
+              <h3 className="text-2xl font-black text-indigo-600 tracking-tight mt-1 font-mono">{formatCurrency(stats.monthCollected)}</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Rapprochement mensuel</p>
+            </div>
+            <div className="h-12 w-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+              <Receipt className="h-6 w-6" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border-none shadow-md bg-white/40 backdrop-blur-xl border border-white/60">
+          <CardContent className="p-6 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400">Cumul Recouvré (Annuel)</p>
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight mt-1 font-mono">{formatCurrency(stats.totalAnnual)}</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Total perçu en caisse</p>
+            </div>
+            <div className="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700">
+              <DollarSign className="h-6 w-6" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Barre d'outils (Filtres de période + Recherche) */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="flex flex-wrap gap-1 bg-slate-100 p-1 rounded-xl self-start">
+          <Button 
+            variant={periodFilter === 'all' ? 'default' : 'ghost'} 
+            onClick={() => setPeriodFilter('all')} 
+            className="rounded-lg text-xs font-bold px-3 py-1.5 h-auto"
+          >
+            Tous les versements
+          </Button>
+          <Button 
+            variant={periodFilter === 'today' ? 'default' : 'ghost'} 
+            onClick={() => setPeriodFilter('today')} 
+            className="rounded-lg text-xs font-bold px-3 py-1.5 h-auto"
+          >
+            Aujourd&apos;hui
+          </Button>
+          <Button 
+            variant={periodFilter === 'week' ? 'default' : 'ghost'} 
+            onClick={() => setPeriodFilter('week')} 
+            className="rounded-lg text-xs font-bold px-3 py-1.5 h-auto"
+          >
+            Cette semaine
+          </Button>
+          <Button 
+            variant={periodFilter === 'month' ? 'default' : 'ghost'} 
+            onClick={() => setPeriodFilter('month')} 
+            className="rounded-lg text-xs font-bold px-3 py-1.5 h-auto"
+          >
+            Ce mois
+          </Button>
+        </div>
+
+        <div className="relative w-full lg:max-w-xs">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+          <Input 
+            placeholder="Rechercher élève, reçu..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 rounded-xl border-slate-200/80 bg-white"
+          />
+        </div>
+      </div>
+
+      {/* Journal des Reçus */}
+      <Card className="rounded-2xl border-none shadow-md overflow-hidden bg-white/70 backdrop-blur-xl">
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader className="bg-slate-50/70 border-b">
+              <TableRow>
+                <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Reçu N°</TableHead>
+                <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Date</TableHead>
+                <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Élève</TableHead>
+                <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Classe</TableHead>
+                <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Description</TableHead>
+                <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Règlement</TableHead>
+                <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Montant (F)</TableHead>
+                <TableHead className="w-[100px] text-center"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredTransactions.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-12 text-slate-400">
+                    Aucun versement enregistré sur cette période.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredTransactions.map((t) => {
+                  const student = students.find(s => s.id === t.studentId);
+                  return (
+                    <TableRow key={t.id} className="hover:bg-slate-50/40">
+                      <TableCell className="font-mono text-xs font-bold text-slate-500">
+                        {t.id?.substring(0, 8).toUpperCase() || 'N/A'}
+                      </TableCell>
+                      <TableCell className="text-xs text-slate-500 font-mono">{t.date}</TableCell>
+                      <TableCell className="font-bold text-slate-900">
+                        {student ? `${student.lastName} ${student.firstName}` : 'Élève Externe'}
+                      </TableCell>
+                      <TableCell className="font-medium text-slate-600">
+                        {student?.class || 'N/A'}
+                      </TableCell>
+                      <TableCell className="text-xs text-slate-600">{t.description}</TableCell>
+                      <TableCell className="text-xs font-semibold text-slate-500">
+                        Espèce
+                      </TableCell>
+                      <TableCell className="font-mono font-bold text-slate-900 text-sm">
+                        {formatCurrency(t.amount)}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex justify-end gap-2 pr-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-slate-600 hover:bg-slate-50 rounded-xl h-8 w-8"
+                            onClick={() => toast({ title: "Impression", description: "Le reçu de scolarité est envoyé à l'imprimante." })}
+                            title="Imprimer le reçu"
+                          >
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleDeleteTransaction(t)}
+                            className="text-rose-600 hover:bg-rose-50 rounded-xl h-8 w-8"
+                            title="Annuler le versement"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Modal d'Encaissement de Versement Rapide */}
+      <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl bg-white border shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black text-slate-900 tracking-tight">Saisir un Versement d&apos;Écolage</DialogTitle>
+            <DialogDescription>Enregistrez le règlement d&apos;un élève en cours d&apos;année.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleRegisterPayment} className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label className="text-xs font-black uppercase tracking-widest text-slate-400">Élève Débiteur *</Label>
+              <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder="Rechercher et choisir l'élève" />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  {students.map(s => (
+                    <SelectItem key={s.id} value={s.id!}>
+                      {s.lastName} {s.firstName} ({s.class}) - Reste: {formatCurrency(s.amountDue)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-black uppercase tracking-widest text-slate-400">Montant Versé (F) *</Label>
+                <Input 
+                  type="number" 
+                  min="1" 
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  placeholder="Ex: 50000"
+                  className="rounded-xl font-mono text-emerald-600 font-bold"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-black uppercase tracking-widest text-slate-400">Date Versement *</Label>
+                <Input 
+                  type="date" 
+                  value={paymentDate}
+                  onChange={(e) => setPaymentDate(e.target.value)}
+                  className="rounded-xl"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-black uppercase tracking-widest text-slate-400">Mode de Règlement</Label>
+              <Select value={paymentMethod} onValueChange={(val: any) => setPaymentMethod(val)}>
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  <SelectItem value="Espèces">Espèces</SelectItem>
+                  <SelectItem value="Mobile Money">Mobile Money (Wave/Orange/MTN)</SelectItem>
+                  <SelectItem value="Chèque">Chèque</SelectItem>
+                  <SelectItem value="Virement Bancaire">Virement Bancaire</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-black uppercase tracking-widest text-slate-400">Libellé / Note</Label>
+              <Input 
+                value={paymentNotes}
+                onChange={(e) => setPaymentNotes(e.target.value)}
+                placeholder="Ex: 2e Versement"
+                className="rounded-xl"
+              />
+            </div>
+
+            <DialogFooter className="pt-4 border-t">
+              <Button type="button" variant="outline" onClick={() => setIsPaymentDialogOpen(false)} className="rounded-xl">
+                Annuler
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={isSubmittingPayment}
+                className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white gap-2 transition-all hover:scale-105 active:scale-95"
+              >
+                {isSubmittingPayment ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> Enregistrement...
+                  </>
+                ) : (
+                  <>
+                    Enregistrer le Règlement <CheckCircle className="h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

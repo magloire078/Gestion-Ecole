@@ -12,7 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, Wrench, Banknote, Key, Shield, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, Wrench, Banknote, Key, Shield, CheckCircle2, XCircle, AlertCircle, MessageSquare, Send, Smartphone, Bell } from 'lucide-react';
 
 export const SystemSettings = () => {
     const firestore = useFirestore();
@@ -32,10 +33,20 @@ export const SystemSettings = () => {
     });
     const [isSaving, setIsSaving] = useState(false);
 
+    const [adminNotificationPhone, setAdminNotificationPhone] = useState('+2250707942880');
+    const [adminWebhookUrl, setAdminWebhookUrl] = useState('');
+    const [isTestingWhatsApp, setIsTestingWhatsApp] = useState(false);
+
     useEffect(() => {
         if (settingsData) {
             setMaintenanceMode(settingsData.maintenanceMode || false);
             setRegistrationEnabled(settingsData.registrationEnabled === false ? false : true);
+            if (settingsData.adminNotificationPhone) {
+                setAdminNotificationPhone(settingsData.adminNotificationPhone);
+            }
+            if (settingsData.adminWebhookUrl) {
+                setAdminWebhookUrl(settingsData.adminWebhookUrl);
+            }
             if (settingsData.paymentProviders) {
                 setPaymentProviders(prev => ({ ...prev, ...settingsData.paymentProviders }));
             }
@@ -44,7 +55,7 @@ export const SystemSettings = () => {
 
     const handleSave = async () => {
         setIsSaving(true);
-        const dataToSave = { maintenanceMode, registrationEnabled, paymentProviders };
+        const dataToSave = { maintenanceMode, registrationEnabled, paymentProviders, adminNotificationPhone, adminWebhookUrl };
         try {
             await setDoc(settingsRef, dataToSave, { merge: true });
             toast({ title: "Paramètres sauvegardés", description: "Les paramètres système ont été mis à jour." });
@@ -53,6 +64,38 @@ export const SystemSettings = () => {
             toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer les paramètres.' });
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleTestWhatsApp = async () => {
+        setIsTestingWhatsApp(true);
+        try {
+            const resp = await fetch('/api/admin/notifications/test-whatsapp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: adminNotificationPhone }),
+            });
+            const resData = await resp.json();
+            if (resData.success) {
+                toast({
+                    title: "✅ Test Envoyé !",
+                    description: `Notification envoyée vers ${resData.recipient} (Canal: ${resData.channel})`,
+                });
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: "Erreur d'envoi",
+                    description: resData.error || "Impossible d'envoyer la notification.",
+                });
+            }
+        } catch (err: any) {
+            toast({
+                variant: 'destructive',
+                title: "Erreur de connexion",
+                description: err.message || "Échec de l'envoi du test.",
+            });
+        } finally {
+            setIsTestingWhatsApp(false);
         }
     };
 
@@ -98,10 +141,14 @@ export const SystemSettings = () => {
     return (
         <div className="space-y-6">
             <Tabs defaultValue="general" className="w-full">
-                <TabsList className="grid w-full grid-cols-4 h-14 bg-slate-50 dark:bg-white/5 p-1.5 rounded-xl border border-blue-50/50 dark:border-white/10 transition-colors duration-500">
+                <TabsList className="grid w-full grid-cols-5 h-14 bg-slate-50 dark:bg-white/5 p-1.5 rounded-xl border border-blue-50/50 dark:border-white/10 transition-colors duration-500">
                     <TabsTrigger value="general" className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-white/10 data-[state=active]:text-[hsl(var(--admin-primary-dark))] dark:data-[state=active]:text-white data-[state=active]:shadow-sm font-bold transition-all">
                         <Wrench className="h-4 w-4 mr-2" />
                         Général
+                    </TabsTrigger>
+                    <TabsTrigger value="notifications" className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-white/10 data-[state=active]:text-[hsl(var(--admin-primary-dark))] dark:data-[state=active]:text-white data-[state=active]:shadow-sm font-bold transition-all">
+                        <MessageSquare className="h-4 w-4 mr-2 text-emerald-600" />
+                        WhatsApp / Alertes
                     </TabsTrigger>
                     <TabsTrigger value="payments" className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-white/10 data-[state=active]:text-[hsl(var(--admin-primary-dark))] dark:data-[state=active]:text-white data-[state=active]:shadow-sm font-bold transition-all">
                         <Banknote className="h-4 w-4 mr-2" />
@@ -149,6 +196,100 @@ export const SystemSettings = () => {
                                     checked={registrationEnabled}
                                     onCheckedChange={setRegistrationEnabled}
                                 />
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="notifications" className="space-y-4 mt-6">
+                    <Card className="bg-white dark:bg-[hsl(var(--admin-card))] rounded-xl border border-blue-50/50 dark:border-white/10 shadow-sm overflow-hidden transition-colors duration-500">
+                        <CardHeader className="border-b border-blue-50/50 dark:border-white/10 bg-slate-50/50 dark:bg-white/5 px-8 py-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-lg font-black text-[hsl(var(--admin-primary-dark))] dark:text-white font-outfit uppercase tracking-wider flex items-center gap-2">
+                                        <MessageSquare className="h-5 w-5 text-emerald-600" />
+                                        Notifications WhatsApp Super-Admin
+                                    </CardTitle>
+                                    <CardDescription className="font-medium">
+                                        Configurez les alertes directes par WhatsApp / SMS pour les abonnements et inscriptions.
+                                    </CardDescription>
+                                </div>
+                                <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">
+                                    <Bell className="h-3 w-3 mr-1" />
+                                    Actif
+                                </Badge>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="space-y-6 p-4 md:p-6">
+                            <div className="space-y-2">
+                                <Label htmlFor="admin-phone" className="font-semibold flex items-center gap-2">
+                                    <Smartphone className="h-4 w-4 text-emerald-600" />
+                                    Numéro de réception WhatsApp (Format International)
+                                </Label>
+                                <div className="flex gap-3">
+                                    <Input
+                                        id="admin-phone"
+                                        value={adminNotificationPhone}
+                                        onChange={(e) => setAdminNotificationPhone(e.target.value)}
+                                        placeholder="+2250707942880"
+                                        className="font-mono text-base font-semibold max-w-md rounded-xl"
+                                    />
+                                    <Button
+                                        type="button"
+                                        onClick={handleTestWhatsApp}
+                                        disabled={isTestingWhatsApp}
+                                        className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-2 font-bold shadow-md shadow-emerald-600/20 hover:scale-105 active:scale-95 transition-all"
+                                    >
+                                        {isTestingWhatsApp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                        Tester WhatsApp
+                                    </Button>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Numéro actif : <code>+225 0707942880</code> (Côte d'Ivoire).
+                                </p>
+                            </div>
+
+                            <div className="space-y-2 pt-2 border-t">
+                                <Label htmlFor="admin-webhook" className="font-semibold flex items-center gap-2">
+                                    <Key className="h-4 w-4 text-indigo-600" />
+                                    URL du Webhook WhatsApp (Make, Zapier, n8n, Whapi, CallMeBot...)
+                                </Label>
+                                <Input
+                                    id="admin-webhook"
+                                    value={adminWebhookUrl}
+                                    onChange={(e) => setAdminWebhookUrl(e.target.value)}
+                                    placeholder="https://hook.eu1.make.com/... ou https://api.callmebot.com/..."
+                                    className="font-mono text-sm rounded-xl max-w-2xl"
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    Collez l'URL de votre webhook. Chaque événement lui enverra un payload JSON avec le message formaté et le numéro <code>+225 0707942880</code>.
+                                </p>
+                            </div>
+
+                            <div className="space-y-3 pt-2">
+                                <h4 className="text-xs font-black uppercase tracking-widest text-slate-400">Événements notifiés automatiquement</h4>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div className="p-3 border rounded-xl bg-slate-50/50 dark:bg-white/5 space-y-1">
+                                        <p className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                                            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                                            Nouveaux Abonnements & Paiements
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Alerte immédiate avec école, plan, montant et méthode (Wave, Stripe, PayDunya, etc.).
+                                        </p>
+                                    </div>
+
+                                    <div className="p-3 border rounded-xl bg-slate-50/50 dark:bg-white/5 space-y-1">
+                                        <p className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                                            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                                            Nouvelles Inscriptions d'Écoles
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Alerte lors de la création d'un établissement avec coordonnées du directeur.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

@@ -119,11 +119,12 @@ export function ProspectsPipeline() {
         }
     }, [authedFetch, toast]);
 
+    const canAccess = !!(user?.profile?.isAdmin || user?.profile?.isCommercial);
     useEffect(() => {
-        if (user?.profile?.isAdmin && prospects === null && !loading) {
+        if (canAccess && prospects === null && !loading) {
             load();
         }
-    }, [user?.profile?.isAdmin, prospects, loading, load]);
+    }, [canAccess, prospects, loading, load]);
 
     const createProspect = async () => {
         if (!form.schoolName.trim()) {

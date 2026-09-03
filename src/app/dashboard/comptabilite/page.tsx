@@ -24,7 +24,9 @@ import {
   Scale,
   Mail,
   FileText,
-  Loader2
+  Loader2,
+  Calendar,
+  Wallet
 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import {
@@ -61,13 +63,10 @@ import type { accountingTransaction as AccountingTransaction } from '@/lib/data-
 import { AccountingCharts } from './charts';
 import { cn } from "@/lib/utils";
 import { TransactionForm } from "@/components/comptabilite/transaction-form";
-import { StatCard } from "@/components/ui/stat-card";
 import { AccountingReportsService } from "@/services/accounting-reports-service";
 import { formatCurrency } from "@/lib/currency-utils";
 import { useAcademicYear } from "@/providers/academic-year-provider";
 import { filterByAcademicYear } from "@/lib/academic-year-utils";
-
-
 
 export default function AccountingPage() {
   const firestore = useFirestore();
@@ -96,6 +95,9 @@ export default function AccountingPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<(AccountingTransaction & { id: string }) | null>(null);
   const [transactionToDelete, setTransactionToDelete] = useState<(AccountingTransaction & { id: string }) | null>(null);
+
+  // Filtre par catégorie (Pills)
+  const [categoryFilter, setCategoryFilter] = useState<string>('Tous');
 
   const { toast } = useToast();
 
@@ -143,7 +145,6 @@ export default function AccountingPage() {
       const reportService = new ReportService(firestore);
       const mailService = new MailService(firestore);
 
-      // Get data for last month
       const lastMonth = subMonths(new Date(), 1);
       const reportData = await reportService.getMonthlyFinanceData(schoolId, lastMonth);
 
@@ -169,7 +170,6 @@ export default function AccountingPage() {
     }
   };
 
-
   const isLoading = schoolLoading || transactionsLoading || studentsLoading;
 
   const stats = useMemo(() => {
@@ -181,7 +181,6 @@ export default function AccountingPage() {
       .reduce((sum, t) => sum + t.amount, 0);
     const solde = totalRevenu - totalDepense;
 
-    // Calcul du recouvrement global
     const students = studentsData?.map(d => d.data() as any) || [];
     const totalExpected = students.reduce((sum, s) => sum + (s.tuitionFee || 0), 0);
     const totalDue = students.reduce((sum, s) => sum + (s.amountDue || 0), 0);
@@ -190,35 +189,48 @@ export default function AccountingPage() {
     return { totalRevenu, totalDepense, solde, recoveryRate };
   }, [transactions, studentsData]);
 
+  // Liste des catégories pour le filtrage
+  const uniqueCategories = useMemo(() => {
+    const list = ['Tous'];
+    transactions.forEach(t => {
+      if (t.category && !list.includes(t.category)) {
+        list.push(t.category);
+      }
+    });
+    return list;
+  }, [transactions]);
+
+  // Filtrer les transactions
+  const filteredTransactions = useMemo(() => {
+    if (categoryFilter === 'Tous') return transactions;
+    return transactions.filter(t => t.category === categoryFilter);
+  }, [transactions, categoryFilter]);
+
   return (
     <>
       <div className="space-y-6">
-        <div className="flex justify-between items-start">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-lg font-semibold md:text-2xl">Comptabilité</h1>
-            <p className="text-muted-foreground">
-              Suivez les revenus, les dépenses et la santé financière de votre école.
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Caisse & Suivi des Dépenses</h1>
+            <p className="text-sm text-slate-500 font-medium">
+              Suivez les entrées, les sorties de caisse et la santé financière de l&apos;établissement.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               onClick={async () => {
                 setIsGeneratingGrandLivre(true);
-                // Petit délai pour laisser le rendu du bouton se mettre à jour
                 setTimeout(() => {
                   AccountingReportsService.generateGrandLivrePDF(schoolData as any, transactions, "Toutes les transactions");
                   setIsGeneratingGrandLivre(false);
                 }, 100);
               }}
               disabled={isLoading || transactions.length === 0 || isGeneratingGrandLivre}
+              className="rounded-xl border-slate-200/80 text-slate-700 gap-2 hover:bg-slate-50"
             >
-              {isGeneratingGrandLivre ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <FileText className="mr-2 h-4 w-4" />
-              )}
-              {isGeneratingGrandLivre ? "Génération..." : "Grand Livre"}
+              {isGeneratingGrandLivre ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+              Grand Livre
             </Button>
             <Button
               variant="outline"
@@ -230,54 +242,97 @@ export default function AccountingPage() {
                 }, 100);
               }}
               disabled={isLoading || transactions.length === 0 || isGeneratingBilan}
+              className="rounded-xl border-slate-200/80 text-slate-700 gap-2 hover:bg-slate-50"
             >
-              {isGeneratingBilan ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Scale className="mr-2 h-4 w-4" />
-              )}
-              {isGeneratingBilan ? "Génération..." : "Bilan (PDF)"}
+              {isGeneratingBilan ? <Loader2 className="h-4 w-4 animate-spin" /> : <Scale className="h-4 w-4" />}
+              Bilan (PDF)
             </Button>
             <Button
               variant="outline"
               onClick={handleSendMonthlyReport}
               disabled={isLoading || isGeneratingReport}
+              className="rounded-xl border-slate-200/80 text-slate-700 gap-2 hover:bg-slate-50"
             >
-              {isGeneratingReport ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
-              Email
+              {isGeneratingReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+              Rapport Email
             </Button>
           </div>
         </div>
 
+        {/* Blocs indicateurs de Caisse Premium */}
         <div className="grid gap-4 md:grid-cols-3">
-          <StatCard title="Total des Revenus" value={formatCurrency(stats.totalRevenu)} icon={TrendingUp} loading={isLoading} colorClass="text-emerald-500" />
-          <StatCard title="Total des Dépenses" value={formatCurrency(stats.totalDepense)} icon={TrendingDown} loading={isLoading} colorClass="text-destructive" />
-          <StatCard title="Solde Actuel" value={formatCurrency(stats.solde)} icon={Scale} loading={isLoading} colorClass={stats.solde >= 0 ? 'text-emerald-500' : 'text-destructive'} />
+          <Card className="rounded-2xl border-none shadow-md bg-white/40 backdrop-blur-xl border border-white/60">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest text-slate-400">Total Encaissé (Entrées)</p>
+                <h3 className="text-2xl font-black text-emerald-600 tracking-tight mt-1 font-mono">{formatCurrency(stats.totalRevenu)}</h3>
+              </div>
+              <div className="h-12 w-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                <TrendingUp className="h-6 w-6" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl border-none shadow-md bg-white/40 backdrop-blur-xl border border-white/60">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest text-slate-400">Total Dépenses (Sorties)</p>
+                <h3 className="text-2xl font-black text-rose-600 tracking-tight mt-1 font-mono">{formatCurrency(stats.totalDepense)}</h3>
+              </div>
+              <div className="h-12 w-12 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600">
+                <TrendingDown className="h-6 w-6" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl border-none shadow-md bg-white/40 backdrop-blur-xl border border-white/60">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest text-slate-400">Solde Actuel de Caisse</p>
+                <h3 className={cn("text-2xl font-black tracking-tight mt-1 font-mono", stats.solde >= 0 ? 'text-indigo-600' : 'text-rose-600')}>{formatCurrency(stats.solde)}</h3>
+              </div>
+              <div className="h-12 w-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                <Wallet className="h-6 w-6" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {!isLoading && transactions.length > 0 && <AccountingCharts transactions={transactions} recoveryRate={stats.recoveryRate} />}
 
+        {/* Boutons de filtrage rapide (Pills) */}
+        <div className="flex flex-wrap gap-1.5 p-1 bg-slate-100 rounded-xl self-start w-fit">
+          {uniqueCategories.map(cat => (
+            <Button
+              key={cat}
+              variant={categoryFilter === cat ? 'default' : 'ghost'}
+              onClick={() => setCategoryFilter(cat)}
+              className="rounded-lg text-xs font-bold px-3 py-1.5 h-auto"
+            >
+              {cat}
+            </Button>
+          ))}
+        </div>
+
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Transactions Récentes</h2>
+          <h2 className="text-lg font-bold text-slate-700">Transactions Récentes</h2>
           {canManageBilling && (
-            <Button onClick={() => handleOpenFormDialog(null)}>
-              <span className="flex items-center gap-2">
-                <PlusCircle className="h-4 w-4" /> Ajouter une Transaction
-              </span>
+            <Button onClick={() => handleOpenFormDialog(null)} className="rounded-xl bg-rose-600 hover:bg-rose-700 text-white gap-2 transition-all hover:scale-105 active:scale-95">
+              <PlusCircle className="h-4 w-4" /> Enregistrer une Dépense
             </Button>
           )}
         </div>
 
-        <Card>
+        <Card className="rounded-2xl border-none shadow-md overflow-hidden bg-white/70 backdrop-blur-xl">
           <CardContent className="p-0">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-slate-50/70 border-b">
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Catégorie</TableHead>
-                  <TableHead className="text-right">Montant</TableHead>
-                  {canManageBilling && <TableHead className="w-[50px] text-right">Actions</TableHead>}
+                  <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Date</TableHead>
+                  <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Description</TableHead>
+                  <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Catégorie</TableHead>
+                  <TableHead className="text-right text-xs font-black uppercase tracking-widest text-slate-400">Montant</TableHead>
+                  {canManageBilling && <TableHead className="w-[50px] text-right"></TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -291,26 +346,26 @@ export default function AccountingPage() {
                       {canManageBilling && <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>}
                     </TableRow>
                   ))
-                ) : transactions.length > 0 ? (
-                  transactions.map((transaction) => (
-                    <TableRow key={transaction.id}>
-                      <TableCell>{format(new Date(transaction.date), 'd MMM yyyy', { locale: fr })}</TableCell>
-                      <TableCell className="font-medium">{transaction.description}</TableCell>
-                      <TableCell>{transaction.category}</TableCell>
-                      <TableCell className={cn('text-right font-mono', transaction.type === 'Revenu' ? 'text-emerald-500' : 'text-destructive')}>
+                ) : filteredTransactions.length > 0 ? (
+                  filteredTransactions.map((transaction) => (
+                    <TableRow key={transaction.id} className="hover:bg-slate-50/40">
+                      <TableCell className="text-xs text-slate-500 font-mono">{format(new Date(transaction.date), 'd MMM yyyy', { locale: fr })}</TableCell>
+                      <TableCell className="font-bold text-slate-900">{transaction.description}</TableCell>
+                      <TableCell className="text-xs font-semibold text-slate-600">{transaction.category}</TableCell>
+                      <TableCell className={cn('text-right font-mono font-bold', transaction.type === 'Revenu' ? 'text-emerald-600' : 'text-rose-600')}>
                         {transaction.type === 'Revenu' ? '+' : '-'} {formatCurrency(transaction.amount)}
                       </TableCell>
                       {canManageBilling && (
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreHorizontal />
+                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                                <MoreHorizontal className="h-4 w-4 text-slate-400" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent align="end" className="rounded-xl bg-white">
                               <DropdownMenuItem onClick={() => handleOpenFormDialog(transaction)}>Modifier</DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(transaction)}>Supprimer</DropdownMenuItem>
+                              <DropdownMenuItem className="text-rose-600" onClick={() => handleOpenDeleteDialog(transaction)}>Supprimer</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -319,7 +374,7 @@ export default function AccountingPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={canManageBilling ? 5 : 4} className="h-24 text-center">Aucune transaction pour le moment.</TableCell>
+                    <TableCell colSpan={canManageBilling ? 5 : 4} className="h-24 text-center text-slate-400">Aucune transaction trouvée.</TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -329,25 +384,25 @@ export default function AccountingPage() {
       </div>
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-2xl bg-white border">
           <AlertDialogHeader>
-            <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+            <AlertDialogTitle className="text-xl font-black text-slate-900 tracking-tight">Êtes-vous sûr(e) ?</AlertDialogTitle>
             <AlertDialogDescription>
               Cette action est irréversible. La transaction <strong>{transactionToDelete?.description}</strong> sera définitivement supprimée.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteTransaction} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction>
+            <AlertDialogCancel className="rounded-xl">Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteTransaction} className="rounded-xl bg-rose-600 hover:bg-rose-700 text-white">Supprimer</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md rounded-2xl bg-white border shadow-2xl">
           <DialogHeader>
-            <DialogTitle>{editingTransaction ? 'Modifier' : 'Nouvelle'} Transaction</DialogTitle>
-            <DialogDescription>Entrez les détails de la transaction.</DialogDescription>
+            <DialogTitle className="text-xl font-black text-slate-900 tracking-tight">{editingTransaction ? 'Modifier' : 'Saisir'} une Dépense / Sortie</DialogTitle>
+            <DialogDescription>Enregistrez un flux financier sortant pour l&apos;établissement.</DialogDescription>
           </DialogHeader>
           <TransactionForm
             schoolId={schoolId!}

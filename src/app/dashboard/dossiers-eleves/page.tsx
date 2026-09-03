@@ -65,13 +65,14 @@ import { StudentService } from "@/services/student-services";
 import { useStudents } from "@/hooks/use-students";
 import { useDebounce } from "@/hooks/use-debounce";
 import { computeAcademicYearFromDate } from "@/lib/academic-year-utils";
+import { useEditableStudentIds } from "@/hooks/use-editable-student-ids";
 
 
 export default function StudentsPage() {
   const router = useRouter();
   const firestore = useFirestore();
   const { user, loading: userLoading } = useUser();
-  const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
+  const { schoolId, schoolData, subscription, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
 
   const canManageUsers = !!user?.profile?.permissions?.manageUsers;
@@ -129,6 +130,14 @@ export default function StudentsPage() {
 
   // Use new hooks for data fetching
   const { students: allStudents, loading: studentsLoading } = useStudents(schoolId, undefined, undefined, effectiveAcademicYear);
+
+  // Abonnement expiré => compte basculé sur le plan Essentiel : seuls les
+  // premiers élèves inscrits (par date d'inscription) restent modifiables.
+  const { editableStudentIds, isLimited: isPlanDowngraded } = useEditableStudentIds(schoolId, subscription);
+  const lockedStudentIds = useMemo(() => {
+    if (!isPlanDowngraded || !editableStudentIds) return undefined;
+    return new Set(allStudents.filter(s => s.id && !editableStudentIds.has(s.id)).map(s => s.id!));
+  }, [isPlanDowngraded, editableStudentIds, allStudents]);
 
   const classesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
   const feesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/frais_scolarite`)) : null, [firestore, schoolId]);
@@ -203,11 +212,13 @@ export default function StudentsPage() {
 
 
   const handleOpenEditDialog = (student: Student) => {
+    if (student.id && lockedStudentIds?.has(student.id)) return;
     setEditingStudent(student);
     setIsEditDialogOpen(true);
   };
 
   const handleOpenArchiveDialog = (student: Student) => {
+    if (student.id && lockedStudentIds?.has(student.id)) return;
     setStudentToArchive(student);
     setIsArchiveDialogOpen(true);
   };
@@ -417,6 +428,7 @@ export default function StudentsPage() {
                   onEdit={handleOpenEditDialog}
                   onArchive={handleOpenArchiveDialog}
                   onRestore={handleOpenRestoreDialog}
+                  lockedStudentIds={lockedStudentIds}
                 />
               ) : (
                 <div className="p-4 md:p-6">
@@ -427,6 +439,7 @@ export default function StudentsPage() {
                     onEdit={handleOpenEditDialog}
                     onArchive={handleOpenArchiveDialog}
                     onRestore={handleOpenRestoreDialog}
+                    lockedStudentIds={lockedStudentIds}
                   />
                 </div>
               )}
@@ -442,6 +455,7 @@ export default function StudentsPage() {
                   onEdit={handleOpenEditDialog}
                   onArchive={handleOpenArchiveDialog}
                   onRestore={handleOpenRestoreDialog}
+                  lockedStudentIds={lockedStudentIds}
                 />
               ) : (
                 <div className="p-4 md:p-6">
@@ -452,6 +466,7 @@ export default function StudentsPage() {
                     onEdit={handleOpenEditDialog}
                     onArchive={handleOpenArchiveDialog}
                     onRestore={handleOpenRestoreDialog}
+                    lockedStudentIds={lockedStudentIds}
                   />
                 </div>
               )}

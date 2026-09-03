@@ -32,7 +32,7 @@ const studentSchema = z.object({
   discountReason: z.string().optional(),
   amountDue: z.coerce.number().min(0, "Le montant dû ne peut pas être négatif."),
   tuitionStatus: z.enum(['Soldé', 'En retard', 'Partiel']),
-  status: z.enum(['Actif', 'En attente', 'Transféré', 'Diplômé', 'Radié']),
+  status: z.enum(['Actif', 'En attente', 'Transféré', 'Diplômé', 'Radié', 'Supprimé']),
   feedback: z.string().optional(),
   grade: z.string().optional(),
   academicYear: z.string().optional(),

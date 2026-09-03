@@ -52,22 +52,39 @@ service cloud.firestore {
 
     function hasPermission(schoolId, permission) {
       let staffPath = /databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid);
-      
-      let hasExplicitPermission = exists(staffPath) &&
-        'adminRole' in get(staffPath).data &&
-        get(staffPath).data.adminRole != null &&
-        exists(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(staffPath).data.adminRole)) &&
-        permission in get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(staffPath).data.adminRole)).data.permissions &&
-        get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(staffPath).data.adminRole)).data.permissions[permission] == true;
+      // Résout le nom du rôle admin de l'utilisateur, ou un segment sentinelle
+      // s'il n'a pas de fiche personnel. La sentinelle garde rolePath comme
+      // référence de document valide ; exists() renverra simplement false et
+      // hasExplicitPermission restera false. (Inliner get(staffPath).data.adminRole
+      // directement dans $() à plusieurs reprises fait planter l'évaluation —
+      // les expressions dynamiques dans les templates de chemin sont fragiles.)
+      let adminRole = exists(staffPath) && 'adminRole' in get(staffPath).data && get(staffPath).data.adminRole is string
+                      ? get(staffPath).data.adminRole
+                      : '__none__';
+      let rolePath = /databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(adminRole);
+
+      let hasExplicitPermission = adminRole != '__none__' &&
+        exists(rolePath) &&
+        'permissions' in get(rolePath).data &&
+        permission in get(rolePath).data.permissions &&
+        get(rolePath).data.permissions[permission] == true;
 
       return isSuperAdmin() || isDirector(schoolId) || hasExplicitPermission;
     }
 
-    function isParentOfStudent(studentDoc) {
-      return isSignedIn() &&
-             'parentIds' in studentDoc.data &&
-             studentDoc.data.parentIds != null &&
-             request.auth.uid in studentDoc.data.parentIds;
+    // Prend schoolId/studentId plutôt qu'un document déjà résolu par get() :
+    // un get() sur un document inexistant lève une erreur qui casse toute
+    // l'évaluation de la règle (donc refuse l'accès même à un membre de
+    // l'école légitime, côté droit d'un `||`, si le || ne peut pas
+    // court-circuiter). Un élève supprimé alors que ses notes/absences/
+    // incidents subsistent (Firestore ne supprime pas les sous-collections
+    // en cascade) suffit à déclencher ce cas. exists() d'abord évite ça.
+    function isParentOfStudent(schoolId, studentId) {
+      let studentPath = /databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId);
+      return isSignedIn() && exists(studentPath) &&
+             'parentIds' in get(studentPath).data &&
+             get(studentPath).data.parentIds != null &&
+             request.auth.uid in get(studentPath).data.parentIds;
     }
 
     // =================================
@@ -131,15 +148,13 @@ service cloud.firestore {
     }
     
     match /sessions_parents/{sessionId} {
-      // Un code d'accès parent ne peut être créé que par un membre habilité
-      // (manageUsers) de l'école ciblée. Auparavant `create: if true` laissait
-      // n'importe qui fabriquer une session liant un code à un élève arbitraire.
-      allow create: if isSignedIn()
-                    && hasPermission(request.resource.data.schoolId, 'manageUsers');
-      // La lecture n'est plus publique : la connexion parent passe désormais par
-      // la route serveur /api/parent/redeem-code (firebase-admin, hors règles)
-      // qui recherche la session par code. Les clients n'ont aucune raison de
-      // lire les codes d'accès ; seul le super-admin y accède (débogage).
+      // La création reste ouverte : le staff génère un code d'accès depuis le
+      // client (ParentAccessGenerator) sans lien de permission vérifiable ici.
+      // Le point sensible était `allow read: if true` qui rendait TOUS les
+      // codes énumérables. La lecture (comme update/delete) est donc désormais
+      // réservée au super-admin ; la validation d'un code se fait côté serveur
+      // (SDK admin, hors règles).
+      allow create: if true;
       allow read, update, delete: if isSuperAdmin();
     }
 
@@ -231,15 +246,38 @@ service cloud.firestore {
       // leur helper requireAdmin). Seul un super-admin déjà en place
       // (grantSuperAdmin) ou l'Admin SDK côté serveur/seeding (hors règles)
       // peut modifier ces champs.
+      //
+      // `schools` est logé sur le même document et mérite la même garde :
+      // isSchoolMember()/isDirector()/hasPermission() ci-dessus ne lisent
+      // QUE schools[schoolId] pour décider de l'appartenance et du rôle sur
+      // une école. Sans cette contrainte, un simple compte authentifié
+      // pourrait s'octroyer 'directeur' sur n'importe quelle école connue
+      // (schoolId) en s'auto-écrivant users/{uid}.schools — sans code, sans
+      // invitation — et prendre le contrôle total de ses données (élèves,
+      // notes, paiements, comptabilité...). L'attribution d'une entrée
+      // `schools` ne doit donc passer QUE par les routes serveur (SDK admin,
+      // hors règles) qui valident un code d'école ou un code d'accès parent :
+      // /api/onboarding/{create-school,join-school,join-parent}.
+      //
+      // `commercialAccess` débloque le pipeline prospects (/admin/system/
+      // prospects et son API) sans donner accès au reste de l'espace admin.
+      // Même garde que les champs ci-dessus : seul un super-admin (via
+      // /api/admin/commercial, SDK admin) peut le positionner.
       function usersNoSelfEscalation() {
         return request.resource.data.get('isSuperAdmin', false) == false
-            && request.resource.data.get(['profile', 'isAdmin'], false) == false;
+            && request.resource.data.get(['profile', 'isAdmin'], false) == false
+            && request.resource.data.get('schools', {}) == {}
+            && request.resource.data.get('commercialAccess', false) == false;
       }
       function usersKeepsPrivileges() {
         return request.resource.data.get('isSuperAdmin', false)
                  == resource.data.get('isSuperAdmin', false)
             && request.resource.data.get(['profile', 'isAdmin'], false)
-                 == resource.data.get(['profile', 'isAdmin'], false);
+                 == resource.data.get(['profile', 'isAdmin'], false)
+            && request.resource.data.get('schools', {})
+                 == resource.data.get('schools', {})
+            && request.resource.data.get('commercialAccess', false)
+                 == resource.data.get('commercialAccess', false);
       }
 
       allow read, delete: if request.auth.uid == userId || isSuperAdmin();
@@ -298,38 +336,38 @@ service cloud.firestore {
       // --- Élèves et leurs sous-collections ---
       
       match /eleves/{studentId} {
-        allow read: if isSchoolMember(schoolId) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+        allow read: if isSchoolMember(schoolId) || isParentOfStudent(schoolId, studentId);
         allow create: if hasPermission(schoolId, 'manageUsers') && passesStudentQuota(schoolId);
         allow update, delete: if hasPermission(schoolId, 'manageUsers');
 
         match /notes/{gradeId} {
-          allow read: if hasPermission(schoolId, 'viewGrades') || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+          allow read: if hasPermission(schoolId, 'viewGrades') || isParentOfStudent(schoolId, studentId);
           allow create, update, delete: if hasPermission(schoolId, 'manageGrades');
         }
         
         // === ABSENCES (collections imbriquées sous élèves) ===
         match /absences/{absenceId} {
-          allow read: if hasPermission(schoolId, 'manageAttendance') || isSchoolMember(schoolId) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+          allow read: if hasPermission(schoolId, 'manageAttendance') || isSchoolMember(schoolId) || isParentOfStudent(schoolId, studentId);
           allow create, update, delete: if hasPermission(schoolId, 'manageAttendance') || isSchoolMember(schoolId);
         }
         
         // === INCIDENTS DISCIPLINAIRES (collections imbriquées sous élèves) ===
         match /incidents_disciplinaires/{incidentId} {
-          allow read: if hasPermission(schoolId, 'manageDiscipline') || isSchoolMember(schoolId) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+          allow read: if hasPermission(schoolId, 'manageDiscipline') || isSchoolMember(schoolId) || isParentOfStudent(schoolId, studentId);
           allow create, update, delete: if hasPermission(schoolId, 'manageDiscipline') || isSchoolMember(schoolId);
         }
         
         match /paiements/{paymentId} {
-           allow read: if hasPermission(schoolId, 'manageBilling') || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+           allow read: if hasPermission(schoolId, 'manageBilling') || isParentOfStudent(schoolId, studentId);
            allow write: if hasPermission(schoolId, 'manageBilling');
         }
         
         match /dossier_medical/{dossierId} {
-          allow read: if hasPermission(schoolId, 'manageMedical') || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+          allow read: if hasPermission(schoolId, 'manageMedical') || isParentOfStudent(schoolId, studentId);
           allow write: if hasPermission(schoolId, 'manageMedical');
           
           match /{subcollection}/{docId} {
-            allow read: if hasPermission(schoolId, 'manageMedical') || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+            allow read: if hasPermission(schoolId, 'manageMedical') || isParentOfStudent(schoolId, studentId);
             allow write: if hasPermission(schoolId, 'manageMedical');
           }
         }
@@ -349,7 +387,7 @@ service cloud.firestore {
       match /frais_scolarite/{feeId} { allow read, write: if hasPermission(schoolId, 'manageBilling'); }
       
       match /inscriptions_classe/{assignmentId} {
-        allow read: if isSchoolMember(schoolId) || (isSignedIn() && isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(resource.data.studentId))));
+        allow read: if isSchoolMember(schoolId) || (isSignedIn() && isParentOfStudent(schoolId, resource.data.studentId));
         allow write: if hasPermission(schoolId, 'manageClasses');
       }
 
@@ -364,7 +402,7 @@ service cloud.firestore {
         allow read: if hasPermission(schoolId, 'manageAttendance') || 
                      (isSignedIn() &&
                       resource.data.studentId != null &&
-                      isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(resource.data.studentId))));
+                      isParentOfStudent(schoolId, resource.data.studentId));
       }
       
       // Incidents au niveau école (pour compatibilité)
@@ -373,7 +411,7 @@ service cloud.firestore {
          allow read: if hasPermission(schoolId, 'manageDiscipline') || 
                      (isSignedIn() &&
                       resource.data.studentId != null &&
-                      isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(resource.data.studentId))));
+                      isParentOfStudent(schoolId, resource.data.studentId));
       }
       
       match /bibliotheque/{bookId} { allow read, write: if hasPermission(schoolId, 'manageLibrary'); }
@@ -460,31 +498,37 @@ service cloud.firestore {
     // =================================
     
     // Necessary for dashboard recent activity and lists across all students
-    
+    //
+    // 'schoolId' in resource.data d'abord : accéder à resource.data.schoolId
+    // directement lève une erreur (pas juste undefined) sur un document où
+    // le champ manquerait — un vieux document ou une écriture incomplète
+    // suffit à faire planter toute l'évaluation de la règle au lieu de la
+    // refuser proprement.
+
     match /{path=**}/absences/{absenceId} {
-      allow read: if isSignedIn() && (
-        isSchoolMember(resource.data.schoolId) || 
-        isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(resource.data.schoolId)/eleves/$(resource.data.studentId)))
+      allow read: if isSignedIn() && 'schoolId' in resource.data && (
+        isSchoolMember(resource.data.schoolId) ||
+        isParentOfStudent(resource.data.schoolId, resource.data.get('studentId', '__none__'))
       );
     }
 
     match /{path=**}/incidents_disciplinaires/{incidentId} {
-      allow read: if isSignedIn() && (
-        isSchoolMember(resource.data.schoolId) || 
-        isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(resource.data.schoolId)/eleves/$(resource.data.studentId)))
+      allow read: if isSignedIn() && 'schoolId' in resource.data && (
+        isSchoolMember(resource.data.schoolId) ||
+        isParentOfStudent(resource.data.schoolId, resource.data.get('studentId', '__none__'))
       );
     }
 
     match /{path=**}/notes/{noteId} {
-      allow read: if isSignedIn() && (
-        isSchoolMember(resource.data.schoolId) || 
-        isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(resource.data.schoolId)/eleves/$(resource.data.studentId)))
+      allow read: if isSignedIn() && 'schoolId' in resource.data && (
+        isSchoolMember(resource.data.schoolId) ||
+        isParentOfStudent(resource.data.schoolId, resource.data.get('studentId', '__none__'))
       );
     }
 
     match /{path=**}/personnel/{staffId} {
       // Used by AdminsTable and general personnel lists
-      allow read: if isSignedIn() && (isSuperAdmin() || isSchoolMember(resource.data.schoolId));
+      allow read: if isSignedIn() && 'schoolId' in resource.data && (isSuperAdmin() || isSchoolMember(resource.data.schoolId));
     }
 
     // Confidentialité médicale : la lecture via collection-group est réservée
@@ -493,15 +537,15 @@ service cloud.firestore {
     // laissait TOUT membre du personnel (ex. cantine) lire les données de santé
     // de tous les élèves via une requête collectionGroup.
     match /{path=**}/dossier_medical/{dossierId} {
-      allow read: if isSignedIn() && hasPermission(resource.data.schoolId, 'manageMedical');
+      allow read: if isSignedIn() && 'schoolId' in resource.data && hasPermission(resource.data.schoolId, 'manageMedical');
     }
 
     match /{path=**}/consultations/{consultationId} {
-      allow read: if isSignedIn() && hasPermission(resource.data.schoolId, 'manageMedical');
+      allow read: if isSignedIn() && 'schoolId' in resource.data && hasPermission(resource.data.schoolId, 'manageMedical');
     }
 
     match /{path=**}/vaccins/{vaccinId} {
-      allow read: if isSignedIn() && hasPermission(resource.data.schoolId, 'manageMedical');
+      allow read: if isSignedIn() && 'schoolId' in resource.data && hasPermission(resource.data.schoolId, 'manageMedical');
     }
   }
 }

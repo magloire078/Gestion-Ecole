@@ -68,7 +68,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const auth = useAuth();
   const { toast } = useToast();
-  const { user, loading: userLoading } = useUser();
+  const { user, loading: userLoading, reloadUser } = useUser();
 
   // Même logique que la page de connexion : un utilisateur déjà authentifié
   // (profil résolu) ne doit pas rester bloqué sur /auth/register. On l'envoie
@@ -100,6 +100,11 @@ export default function RegisterPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(userCredential.user, { displayName });
+      // onIdTokenChanged ne se redéclenche pas après updateProfile (le token
+      // ID n'a pas changé) : sans ce reload, le contexte utilisateur garde le
+      // displayName vide capturé à la création du compte, ce qui bloque
+      // ensuite "Rejoindre (Staff)" sur /onboarding avec "Informations manquantes".
+      await reloadUser();
 
       toast({
         title: "Compte créé avec succès",

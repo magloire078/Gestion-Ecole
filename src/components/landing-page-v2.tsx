@@ -104,20 +104,22 @@ export function LandingPageV2() {
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 overflow-hidden">
         <AnimatedHighlight />
-        <div className="container flex h-auto py-4 items-center">
-          <div className="mr-4 flex">
-            <Link href="/" className="mr-6 flex items-center space-x-2 transition-transform hover:scale-105">
-              <Logo disableLink={true} size="lg" />
+        <div className="container flex h-auto py-3 sm:py-4 items-center px-4 sm:px-8">
+          <div className="mr-2 sm:mr-4 flex shrink-0">
+            <Link href="/" className="flex items-center transition-transform hover:scale-105">
+              <Logo disableLink={true} size="sm" className="sm:hidden" />
+              <Logo disableLink={true} size="lg" className="hidden sm:flex" />
             </Link>
           </div>
-          <div className="flex flex-1 items-center justify-end space-x-2">
-            <nav className="flex items-center gap-2">
-              <Button variant="ghost" asChild className="hover:bg-primary/10 transition-colors">
+          <div className="flex flex-1 items-center justify-end gap-1 sm:gap-2 min-w-0">
+            <nav className="flex items-center gap-1 sm:gap-2">
+              <Button variant="ghost" asChild size="sm" className="hover:bg-primary/10 transition-colors px-2 sm:px-4 text-sm sm:text-base">
                 <Link href="/contact">Contact</Link>
               </Button>
               <Button
                 onClick={() => router.push('/auth/login')}
-                className="bg-[#2D9CDB] hover:bg-[#2D9CDB]/90 text-white shadow-lg shadow-blue-500/20 px-6"
+                size="sm"
+                className="bg-[#2D9CDB] hover:bg-[#2D9CDB]/90 text-white shadow-lg shadow-blue-500/20 px-3 sm:px-6 text-sm sm:text-base whitespace-nowrap"
               >
                 Se connecter
               </Button>
