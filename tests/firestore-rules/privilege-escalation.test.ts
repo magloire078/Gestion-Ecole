@@ -213,9 +213,14 @@ describe('server-only collections', () => {
     await assertFails(getDocs(collection(ctx.firestore(), 'mail')));
   });
 
-  test('mail queue: signed-in can enqueue a message', async () => {
+  test('mail queue: signed-in client cannot enqueue directly (serveur uniquement)', async () => {
+    // L'écriture directe dans `mail` est désormais interdite aux clients
+    // (règle `allow create: if false`) : tout email passe par la route serveur
+    // /api/mail/send (Admin SDK), qui authentifie l'appelant et estampille
+    // l'auteur, empêchant l'injection d'emails arbitraires depuis un compte
+    // authentifié quelconque.
     const ctx = env.authenticatedContext('normalUser');
-    await assertSucceeds(
+    await assertFails(
       setDoc(doc(ctx.firestore(), 'mail/test'), {
         to: 'x@y.com',
         message: { subject: 'hi', html: '<p>hi</p>' },
