@@ -207,7 +207,7 @@ export default function PaymentsPage() {
         >
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div className="space-y-1">
-                    <h1 className="text-4xl font-black tracking-tight text-slate-900 bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-600 bg-clip-text text-transparent">Suivi des Paiements</h1>
+                    <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-600 dark:from-white dark:via-indigo-200 dark:to-slate-300 bg-clip-text text-transparent">Suivi des Paiements</h1>
                     <p className="text-slate-500 max-w-2xl text-sm font-medium">Gestion centralisée et analytique des flux de scolarité.</p>
                 </div>
                 <div className="flex gap-3">

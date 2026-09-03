@@ -312,7 +312,7 @@ export default function TimetablePage() {
         {/* Header Section */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
           <div className="space-y-1">
-            <h1 className="text-4xl font-black tracking-tight text-slate-900 bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-600 bg-clip-text text-transparent">Emploi du Temps</h1>
+            <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-600 dark:from-white dark:via-indigo-200 dark:to-slate-300 bg-clip-text text-transparent">Emploi du Temps</h1>
             <p className="text-slate-500 max-w-2xl text-sm font-medium">Planification et organisation pédagogique de l&apos;établissement.</p>
           </div>
           

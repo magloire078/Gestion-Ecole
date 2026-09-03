@@ -215,7 +215,7 @@ export default function PaiePage() {
       <div className="p-4 md:p-6 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="space-y-1">
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 bg-gradient-to-r from-slate-900 to-slate-500 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
               Gestion de la Paie
             </h1>
             <p className="text-slate-500 max-w-2xl text-sm font-medium">

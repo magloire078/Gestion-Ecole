@@ -286,34 +286,34 @@ export default function StudentsPage() {
                Pédagogie
              </span>
           </div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900 bg-gradient-to-r from-slate-900 to-slate-500 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
             Dossiers Élèves
           </h1>
-          <p className="text-slate-500 max-w-2xl text-sm font-medium">
+          <p className="text-slate-500 dark:text-slate-400 max-w-2xl text-sm font-medium">
             Gestion centrale des effectifs : inscriptions, suivi pédagogique et informations personnelles.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button 
-            variant="outline" 
+        <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto">
+          <Button
+            variant="outline"
             onClick={handlePrint}
-            className="rounded-xl border-slate-200 hover:bg-slate-50 transition-all font-semibold"
+            className="flex-1 md:flex-none rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all font-semibold"
           >
             <Printer className="mr-2 h-4 w-4" />
             Imprimer Liste
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={handleExportPDF}
-            className="rounded-xl border-slate-200 hover:bg-slate-50 transition-all font-semibold"
+            className="flex-1 md:flex-none rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all font-semibold"
           >
             <Download className="mr-2 h-4 w-4" />
             Exporter PDF
           </Button>
           {canManageUsers && (
-            <Button 
+            <Button
               onClick={() => router.push('/dashboard/inscription')}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 transition-all duration-300 hover:-translate-y-1 rounded-xl px-6 font-bold"
+              className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 dark:shadow-indigo-950/50 transition-all duration-300 hover:-translate-y-1 rounded-xl px-6 font-bold"
             >
               <PlusCircle className="mr-2 h-5 w-5" />
               Inscrire un Élève
