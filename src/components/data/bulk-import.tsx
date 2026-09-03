@@ -74,6 +74,7 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
     const [fileData, setFileData] = useState<any[]>([]);
     const [headers, setHeaders] = useState<string[]>([]);
     const [isUploading, setIsUploading] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
     const [progress, setProgress] = useState({ current: 0, total: 0 });
     const [targetYear, setTargetYear] = useState<string>(currentAcademicYear || currentYear || '');
     const [showResults, setShowResults] = useState<{ successCount: number; errorCount: number; errors: string[] } | null>(null);
@@ -116,9 +117,7 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
         XLSX.writeFile(wb, `modele_import_${entityId}.xlsx`);
     };
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+    const processFile = async (file: File) => {
         const ext = file.name.toLowerCase().split('.').pop() ?? '';
         try {
             if (ext === 'sql') {
@@ -179,6 +178,18 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
             setHeaders([]);
             setFileData([]);
         }
+    };
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) await processFile(file);
+    };
+
+    const handleDrop = async (e: React.DragEvent<HTMLLabelElement>) => {
+        e.preventDefault();
+        setIsDragging(false);
+        const file = e.dataTransfer.files?.[0];
+        if (file) await processFile(file);
     };
 
     const validate = () => {
@@ -344,12 +355,25 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Importation de masse</CardTitle>
-                <CardDescription>
-                    Importez vos données scolaires depuis Excel (.xlsx, .xls), CSV, JSON ou un dump SQL
-                    (.sql). Les lignes sans colonne <code className="px-1 mx-0.5 rounded bg-muted text-xs">academicYear</code> sont
-                    rattachées à l&apos;<strong>année cible</strong>.
-                </CardDescription>
+                <div className="flex items-start gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <Upload className="h-5 w-5" />
+                    </div>
+                    <div className="space-y-1">
+                        <CardTitle>Importation de masse</CardTitle>
+                        <CardDescription>
+                            Importez vos données depuis Excel (.xlsx, .xls), CSV, JSON ou un dump SQL (.sql).
+                            Les lignes sans colonne <code className="px-1 mx-0.5 rounded bg-muted text-xs">academicYear</code> sont
+                            rattachées à l&apos;<strong>année cible</strong>.
+                        </CardDescription>
+                    </div>
+                </div>
+                {/* Rappel des étapes */}
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <span><span className="font-bold text-primary">1.</span> Choisissez le type &amp; l&apos;année</span>
+                    <span><span className="font-bold text-primary">2.</span> Téléchargez le modèle vide</span>
+                    <span><span className="font-bold text-primary">3.</span> Déposez votre fichier rempli</span>
+                </div>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="grid gap-4 md:grid-cols-3">
@@ -400,32 +424,68 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
                 </div>
 
                 {descriptor && (
-                    <Alert>
-                        <AlertTitle className="text-sm">Colonnes attendues — {descriptor.label}</AlertTitle>
-                        <AlertDescription>
-                            <div className="mt-2 flex flex-wrap gap-1">
-                                {descriptor.columns.map(c => (
-                                    <span
-                                        key={c.header}
-                                        className={cn(
-                                            'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-mono',
-                                            c.required ? 'border-primary/30 bg-primary/5 text-primary' : 'border-muted-foreground/20 text-muted-foreground',
-                                        )}
-                                        title={c.desc}
-                                    >
-                                        {c.header}{c.required && <span>*</span>}
-                                    </span>
-                                ))}
+                    <div className="rounded-xl border bg-muted/30 dark:bg-slate-800/30 p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                            <p className="text-sm font-bold">Colonnes attendues — {descriptor.label}</p>
+                            <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                                <span className="inline-flex items-center gap-1.5">
+                                    <span className="h-2.5 w-2.5 rounded-full bg-primary/70" /> obligatoire <span className="text-primary font-bold">*</span>
+                                </span>
+                                <span className="inline-flex items-center gap-1.5">
+                                    <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/40" /> optionnel
+                                </span>
                             </div>
-                        </AlertDescription>
-                    </Alert>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                            {[...descriptor.columns].sort((a, b) => Number(b.required) - Number(a.required)).map(c => (
+                                <span
+                                    key={c.header}
+                                    className={cn(
+                                        'inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-mono transition-colors',
+                                        c.required
+                                            ? 'border-primary/40 bg-primary/10 text-primary font-semibold'
+                                            : 'border-muted-foreground/20 bg-background/60 dark:bg-slate-900/40 text-muted-foreground',
+                                    )}
+                                    title={c.desc}
+                                >
+                                    {c.header}{c.required && <span className="font-bold">*</span>}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
                 )}
 
-                <div className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center space-y-2 bg-muted/20">
-                    <Upload className="h-8 w-8 text-muted-foreground" />
-                    <Label htmlFor="file-upload" className="cursor-pointer text-primary hover:underline">
-                        Cliquez pour uploader un fichier (.xlsx, .csv, .json, .sql)
-                    </Label>
+                <label
+                    htmlFor="file-upload"
+                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                    onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
+                    onDrop={handleDrop}
+                    className={cn(
+                        'group relative flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-8 text-center transition-all duration-200',
+                        isDragging
+                            ? 'border-primary bg-primary/10 ring-4 ring-primary/10 scale-[1.01]'
+                            : 'border-muted-foreground/25 bg-muted/20 hover:border-primary/50 hover:bg-primary/5 dark:bg-slate-800/30',
+                    )}
+                >
+                    <div className={cn(
+                        'flex h-14 w-14 items-center justify-center rounded-2xl transition-all',
+                        isDragging ? 'bg-primary text-white scale-110' : 'bg-primary/10 text-primary group-hover:scale-105',
+                    )}>
+                        <Upload className="h-7 w-7" />
+                    </div>
+                    <div className="space-y-1">
+                        <p className="font-bold text-foreground">
+                            {isDragging ? 'Déposez le fichier ici' : 'Glissez-déposez votre fichier'}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                            ou <span className="font-semibold text-primary underline underline-offset-2">cliquez pour parcourir</span>
+                        </p>
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-1.5">
+                        {['.xlsx', '.xls', '.csv', '.json', '.sql'].map(ext => (
+                            <span key={ext} className="rounded-md bg-background/80 dark:bg-slate-900/60 border px-2 py-0.5 text-[10px] font-mono font-semibold text-muted-foreground">{ext}</span>
+                        ))}
+                    </div>
                     <Input
                         id="file-upload"
                         type="file"
@@ -434,10 +494,10 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
                         ref={fileInputRef}
                         onChange={handleFileUpload}
                     />
-                    <p className="text-xs text-muted-foreground text-center max-w-sm">
+                    <p className="text-xs text-muted-foreground max-w-md pt-1">
                         Une colonne <code className="px-1 rounded bg-muted">academicYear</code> dans le fichier surclasse l&apos;année cible. Le SQL accepte les dumps phpMyAdmin / pg_dump.
                     </p>
-                </div>
+                </label>
 
                 {fileData.length > 0 && (
                     <div className="space-y-2">
