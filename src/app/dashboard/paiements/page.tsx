@@ -210,21 +210,21 @@ export default function PaymentsPage() {
                     <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-600 dark:from-white dark:via-indigo-200 dark:to-slate-300 bg-clip-text text-transparent">Suivi des Paiements</h1>
                     <p className="text-slate-500 max-w-2xl text-sm font-medium">Gestion centralisée et analytique des flux de scolarité.</p>
                 </div>
-                <div className="flex gap-3">
-                    <Button 
-                        variant="outline" 
-                        onClick={handleExportCSV} 
+                <div className="flex flex-wrap gap-2 md:gap-3 w-full md:w-auto">
+                    <Button
+                        variant="outline"
+                        onClick={handleExportCSV}
                         disabled={isLoading || filteredStudents.length === 0}
-                        className="rounded-xl border-white/60 bg-white/40 backdrop-blur-md hover:bg-white/60 shadow-sm font-bold h-11"
+                        className="flex-1 md:flex-none rounded-xl border-white/60 dark:border-slate-700 bg-white/40 dark:bg-slate-800/40 backdrop-blur-md hover:bg-white/60 dark:hover:bg-slate-800/60 shadow-sm font-bold h-11"
                     >
                         <Download className="mr-2 h-4 w-4" /> Exporter CSV
                     </Button>
                     {selectedClass !== 'all' && filteredStudents.some(s => s.amountDue && s.amountDue > 0) && (
-                        <Button 
-                            variant="secondary" 
-                            onClick={handleMassReminder} 
+                        <Button
+                            variant="secondary"
+                            onClick={handleMassReminder}
                             disabled={isGeneratingReminder}
-                            className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100 font-bold h-11"
+                            className="flex-1 md:flex-none rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100 font-bold h-11"
                         >
                             {isGeneratingReminder ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Users className="mr-2 h-4 w-4" />}
                             Relancer la classe
