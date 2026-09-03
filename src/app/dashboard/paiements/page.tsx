@@ -294,7 +294,7 @@ export default function PaymentsJournalPage() {
       {/* En-tête */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Journal des Paiements & Reçus</h1>
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Journal des Paiements & Reçus</h1>
           <p className="text-sm text-slate-500 font-medium">
             Historique complet des versements d&apos;écolage perçus pour l&apos;année {currentYear}.
           </p>

@@ -77,7 +77,7 @@ export default function ProfilePage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
                                 <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Type de compte</p>
-                                <p className="font-bold text-[#0C365A]">Parent d'élève</p>
+                                <p className="font-bold text-[#0C365A] dark:text-blue-300">Parent d'élève</p>
                             </div>
                             <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
                                 <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Identifiant Unique</p>

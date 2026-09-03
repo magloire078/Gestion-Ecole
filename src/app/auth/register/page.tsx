@@ -68,7 +68,16 @@ export default function RegisterPage() {
   const router = useRouter();
   const auth = useAuth();
   const { toast } = useToast();
-  const { reloadUser } = useUser();
+  const { user, loading: userLoading, reloadUser } = useUser();
+
+  // Même logique que la page de connexion : un utilisateur déjà authentifié
+  // (profil résolu) ne doit pas rester bloqué sur /auth/register. On l'envoie
+  // vers l'app ; le garde du dashboard l'orientera vers l'onboarding si besoin.
+  useEffect(() => {
+    if (!userLoading && user) {
+      router.replace('/dashboard');
+    }
+  }, [user, userLoading, router]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,20 +148,46 @@ export default function RegisterPage() {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
 
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-      if (isMobile) {
-        await signInWithRedirect(auth, provider);
-      } else {
+      // Popup en priorité : plus fiable que signInWithRedirect quand le domaine
+      // d'auth Firebase diffère du domaine de l'app (partitionnement du stockage
+      // tiers sur Safari/Chrome). Repli sur le redirect si la popup est bloquée
+      // ou non supportée (certains navigateurs mobiles).
+      try {
         await signInWithPopup(auth, provider);
+        toast({
+          title: "Connexion réussie",
+          description: "Préparation de votre espace établissement..."
+        });
         router.push('/onboarding');
+      } catch (popupError) {
+        const code = (popupError as AuthError)?.code || '';
+
+        if (code === 'auth/popup-closed-by-user') {
+          setIsGoogleProcessing(false);
+          return;
+        }
+
+        const popupUnavailable =
+          code === 'auth/popup-blocked' ||
+          code === 'auth/operation-not-supported-in-this-environment' ||
+          code === 'auth/cancelled-popup-request';
+
+        if (popupUnavailable) {
+          await signInWithRedirect(auth, provider);
+          return; // La page va se recharger ; getRedirectResult prend le relais.
+        }
+        throw popupError;
       }
     } catch (error) {
-      setError('Erreur de connexion avec Google.');
+      console.error("Google Sign-in error:", error);
+      const code = (error as AuthError)?.code;
+      const msg = (error as AuthError)?.message;
+      // On affiche le vrai code d'erreur Firebase (ex: auth/web-storage-unsupported,
+      // auth/internal-error…) au lieu d'un message générique, pour permettre le
+      // diagnostic sans ouvrir la console du navigateur.
+      setError(`Échec de la connexion Google : ${code || msg || 'erreur inconnue'}`);
     } finally {
-      if (!/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-        setIsGoogleProcessing(false);
-      }
+      setIsGoogleProcessing(false);
     }
   };
 

@@ -148,20 +148,23 @@ service cloud.firestore {
     }
     
     match /sessions_parents/{sessionId} {
-      // La création reste ouverte (le staff génère un code depuis le client
-      // sans lien de permission direct ici — ParentAccessGenerator). En
-      // revanche `allow read: if true` rendait TOUS les codes d'accès
-      // parents énumérables via un simple listing de la collection, y
-      // compris sans authentification. Aucun code client ne lit réellement
-      // cette collection : la validation d'un code se fait côté serveur
-      // (SDK admin, hors règles) via /api/onboarding/join-parent. La lecture
-      // est donc verrouillée comme l'écriture.
+      // La création reste ouverte : le staff génère un code d'accès depuis le
+      // client (ParentAccessGenerator) sans lien de permission vérifiable ici.
+      // Le point sensible était `allow read: if true` qui rendait TOUS les
+      // codes énumérables. La lecture (comme update/delete) est donc désormais
+      // réservée au super-admin ; la validation d'un code se fait côté serveur
+      // (SDK admin, hors règles).
       allow create: if true;
       allow read, update, delete: if isSuperAdmin();
     }
 
     match /mail/{mailId} {
-      allow create: if isSignedIn();
+      // L'écriture directe est désormais interdite aux clients : tout email
+      // passe par la route serveur /api/mail/send (Admin SDK, hors règles), qui
+      // authentifie l'appelant et estampille l'auteur. Auparavant
+      // 'create: if isSignedIn()' laissait tout compte authentifié fabriquer
+      // des emails arbitraires (spam/phishing depuis le domaine de l'école).
+      allow create: if false;
       allow read, update, delete: if isSuperAdmin();
     }
 
@@ -297,9 +300,19 @@ service cloud.firestore {
       // --- Sub-collections of /ecoles/{schoolId} ---
 
       match /personnel/{staffId} {
-        allow create: if hasPermission(schoolId, 'manageUsers') || (request.auth.uid == staffId);
+        // Anti-escalade de privilèges : le champ `adminRole` d'un doc personnel
+        // pilote hasPermission(). Un utilisateur qui écrit son PROPRE doc
+        // (request.auth.uid == staffId, hors manageUsers) ne doit donc jamais
+        // pouvoir se l'attribuer ni le modifier — seul un détenteur de
+        // manageUsers le peut. À la création il doit rester absent/null ; à la
+        // mise à jour il doit rester identique à la valeur déjà en place.
+        allow create: if hasPermission(schoolId, 'manageUsers')
+                      || (request.auth.uid == staffId
+                          && request.resource.data.get('adminRole', null) == null);
         allow read: if isSchoolMember(schoolId);
-        allow update: if hasPermission(schoolId, 'manageUsers') || request.auth.uid == staffId;
+        allow update: if hasPermission(schoolId, 'manageUsers')
+                      || (request.auth.uid == staffId
+                          && request.resource.data.get('adminRole', null) == resource.data.get('adminRole', null));
         allow delete: if hasPermission(schoolId, 'manageUsers') || (resource.data.email == request.auth.token.email);
       }
 
@@ -471,8 +484,12 @@ service cloud.firestore {
 
     match /visitor_chats/{chatId} {
       allow create: if true;
-      allow read: if true; // Public for visitors
-      allow update: if true; // Public for visitors and webhook
+      allow read: if true; // Public : le visiteur anonyme lit sa propre conversation
+      // Le chat visiteur est anonyme (pas d'auth), mais une mise à jour ne peut
+      // désormais toucher QUE les champs attendus — empêche l'écrasement ou
+      // l'injection de champs arbitraires dans un document de conversation.
+      allow update: if request.resource.data.diff(resource.data)
+                      .affectedKeys().hasOnly(['messages', 'lastMessageAt', 'status']);
       allow delete: if isSuperAdmin();
     }
 
@@ -514,16 +531,21 @@ service cloud.firestore {
       allow read: if isSignedIn() && 'schoolId' in resource.data && (isSuperAdmin() || isSchoolMember(resource.data.schoolId));
     }
 
+    // Confidentialité médicale : la lecture via collection-group est réservée
+    // aux détenteurs de manageMedical, comme sur le chemin direct
+    // (ecoles/{id}/eleves/{id}/dossier_medical). Auparavant `|| isSchoolMember`
+    // laissait TOUT membre du personnel (ex. cantine) lire les données de santé
+    // de tous les élèves via une requête collectionGroup.
     match /{path=**}/dossier_medical/{dossierId} {
-      allow read: if isSignedIn() && 'schoolId' in resource.data && (hasPermission(resource.data.schoolId, 'manageMedical') || isSchoolMember(resource.data.schoolId));
+      allow read: if isSignedIn() && 'schoolId' in resource.data && hasPermission(resource.data.schoolId, 'manageMedical');
     }
 
     match /{path=**}/consultations/{consultationId} {
-      allow read: if isSignedIn() && 'schoolId' in resource.data && (hasPermission(resource.data.schoolId, 'manageMedical') || isSchoolMember(resource.data.schoolId));
+      allow read: if isSignedIn() && 'schoolId' in resource.data && hasPermission(resource.data.schoolId, 'manageMedical');
     }
 
     match /{path=**}/vaccins/{vaccinId} {
-      allow read: if isSignedIn() && 'schoolId' in resource.data && (hasPermission(resource.data.schoolId, 'manageMedical') || isSchoolMember(resource.data.schoolId));
+      allow read: if isSignedIn() && 'schoolId' in resource.data && hasPermission(resource.data.schoolId, 'manageMedical');
     }
   }
 }

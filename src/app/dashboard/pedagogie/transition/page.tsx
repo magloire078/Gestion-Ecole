@@ -160,7 +160,7 @@ export default function TransitionPage() {
     return (
         <div className="p-4 md:p-6 space-y-6">
             <div>
-                <h1 className="text-3xl font-black tracking-tight text-slate-900">Passage en Classe Supérieure</h1>
+                <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Passage en Classe Supérieure</h1>
                 <p className="text-slate-500">Préparez la rentrée scolaire en transférant les élèves vers leur nouvelle classe.</p>
             </div>
 

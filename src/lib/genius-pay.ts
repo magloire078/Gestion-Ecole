@@ -1,9 +1,10 @@
 import axios from 'axios';
 
 // Configuration basée sur la documentation officielle Genius Pay
+// Domaine officiel documenté : https://geniuspay.ci/api/v1/merchant
 const GENIUS_API_URL = process.env.GENIUS_PAY_API_URL
     || process.env.NEXT_PUBLIC_GENIUS_PAY_API_URL
-    || 'https://pay.genius.ci/api/v1/merchant';
+    || 'https://geniuspay.ci/api/v1/merchant';
 const GENIUS_API_KEY = process.env.GENIUS_PAY_API_KEY
     || process.env.NEXT_PUBLIC_GENIUS_PAY_API_KEY; // pk_sandbox_xxx ou pk_live_xxx
 const GENIUS_API_SECRET = process.env.GENIUS_PAY_API_SECRET; // sk_sandbox_xxx ou sk_live_xxx
@@ -64,7 +65,7 @@ interface GeniusPaymentDetails {
  * Initialise un paiement avec Genius Pay.
  * Mode Checkout: Sans spécifier payment_method, le client choisit sur la page GeniusPay.
  * 
- * Documentation: https://pay.genius.ci/docs/api
+ * Documentation: https://geniuspay.ci/docs/api
  */
 export async function createGeniusPayment(data: GeniusPaymentInit): Promise<GeniusPaymentResponse> {
     if (!GENIUS_API_KEY || !GENIUS_API_SECRET) {
@@ -163,6 +164,72 @@ export async function listGeniusPayments(params?: {
     } catch (error: any) {
         console.error("Erreur lors de la récupération des paiements:", error.response?.data || error.message);
         throw error;
+    }
+}
+
+export interface GeniusWebhookConfig {
+    name?: string;
+    url: string;
+    events: string[];
+}
+
+/**
+ * Enregistre un endpoint webhook auprès de GeniusPay.
+ * ⚠️ La réponse contient le secret `whsec_...` UNE SEULE FOIS : il doit être
+ * copié dans la variable d'environnement GENIUS_WEBHOOK_SECRET.
+ *
+ * POST /webhooks — https://geniuspay.ci/docs/api
+ */
+export async function registerGeniusWebhook(config: GeniusWebhookConfig): Promise<any> {
+    if (!GENIUS_API_KEY || !GENIUS_API_SECRET) {
+        throw new Error("Les clés API Genius Pay ne sont pas configurées.");
+    }
+    try {
+        const response = await axios.post(
+            `${GENIUS_API_URL}/webhooks`,
+            {
+                name: config.name || 'GèreEcole',
+                url: config.url,
+                events: config.events,
+            },
+            {
+                headers: {
+                    'X-API-Key': GENIUS_API_KEY,
+                    'X-API-Secret': GENIUS_API_SECRET,
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
+        return response.data;
+    } catch (error: any) {
+        const apiMsg = error.response?.data?.error?.message || error.response?.data?.message;
+        console.error("Erreur lors de l'enregistrement du webhook Genius Pay:", error.response?.data || error.message);
+        throw new Error(apiMsg || "Impossible d'enregistrer le webhook Genius Pay.");
+    }
+}
+
+/**
+ * Liste les webhooks enregistrés. GET /webhooks
+ */
+export async function listGeniusWebhooks(): Promise<any> {
+    if (!GENIUS_API_KEY || !GENIUS_API_SECRET) {
+        throw new Error("Les clés API Genius Pay ne sont pas configurées.");
+    }
+    try {
+        const response = await axios.get(
+            `${GENIUS_API_URL}/webhooks`,
+            {
+                headers: {
+                    'X-API-Key': GENIUS_API_KEY,
+                    'X-API-Secret': GENIUS_API_SECRET,
+                },
+            }
+        );
+        return response.data;
+    } catch (error: any) {
+        const apiMsg = error.response?.data?.error?.message || error.response?.data?.message;
+        console.error("Erreur lors de la récupération des webhooks Genius Pay:", error.response?.data || error.message);
+        throw new Error(apiMsg || "Impossible de lister les webhooks Genius Pay.");
     }
 }
 

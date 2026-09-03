@@ -350,7 +350,7 @@ export default function GradeEntryPage() {
       <div className="p-4 md:p-6 space-y-4 animate-in fade-in duration-700">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="space-y-1">
-            <h1 className="text-4xl font-black tracking-tight text-slate-900 bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-600 bg-clip-text text-transparent">Saisie des Notes</h1>
+            <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-600 dark:from-white dark:via-indigo-200 dark:to-slate-300 bg-clip-text text-transparent">Saisie des Notes</h1>
             <p className="text-slate-500 max-w-2xl text-sm font-medium">
               Tableau de bord analytique pour la gestion de la performance académique par classe et matière.
             </p>

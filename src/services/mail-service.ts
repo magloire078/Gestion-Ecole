@@ -1,6 +1,7 @@
 
 'use client';
-import { Firestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { Firestore } from 'firebase/firestore';
+import { firebaseAuth } from '@/firebase/config';
 import { formatCurrency } from '@/lib/currency-utils';
 
 export interface MailOptions {
@@ -21,19 +22,34 @@ export class MailService {
   constructor(private firestore: Firestore) { }
 
   /**
-   * Envoie un email en ajoutant un document à la collection 'mail'.
-   * Nécessite l'extension Firebase "Trigger Email from Firestore" configurée.
+   * Envoie un email via la route serveur /api/mail/send (Admin SDK).
+   * L'écriture directe dans la collection 'mail' n'est plus autorisée côté
+   * client (firestore.rules) : la route authentifie l'appelant et estampille
+   * l'auteur, offrant un point de contrôle unique. Nécessite l'extension
+   * Firebase "Trigger Email from Firestore" configurée.
    */
   async sendMail(options: MailOptions) {
     try {
-      const mailCollection = collection(this.firestore, 'mail');
-      await addDoc(mailCollection, {
-        ...options,
-        delivery: {
-          startTime: serverTimestamp(),
-          state: 'PENDING'
-        }
+      const idToken = await firebaseAuth.currentUser?.getIdToken();
+      if (!idToken) {
+        return { success: false, error: 'not-authenticated' };
+      }
+
+      const res = await fetch('/api/mail/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
+        },
+        body: JSON.stringify(options),
       });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        console.error('Error sending mail:', data?.error);
+        return { success: false, error: data?.error || 'send-failed' };
+      }
+
       return { success: true };
     } catch (error) {
       console.error('Error sending mail:', error);
