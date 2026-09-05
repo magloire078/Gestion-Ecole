@@ -15,17 +15,16 @@ import { firebaseFirestore } from '@/firebase/config';
 import type {
     academicYearTransition,
     class_type as ClassType,
-    studentClassAssignment as Assignment,
 } from '@/lib/data-types';
+import {
+    promoteStudentsToClasses,
+    type PromotionRule,
+    type PromoteStudentsResult,
+} from './class-assignment-service';
 
 const db = firebaseFirestore as Firestore;
 
-export interface PromotionRule {
-    studentId: string;
-    fromClassId: string;
-    toClassId: string;          // classe cible (déjà clonée dans la nouvelle année)
-    promotionType: Assignment['promotionType'];
-}
+export type { PromotionRule, PromoteStudentsResult };
 
 export interface CloneClassesResult {
     cloned: number;
@@ -100,78 +99,20 @@ export async function cloneClassesForNewYear(
     return { cloned, archived, mapping };
 }
 
-export interface PromoteStudentsResult {
-    promoted: number;
-    skipped: number;
-    errors: { studentId: string; reason: string }[];
-}
-
 /**
- * Crée une nouvelle `studentClassAssignment` pour chaque élève listé,
- * en clôturant l'affectation précédente (`status: transferred`,
- * `endDate: today`).
+ * @deprecated Conservé pour compatibilité d'import — délègue entièrement à
+ * `promoteStudentsToClasses` (logique partagée avec l'attribution en lot,
+ * source de vérité unique `inscriptions_classe` + `eleve.classId`, et
+ * journal d'audit réversible).
  */
 export async function promoteStudents(
     schoolId: string,
     rules: PromotionRule[],
     toYear: string,
     userId: string,
+    userName?: string,
 ): Promise<PromoteStudentsResult> {
-    const result: PromoteStudentsResult = { promoted: 0, skipped: 0, errors: [] };
-    if (!rules.length) return result;
-
-    const today = new Date().toISOString().split('T')[0];
-    const assignmentsRef = collection(db, `ecoles/${schoolId}/inscriptions_classe`);
-
-    // Firestore batch max = 500 ops. Chaque élève = 2 ops (clôture + création) + 1 update élève.
-    const CHUNK = 150;
-    for (let i = 0; i < rules.length; i += CHUNK) {
-        const chunk = rules.slice(i, i + CHUNK);
-        const batch = writeBatch(db);
-        for (const rule of chunk) {
-            try {
-                // Fermer l'ancienne affectation active sur fromClassId
-                const oldAssignSnap = await getDocs(query(
-                    assignmentsRef,
-                    where('studentId', '==', rule.studentId),
-                    where('classeId', '==', rule.fromClassId),
-                    where('status', '==', 'active'),
-                ));
-                oldAssignSnap.docs.forEach(oldDoc => {
-                    batch.update(oldDoc.ref, {
-                        status: 'transferred',
-                        endDate: today,
-                    });
-                });
-
-                const newAssignRef = doc(assignmentsRef);
-                batch.set(newAssignRef, {
-                    schoolId,
-                    studentId: rule.studentId,
-                    classeId: rule.toClassId,
-                    academicYear: toYear,
-                    startDate: today,
-                    promotionType: rule.promotionType,
-                    status: 'active',
-                    previousClass: rule.fromClassId,
-                    createdBy: userId,
-                    createdAt: serverTimestamp(),
-                });
-
-                batch.update(doc(db, `ecoles/${schoolId}/eleves/${rule.studentId}`), {
-                    currentClassId: rule.toClassId,
-                    updatedAt: serverTimestamp(),
-                });
-                result.promoted += 1;
-            } catch (err: any) {
-                result.errors.push({ studentId: rule.studentId, reason: err?.message ?? 'unknown' });
-                result.skipped += 1;
-            }
-        }
-        await batch.commit();
-    }
-
-    return result;
+    return promoteStudentsToClasses(schoolId, rules, toYear, userId, userName);
 }
 
 /**

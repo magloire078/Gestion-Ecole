@@ -71,6 +71,23 @@ export type academicYearTransition = {
     notes?: string;
 };
 
+export type audit_log = {
+    action: string;
+    details: string;
+    userId: string;
+    userName?: string;
+    userRole?: string;
+    targetId?: string;
+    targetType?: string;
+    /** Données structurées propres à l'action (ex: entrées réversibles pour une attribution de classe). */
+    payload?: any;
+    reverted?: boolean;
+    revertedAt?: any;
+    revertedBy?: string;
+    timestamp?: any;
+    id?: string;
+};
+
 export type parent_profile = {
     firstName?: string;
     lastName?: string;
