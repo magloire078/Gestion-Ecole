@@ -17,8 +17,10 @@ async function requireAdmin(request: NextRequest): Promise<{ uid: string } | { e
         return { error: 'Invalid token', status: 401 };
     }
     const userSnap = await getAdminDb().collection('users').doc(decoded.uid).get();
-    const profile = userSnap.data()?.profile;
-    if (!profile?.isAdmin) {
+    const data = userSnap.data();
+    
+    // Check both isSuperAdmin (top-level) and profile.isAdmin
+    if (!data?.isSuperAdmin && !data?.profile?.isAdmin) {
         return { error: 'Admin access required', status: 403 };
     }
     return { uid: decoded.uid };
@@ -50,25 +52,30 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const db = getAdminDb();
+    try {
+        const db = getAdminDb();
 
-    const [pendingSnap, decidedSnap] = await Promise.all([
-        db.collection('decision_queue')
-            .where('status', '==', 'pending')
-            .orderBy('createdAt', 'desc')
-            .limit(100)
-            .get(),
-        // Les docs en attente n'ont pas de champ decidedAt : les trier dessus
-        // renvoie donc uniquement l'historique, sans index composite.
-        db.collection('decision_queue')
-            .orderBy('decidedAt', 'desc')
-            .limit(50)
-            .get(),
-    ]);
+        const [pendingSnap, decidedSnap] = await Promise.all([
+            db.collection('decision_queue')
+                .where('status', '==', 'pending')
+                .orderBy('createdAt', 'desc')
+                .limit(100)
+                .get(),
+            // Les docs en attente n'ont pas de champ decidedAt : les trier dessus
+            // renvoie donc uniquement l'historique, sans index composite.
+            db.collection('decision_queue')
+                .orderBy('decidedAt', 'desc')
+                .limit(50)
+                .get(),
+        ]);
 
-    return NextResponse.json({
-        generatedAt: new Date().toISOString(),
-        pending: pendingSnap.docs.map(serialize),
-        decided: decidedSnap.docs.map(serialize),
-    });
+        return NextResponse.json({
+            generatedAt: new Date().toISOString(),
+            pending: pendingSnap.docs.map(serialize),
+            decided: decidedSnap.docs.map(serialize),
+        });
+    } catch (err: any) {
+        console.error('[Admin Decisions GET Error]', err);
+        return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
+    }
 }

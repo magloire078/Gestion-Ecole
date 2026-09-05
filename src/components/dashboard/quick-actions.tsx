@@ -30,12 +30,12 @@ export function QuickActions() {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="h-full"
         >
-            <Card className="glass-card border-white/10 bg-card/40 backdrop-blur-2xl shadow-2xl relative overflow-hidden h-full">
+            <Card className="bg-white/40 backdrop-blur-xl border border-white/60 shadow-xl rounded-2xl relative overflow-hidden h-full">
                 {/* Secondary Background Glow */}
                 <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-50" />
                 
                 <CardHeader>
-                    <CardTitle className="text-xl font-black tracking-tight">Accès Rapides</CardTitle>
+                    <CardTitle className="text-xl font-black tracking-tight text-slate-900">Accès Rapides</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col space-y-3">
                     {actions.map((action, index) => (
@@ -47,7 +47,7 @@ export function QuickActions() {
                         >
                             <Button 
                                 variant="outline" 
-                                className="w-full justify-between h-12 border-white/10 bg-white/5 hover:bg-primary/10 hover:border-primary/30 transition-all duration-300 group rounded-xl px-4" 
+                                className="w-full justify-between h-12 bg-white/60 border-white/80 hover:bg-blue-50 hover:border-blue-200 transition-all duration-300 group rounded-xl px-4 text-slate-700 hover:text-blue-700 shadow-sm" 
                                 asChild
                             >
                                 <Link href={action.href}>
@@ -57,7 +57,7 @@ export function QuickActions() {
                                         </div>
                                         <span className="font-bold text-[13px]">{action.label}</span>
                                     </div>
-                                    <div className="w-6 h-6 rounded-full border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
+                                    <div className="w-6 h-6 rounded-full border border-slate-200 flex items-center justify-center opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
                                         <Send className="w-3 h-3 rotate-45" />
                                     </div>
                                 </Link>

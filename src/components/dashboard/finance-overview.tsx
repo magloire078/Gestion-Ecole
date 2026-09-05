@@ -13,7 +13,7 @@ import { motion } from 'framer-motion';
 import { Wallet, PieChart as PieChartIcon, TrendingUp, ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
 import { formatCurrency } from '@/lib/currency-utils';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, AreaChart, Area, XAxis, YAxis } from 'recharts';
 
 interface FinanceOverviewProps {
     schoolId: string;
@@ -46,9 +46,19 @@ export function FinanceOverview({ schoolId: propSchoolId, academicYear }: Financ
         { name: 'Solde Dû', value: financeStats.totalDue, color: 'rgba(239, 68, 68, 0.4)' },
     ], [financeStats]);
 
+    // Données fictives d'évolution mensuelle pour le graphique (À remplacer par les vraies données de paiements)
+    const trendData = useMemo(() => [
+        { month: 'Sep', revenue: 450000 },
+        { month: 'Oct', revenue: 850000 },
+        { month: 'Nov', revenue: 1200000 },
+        { month: 'Déc', revenue: 1500000 },
+        { month: 'Jan', revenue: 1900000 },
+        { month: 'Fév', revenue: 2300000 },
+    ], []);
+
     if (loading) {
         return (
-            <Card className="glass-card border-white/10 bg-card/40 backdrop-blur-2xl shadow-2xl">
+            <Card className="bg-white/40 backdrop-blur-xl border border-white/60 shadow-xl rounded-2xl">
                 <CardHeader>
                     <Skeleton className="h-6 w-2/3" />
                     <Skeleton className="h-4 w-1/2" />
@@ -68,7 +78,7 @@ export function FinanceOverview({ schoolId: propSchoolId, academicYear }: Financ
             transition={{ duration: 0.6, delay: 0.2 }}
             className="h-full"
         >
-            <Card className="glass-card border-white/10 bg-card/40 backdrop-blur-2xl h-full overflow-hidden relative shadow-2xl group flex flex-col">
+            <Card className="bg-white/40 backdrop-blur-xl border border-white/60 shadow-xl rounded-2xl h-full overflow-hidden relative group flex flex-col">
                 {/* 3D Light Source Effect */}
                 <div className="absolute -top-24 -left-24 w-64 h-64 bg-primary/10 rounded-full blur-[80px] opacity-50 group-hover:opacity-100 transition-opacity duration-1000" />
                 
@@ -91,13 +101,17 @@ export function FinanceOverview({ schoolId: propSchoolId, academicYear }: Financ
 
                 <CardContent className="space-y-4 flex-1 pt-4">
                     <div className="h-44 w-full relative">
-                        {/* Custom SVG Shadows for PieChart */}
+                        {/* Custom SVG Shadows & Gradients for Charts */}
                         <svg className="h-0 w-0 absolute pointer-events-none" aria-hidden="true">
                             <defs>
                                 <filter id="pie-glow" x="-20%" y="-20%" width="140%" height="140%">
                                     <feGaussianBlur stdDeviation="4" result="blur" />
                                     <feComposite in="SourceGraphic" in2="blur" operator="over" />
                                 </filter>
+                                <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4}/>
+                                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                                </linearGradient>
                             </defs>
                         </svg>
 
@@ -150,6 +164,40 @@ export function FinanceOverview({ schoolId: propSchoolId, academicYear }: Financ
                             <span className="text-[10px] uppercase font-black text-muted-foreground/40 leading-none block">Restant</span>
                             <span className="text-sm font-black text-destructive drop-shadow-sm">{formatCurrency(financeStats.totalDue, country)}</span>
                         </div>
+                    </div>
+
+                    {/* Évolution Mensuelle (Area Chart) */}
+                    <div className="pt-2 h-32 w-full mt-2">
+                        <div className="mb-2 flex items-center justify-between">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Évolution des Recettes</span>
+                        </div>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={trendData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                                <XAxis dataKey="month" hide />
+                                <YAxis hide />
+                                <RechartsTooltip 
+                                    contentStyle={{ 
+                                        backgroundColor: 'rgba(255,255,255,0.9)', 
+                                        backdropFilter: 'blur(10px)',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        fontSize: '11px',
+                                        fontWeight: 'bold',
+                                        boxShadow: '0 4px 20px -5px rgba(0,0,0,0.1)'
+                                    }}
+                                    formatter={(value: number) => [`${value.toLocaleString('fr-FR')} F`, 'Recettes']}
+                                    labelStyle={{ color: '#0f172a' }}
+                                />
+                                <Area 
+                                    type="monotone" 
+                                    dataKey="revenue" 
+                                    stroke="hsl(var(--primary))" 
+                                    strokeWidth={3}
+                                    fillOpacity={1} 
+                                    fill="url(#colorRevenue)" 
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
                     </div>
                 </CardContent>
 

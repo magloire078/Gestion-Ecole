@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useFirestore } from '@/firebase';
 import { useAcademicYear } from '@/providers/academic-year-provider';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, query, collection, where, getCountFromServer } from 'firebase/firestore';
 import type { class_type, student } from '@/lib/data-types';
 import { getPlanLimits } from '@/lib/subscription-plans';
 import { resolveAcademicYearForWrite } from '@/lib/academic-year-utils';
@@ -86,13 +86,15 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
 
     const descriptor = useMemo(() => getDescriptor(entityId), [entityId]);
 
-    const yearOptions = useMemo(() => Array.from(new Set([
-        currentAcademicYear,
-        currentYear,
-        targetYear,
-        ...availableYears,
-    ].filter(Boolean) as string[])).sort((a, b) => b.localeCompare(a)),
-    [currentAcademicYear, currentYear, targetYear, availableYears]);
+    const yearOptions = useMemo(() => {
+        return Array.from(new Set([
+            currentAcademicYear,
+            currentYear,
+            targetYear,
+            ...availableYears,
+        ].filter(Boolean) as string[]))
+        .sort((a, b) => b.localeCompare(a));
+    }, [currentAcademicYear, currentYear, targetYear, availableYears]);
 
     const downloadTemplate = (format: 'xlsx' | 'json' = 'xlsx') => {
         if (!descriptor) return;
@@ -210,29 +212,44 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
         setProgress({ current: 0, total: nonEmptyRows.length });
 
         if (descriptor.id === 'students') {
-            try {
-                const [schoolSnap, statsSnap] = await Promise.all([
-                    getDoc(doc(firestore, `ecoles/${schoolId}`)),
-                    getDoc(doc(firestore, `ecoles/${schoolId}/stats/finance`)),
-                ]);
-                if (schoolSnap.exists()) {
-                    const planName = schoolSnap.data()?.subscription?.plan ?? 'Essentiel';
-                    const limits = getPlanLimits(planName);
-                    if (limits && Number.isFinite(limits.maxStudents)) {
-                        const currentCount = statsSnap.exists() ? (statsSnap.data()?.studentCount ?? 0) : 0;
-                        if (currentCount + nonEmptyRows.length > limits.maxStudents) {
-                            toast({
-                                variant: 'destructive',
-                                title: 'Limite d\'élèves atteinte',
-                                description: `Plan ${planName} : ${currentCount + nonEmptyRows.length} > ${limits.maxStudents}.`,
-                            });
-                            setIsUploading(false);
-                            return;
+            const currentYearRowsCount = nonEmptyRows.filter((r: any) => {
+                const rowYear = typeof r.academicYear === 'string' && r.academicYear.trim() 
+                    ? r.academicYear.trim() 
+                    : targetYear;
+                return rowYear === currentYear;
+            }).length;
+
+            if (currentYearRowsCount > 0) {
+                try {
+                    const schoolSnap = await getDoc(doc(firestore, `ecoles/${schoolId}`));
+                    if (schoolSnap.exists()) {
+                        const planName = schoolSnap.data()?.subscription?.plan ?? 'Essentiel';
+                        const currentAcademicYear = schoolSnap.data()?.currentAcademicYear || "2024-2025";
+                        const limits = getPlanLimits(planName);
+                        
+                        if (limits && Number.isFinite(limits.maxStudents)) {
+                            const activeStudentsQuery = query(
+                                collection(firestore, `ecoles/${schoolId}/eleves`),
+                                where('status', '==', 'Actif'),
+                                where('academicYear', '==', currentAcademicYear)
+                            );
+                            const countSnap = await getCountFromServer(activeStudentsQuery);
+                            const currentCount = countSnap.data().count;
+                            
+                            if (currentCount + currentYearRowsCount > limits.maxStudents) {
+                                toast({
+                                    variant: 'destructive',
+                                    title: 'Limite d\'élèves atteinte',
+                                    description: `Plan ${planName} : ${currentCount + currentYearRowsCount} > ${limits.maxStudents}.`,
+                                });
+                                setIsUploading(false);
+                                return;
+                            }
                         }
                     }
+                } catch (err) {
+                    console.error('[BulkImport] check limit error', err);
                 }
-            } catch (err) {
-                console.error('[BulkImport] check limit error', err);
             }
         }
 
@@ -351,12 +368,12 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
                     rattachées à l&apos;<strong>année cible</strong>.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="grid gap-4 md:grid-cols-3">
-                    <div className="space-y-2">
-                        <Label>Type de données</Label>
+            <CardContent className="space-y-8">
+                <div className="flex flex-col gap-6 md:flex-row md:items-start bg-primary/5 p-6 rounded-2xl border border-primary/10 shadow-inner">
+                    <div className="space-y-3 flex-1">
+                        <Label className="text-sm font-bold text-primary uppercase tracking-wide">1. Type de données</Label>
                         <Select value={entityId} onValueChange={v => { setEntityId(v); setFileData([]); setHeaders([]); }}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="bg-white border-primary/20 shadow-sm h-12 rounded-xl"><SelectValue /></SelectTrigger>
                             <SelectContent>
                                 {ENTITY_DESCRIPTORS.map(e => (
                                     <SelectItem key={e.id} value={e.id}>{e.label}</SelectItem>
@@ -365,9 +382,9 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
                         </Select>
                     </div>
 
-                    <div className="space-y-2">
-                        <Label className="flex items-center gap-2">
-                            Année cible
+                    <div className="space-y-3 flex-1">
+                        <Label className="text-sm font-bold text-primary uppercase tracking-wide flex items-center gap-2">
+                            2. Année cible
                             {isImportingArchive && (
                                 <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 text-[10px] font-bold uppercase">
                                     <Archive className="h-3 w-3" /> Archive
@@ -375,7 +392,7 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
                             )}
                         </Label>
                         <Select value={targetYear} onValueChange={setTargetYear}>
-                            <SelectTrigger><SelectValue placeholder="Choisir une année" /></SelectTrigger>
+                            <SelectTrigger className="bg-white border-primary/20 shadow-sm h-12 rounded-xl"><SelectValue placeholder="Choisir une année" /></SelectTrigger>
                             <SelectContent>
                                 {yearOptions.map(y => (
                                     <SelectItem key={y} value={y}>
@@ -386,45 +403,48 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
                         </Select>
                     </div>
 
-                    <div className="space-y-2">
-                        <Label>Modèle vide</Label>
+                    <div className="space-y-3 md:w-72 shrink-0 md:border-l border-primary/20 md:pl-6 pt-4 md:pt-0">
+                        <Label className="text-sm font-bold text-primary uppercase tracking-wide">Modèles de base</Label>
                         <div className="flex gap-2">
-                            <Button variant="outline" className="flex-1" onClick={() => downloadTemplate('xlsx')}>
+                            <Button variant="outline" className="flex-1 bg-white hover:bg-primary/10 hover:text-primary transition-all border-primary/20 shadow-sm h-12 rounded-xl" onClick={() => downloadTemplate('xlsx')}>
                                 <FileDown className="mr-2 h-4 w-4" /> Excel
                             </Button>
-                            <Button variant="outline" className="flex-1" onClick={() => downloadTemplate('json')}>
+                            <Button variant="outline" className="flex-1 bg-white hover:bg-primary/10 hover:text-primary transition-all border-primary/20 shadow-sm h-12 rounded-xl" onClick={() => downloadTemplate('json')}>
                                 <FileDown className="mr-2 h-4 w-4" /> JSON
                             </Button>
                         </div>
+                        <p className="text-[10px] text-muted-foreground text-center">Téléchargez un modèle vide avec les colonnes exactes.</p>
                     </div>
                 </div>
 
                 {descriptor && (
-                    <Alert>
-                        <AlertTitle className="text-sm">Colonnes attendues — {descriptor.label}</AlertTitle>
-                        <AlertDescription>
-                            <div className="mt-2 flex flex-wrap gap-1">
-                                {descriptor.columns.map(c => (
-                                    <span
-                                        key={c.header}
-                                        className={cn(
-                                            'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-mono',
-                                            c.required ? 'border-primary/30 bg-primary/5 text-primary' : 'border-muted-foreground/20 text-muted-foreground',
-                                        )}
-                                        title={c.desc}
-                                    >
-                                        {c.header}{c.required && <span>*</span>}
-                                    </span>
-                                ))}
-                            </div>
-                        </AlertDescription>
-                    </Alert>
+                    <div className="space-y-4">
+                        <h4 className="text-xs font-black uppercase tracking-widest text-slate-400">Colonnes attendues — {descriptor.label}</h4>
+                        <div className="flex flex-wrap gap-2">
+                            {descriptor.columns.map(c => (
+                                <div
+                                    key={c.header}
+                                    className={cn(
+                                        'px-3 py-1.5 rounded-lg text-xs font-mono font-semibold border flex items-center gap-2 shadow-sm transition-all hover:-translate-y-0.5 cursor-default',
+                                        c.required ? 'bg-primary text-white border-primary shadow-primary/20' : 'bg-white text-slate-500 border-slate-200'
+                                    )}
+                                    title={c.desc}
+                                >
+                                    {c.header} {c.required && <span className="opacity-70">*</span>}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 )}
 
-                <div className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center space-y-2 bg-muted/20">
-                    <Upload className="h-8 w-8 text-muted-foreground" />
-                    <Label htmlFor="file-upload" className="cursor-pointer text-primary hover:underline">
-                        Cliquez pour uploader un fichier (.xlsx, .csv, .json, .sql)
+                <div className="border-2 border-dashed border-primary/30 rounded-3xl p-10 flex flex-col items-center justify-center space-y-4 bg-gradient-to-b from-white to-primary/5 hover:bg-primary-[0.02] transition-all group relative overflow-hidden">
+                    <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="h-20 w-20 rounded-full bg-white shadow-xl shadow-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 z-10 border border-primary/10">
+                        <Upload className="h-8 w-8 text-primary" />
+                    </div>
+                    <Label htmlFor="file-upload" className="cursor-pointer text-lg font-bold text-slate-900 group-hover:text-primary transition-colors z-10 text-center">
+                        Cliquez pour uploader un fichier<br/>
+                        <span className="text-sm font-normal text-muted-foreground">(.xlsx, .csv, .json, .sql)</span>
                     </Label>
                     <Input
                         id="file-upload"
@@ -434,8 +454,9 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
                         ref={fileInputRef}
                         onChange={handleFileUpload}
                     />
-                    <p className="text-xs text-muted-foreground text-center max-w-sm">
-                        Une colonne <code className="px-1 rounded bg-muted">academicYear</code> dans le fichier surclasse l&apos;année cible. Le SQL accepte les dumps phpMyAdmin / pg_dump.
+                    <p className="text-xs font-medium text-slate-500 text-center max-w-md z-10 bg-white/80 p-2 rounded-lg border shadow-sm">
+                        Une colonne <code className="px-1.5 py-0.5 rounded-md bg-primary/10 text-primary font-bold">academicYear</code> dans le fichier surclasse l&apos;année cible. 
+                        Le SQL accepte les dumps phpMyAdmin.
                     </p>
                 </div>
 

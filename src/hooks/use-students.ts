@@ -148,6 +148,9 @@ export function useStudents(
                         tuitionStatus: enrollment.tuitionStatus as any,
                         status: enrollment.status === 'Radié' || enrollment.status === 'Transféré' ? 'Radié' : 'Actif'
                     };
+                } else if (String(student.inscriptionYear) === effectiveYear || student.academicYear === effectiveYear) {
+                    // Fallback pour les élèves historiques / importés qui n'ont pas encore le tableau d'historique enrollments
+                    // On les garde tels quels car leur racine correspond bien à l'année demandée.
                 } else {
                     // STRICT FILTERING: If the student has no enrollment for the requested year, exclude them.
                     (student as any)._exclude = true;

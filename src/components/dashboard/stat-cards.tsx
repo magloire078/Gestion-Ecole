@@ -16,6 +16,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from 'framer-motion';
 import { useStudents } from '@/hooks/use-students';
+import { AnimatedHighlight } from '@/components/ui/animated-highlight';
 
 export function StatCards({ schoolId, academicYear }: { schoolId: string, academicYear?: string }) {
   const firestore = useFirestore();
@@ -80,34 +81,34 @@ export function StatCards({ schoolId, academicYear }: { schoolId: string, academ
       icon: Users,
       color: 'text-blue-600 dark:text-blue-400',
       bgColor: 'bg-blue-100/50 dark:bg-blue-900/30',
-      gradient: 'from-blue-500/20 to-indigo-500/20',
+      gradient: 'from-blue-500/20 to-blue-600/20',
       href: '/dashboard/dossiers-eleves'
     },
     {
       title: 'Enseignants',
       value: stats.teachers,
       icon: BookUser,
-      color: 'text-cyan-600 dark:text-cyan-400',
-      bgColor: 'bg-cyan-100/50 dark:bg-cyan-900/30',
-      gradient: 'from-cyan-500/20 to-sky-500/20',
+      color: 'text-blue-500 dark:text-blue-300',
+      bgColor: 'bg-blue-100/40 dark:bg-blue-900/20',
+      gradient: 'from-blue-400/20 to-blue-500/20',
       href: '/dashboard/rh'
     },
     {
       title: 'Classes',
       value: stats.classes,
       icon: School,
-      color: 'text-indigo-600 dark:text-indigo-400',
-      bgColor: 'bg-indigo-100/50 dark:bg-indigo-900/30',
-      gradient: 'from-indigo-500/20 to-violet-500/20',
+      color: 'text-blue-700 dark:text-blue-500',
+      bgColor: 'bg-blue-200/50 dark:bg-blue-800/30',
+      gradient: 'from-blue-600/20 to-blue-700/20',
       href: '/dashboard/pedagogie/structure'
     },
     {
       title: 'Livres',
       value: stats.books,
       icon: BookOpen,
-      color: 'text-sky-600 dark:text-sky-400',
-      bgColor: 'bg-sky-100/50 dark:bg-sky-900/30',
-      gradient: 'from-sky-500/20 to-blue-500/20',
+      color: 'text-slate-600 dark:text-slate-400',
+      bgColor: 'bg-slate-100/50 dark:bg-slate-900/30',
+      gradient: 'from-slate-500/20 to-blue-500/20',
       href: '/dashboard/bibliotheque'
     }
   ];
@@ -133,7 +134,9 @@ export function StatCards({ schoolId, academicYear }: { schoolId: string, academ
                 stat.gradient
               )} />
 
-              <Card className="glass-card relative border-white/10 bg-card/40 backdrop-blur-2xl h-full overflow-hidden flex flex-col justify-between shadow-2xl transition-all duration-500 group-hover:bg-card/50">
+              <Card className="bg-white/40 backdrop-blur-xl border border-white/60 shadow-xl rounded-2xl relative h-full overflow-hidden flex flex-col justify-between transition-all duration-500 group-hover:bg-white/60">
+                <AnimatedHighlight delay={index * 0.2} duration={4} />
+                
                 {/* Animated Shine Effect */}
                 <div className="absolute inset-0 z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[shine_1.5s_ease-in-out_infinite]" />
@@ -173,7 +176,7 @@ export function StatCards({ schoolId, academicYear }: { schoolId: string, academ
                     <p className="text-[10px] text-muted-foreground/50 font-black uppercase tracking-[0.3em] group-hover:text-foreground/70 transition-colors">
                       Visionner
                     </p>
-                    <div className="h-[3px] w-0 bg-gradient-to-r from-blue-500 to-indigo-500 group-hover:w-16 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+                    <div className="h-[3px] w-0 bg-gradient-to-r from-blue-400 to-blue-600 group-hover:w-16 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] rounded-full shadow-[0_0_10px_rgba(37,99,235,0.5)]" />
                   </div>
                 </CardContent>
 

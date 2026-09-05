@@ -10,14 +10,29 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, User, Users, Clock, BookOpen, CalendarDays, Download, Upload, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, User, Users, Clock, BookOpen, CalendarDays, Download, Upload, CheckCircle2, IdCard, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
-import type { class_type as Class, student as Student, timetableEntry as TimetableEntry } from '@/lib/data-types';
+import type { class_type as Class, student as Student, timetableEntry as TimetableEntry, staff as Staff } from '@/lib/data-types';
 import { formatCurrency } from '@/lib/currency-utils';
+import { StudentCardService, StudentCardData } from '@/services/student-card-service';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
+import { DraggableTimetableEntry } from '@/components/timetable/draggable-entry';
+import { DroppableCell } from '@/components/timetable/droppable-cell';
+import { TimetableService } from '@/services/timetable-service';
+import { TimetablePDFService } from '@/services/timetable-pdf-service';
+import { useTimetable } from '@/hooks/use-timetable';
+import { validateMove } from '@/lib/timetable-utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { TimetableForm } from '@/components/timetable/timetable-form';
+import { useSubjects } from '@/hooks/use-subjects';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { FinancialReportsService, type StudentWithPayments } from '@/services/financial-reports-service';
+import { ClassListReportService } from '@/services/class-list-service';
+import { getDocs } from 'firebase/firestore';
 
 function ClassDetailsSkeleton() {
     return (
@@ -43,7 +58,7 @@ export default function ClassDetailsClient() {
     const params = useParams();
     const router = useRouter();
     const classId = params.classId as string;
-    const { schoolId, loading: schoolLoading } = useSchoolData();
+    const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
     const firestore = useFirestore();
     const { toast } = useToast();
 
@@ -66,6 +81,72 @@ export default function ClassDetailsClient() {
         , [firestore, schoolId, classId]);
     const { data: timetableData } = useCollection(timetableQuery);
     const timetableEntries = useMemo(() => timetableData?.map(d => ({ id: d.id, ...d.data() } as TimetableEntry & { id: string })) || [], [timetableData]);
+
+    // Data for timetable form
+    const allTeachersQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant')) as Query<Staff, DocumentData> : null, [schoolId, firestore]);
+    const { data: teachersData } = useCollection(allTeachersQuery);
+    const teachers = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as Staff & { id: string })) || [], [teachersData]);
+    const { subjects } = useSubjects(schoolId);
+    
+    // Fetch all timetable entries for conflict detection across all classes
+    const { timetable: allEntries } = useTimetable(schoolId || '', 'all');
+
+    const [isFormOpen, setIsFormOpen] = useState(false);
+    const [editingEntry, setEditingEntry] = useState<TimetableEntry | null>(null);
+    const [isGeneratingFinancePDF, setIsGeneratingFinancePDF] = useState(false);
+
+    const generateFinancialReport = async (filter: 'all' | 'paid' | 'unpaid' = 'all') => {
+        if (!schoolId || !classData || students.length === 0) return;
+        setIsGeneratingFinancePDF(true);
+        toast({ title: "Génération en cours...", description: "Veuillez patienter pendant la création du bilan." });
+        try {
+            const studentsWithPayments: StudentWithPayments[] = await Promise.all(students.map(async (s) => {
+                const paymentsRef = collection(firestore, `ecoles/${schoolId}/eleves/${s.id}/paiements`);
+                const q = query(paymentsRef); 
+                const snap = await getDocs(q);
+                const paymentHistory = snap.docs.map(doc => doc.data() as any);
+                return { ...s, paymentHistory };
+            }));
+            
+            FinancialReportsService.generateClassFinancialReportPdf(schoolData as any, classData, studentsWithPayments, schoolData?.mainLogoUrl, filter);
+            
+            toast({
+                title: "Succès",
+                description: "Le bilan financier a été généré avec succès."
+            });
+        } catch (e) {
+            console.error("Erreur lors de la génération du bilan financier :", e);
+            toast({
+                variant: "destructive",
+                title: "Erreur",
+                description: "Impossible de générer le bilan financier."
+            });
+        } finally {
+            setIsGeneratingFinancePDF(false);
+        }
+    };
+
+    const handleGenerateCards = async () => {
+        if (!classData || students.length === 0) return;
+        toast({ title: "Génération en cours...", description: "Veuillez patienter pendant la création des QR codes." });
+        
+        const cardDataList: StudentCardData[] = students.map(s => ({
+            id: s.id!,
+            firstName: s.firstName || '',
+            lastName: s.lastName || '',
+            matricule: s.matricule || 'N/A',
+            className: classData.name,
+            academicYear: classData.academicYear || '',
+            photoUrl: s.photoURL,
+            dateOfBirth: s.dateOfBirth
+        }));
+
+        await StudentCardService.generateCardsPDF(cardDataList, {
+            name: schoolData?.name || 'École',
+            logoUrl: schoolData?.mainLogoUrl,
+            motto: schoolData?.motto
+        });
+    };
 
     const isLoading = schoolLoading || classLoading || studentsLoading;
 
@@ -108,6 +189,43 @@ export default function ClassDetailsClient() {
             title: "Importation Réussie !",
             description: "Le volume horaire a été mis à jour via Excel.",
         });
+    };
+
+    const handleDragEnd = async (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over || !schoolId) return;
+
+        const entry = active.data.current?.entry as TimetableEntry;
+        const [overDay, overTime] = (over.id as string).split('-');
+
+        const startObj = new Date(`2000/01/01 ${entry.startTime}`);
+        const endObj = new Date(`2000/01/01 ${entry.endTime}`);
+        const durationMs = endObj.getTime() - startObj.getTime();
+        
+        const newStartObj = new Date(`2000/01/01 ${overTime}`);
+        const newEndObj = new Date(newStartObj.getTime() + durationMs);
+        const newEndTime = newEndObj.toTimeString().substring(0, 5);
+
+        if (entry.day !== overDay || entry.startTime !== overTime) {
+            // Check for conflicts before updating
+            const conflicts = validateMove(entry, overDay as any, overTime, allEntries);
+            if (conflicts.length > 0) {
+                toast({ variant: "destructive", title: "Conflit détecté", description: conflicts[0] });
+                return;
+            }
+
+            try {
+                await TimetableService.updateEntry(schoolId, entry.id!, {
+                    ...entry,
+                    day: overDay as any,
+                    startTime: overTime,
+                    endTime: newEndTime
+                });
+                toast({ title: "Déplacé", description: "Le cours a été déplacé avec succès." });
+            } catch (e) {
+                toast({ variant: "destructive", title: "Erreur", description: "Impossible de déplacer le cours." });
+            }
+        }
     };
 
     return (
@@ -181,8 +299,34 @@ export default function ClassDetailsClient() {
                         {/* Tab 1: Liste des élèves */}
                         <TabsContent value="eleves" className="focus-visible:ring-0">
                             <Card className="border-none shadow-none bg-transparent">
-                                <CardHeader className="px-0 pt-0">
+                                <CardHeader className="px-0 pt-0 flex flex-row items-center justify-between">
                                     <CardTitle className="text-base font-bold text-slate-700">Registre des Élèves</CardTitle>
+                                    <div className="flex gap-2">
+                                        <Button variant="outline" size="sm" className="text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => ClassListReportService.generateClassListPDF(schoolData as any, classData, students, schoolData?.mainLogoUrl)}>
+                                            <Download className="mr-2 h-4 w-4" /> Liste PDF
+                                        </Button>
+                                        <Button variant="outline" size="sm" className="text-indigo-600 border-indigo-200 hover:bg-indigo-50" onClick={handleGenerateCards}>
+                                            <IdCard className="mr-2 h-4 w-4" /> Cartes Scolaires
+                                        </Button>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="outline" size="sm" className="text-emerald-600 border-emerald-200 hover:bg-emerald-50" disabled={isGeneratingFinancePDF}>
+                                                    <Download className="mr-2 h-4 w-4" /> Bilan Financier
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="w-56">
+                                                <DropdownMenuItem onClick={() => generateFinancialReport('all')}>
+                                                    Tous les élèves
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => generateFinancialReport('paid')} className="text-emerald-600">
+                                                    Uniquement les Soldés (Reste = 0)
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => generateFinancialReport('unpaid')} className="text-rose-600">
+                                                    Uniquement les Impayés (Reste &gt; 0)
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
                                 </CardHeader>
                                 <CardContent className="p-0">
                                     <Table>
@@ -307,50 +451,69 @@ export default function ClassDetailsClient() {
                         {/* Tab 4: Emploi du temps Visuel */}
                         <TabsContent value="emploi" className="focus-visible:ring-0">
                             <Card className="border-none shadow-none bg-transparent">
-                                <CardHeader className="px-0 pt-0">
+                                <CardHeader className="px-0 pt-0 flex flex-row items-center justify-between">
                                     <CardTitle className="text-base font-bold text-slate-700">Grille Hebdomadaire des Cours</CardTitle>
+                                    <div className="flex gap-2">
+                                        <Button variant="outline" className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 rounded-xl h-9 text-xs" onClick={() => TimetablePDFService.generateTimetablePDF(schoolData as any, classData, timetableEntries, teachers)}>
+                                            <Download className="mr-2 h-4 w-4" /> Exporter PDF
+                                        </Button>
+                                        <Button onClick={() => { setEditingEntry(null); setIsFormOpen(true); }} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-9 text-xs">
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            Ajouter un cours
+                                        </Button>
+                                    </div>
                                 </CardHeader>
                                 <CardContent className="p-0">
-                                    <div className="overflow-x-auto">
-                                        <Table className="border rounded-xl">
-                                            <TableHeader className="bg-slate-50">
-                                                <TableRow>
-                                                    <TableHead className="w-[100px] text-xs font-black uppercase text-slate-400">Créneau</TableHead>
-                                                    {joursSemaine.map(j => (
-                                                        <TableHead key={j} className="text-xs font-black uppercase text-slate-400">{j}</TableHead>
-                                                    ))}
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {plagesHoraires.filter(p => p.type === 'Cours').map(plage => (
-                                                    <TableRow key={plage.nom} className="h-16">
-                                                        <TableCell className="font-bold text-xs text-slate-500 font-mono">
-                                                            {plage.nom} ({plage.start}-{plage.end})
-                                                        </TableCell>
-                                                        {joursSemaine.map(jour => {
-                                                            // Trouver une entrée de cours correspondante
-                                                            const match = timetableEntries.find(e => 
-                                                                e.day === jour && 
-                                                                (e.startTime === plage.start || (e.startTime >= plage.start && e.startTime < plage.end))
-                                                            );
-                                                            return (
-                                                                <TableCell key={jour} className="p-1 border-l">
-                                                                    {match ? (
-                                                                        <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-2 h-full flex flex-col justify-center">
-                                                                            <p className="text-xs font-bold text-indigo-700 leading-tight">{match.subject}</p>
-                                                                            <p className="text-[9px] text-indigo-500 font-medium truncate mt-0.5">{match.classroom || 'Salle N/A'}</p>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <span className="text-[10px] text-slate-300 italic flex justify-center items-center h-full">-</span>
-                                                                    )}
-                                                                </TableCell>
-                                                            );
-                                                        })}
+                                    <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                        <div className="overflow-x-auto">
+                                            <Table className="border rounded-xl">
+                                                <TableHeader className="bg-slate-50">
+                                                    <TableRow>
+                                                        <TableHead className="w-[100px] text-xs font-black uppercase text-slate-400">Créneau</TableHead>
+                                                        {joursSemaine.map(j => (
+                                                            <TableHead key={j} className="text-xs font-black uppercase text-slate-400 text-center">{j}</TableHead>
+                                                        ))}
                                                     </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {plagesHoraires.filter(p => p.type === 'Cours').map(plage => (
+                                                        <TableRow key={plage.nom}>
+                                                            <TableCell className="font-bold text-xs text-slate-500 font-mono align-top pt-4">
+                                                                {plage.nom} <br/><span className="text-[10px] text-slate-400">({plage.start}-{plage.end})</span>
+                                                            </TableCell>
+                                                            {joursSemaine.map(jour => {
+                                                                const matches = timetableEntries.filter(e => 
+                                                                    e.day === jour && 
+                                                                    (e.startTime === plage.start || (e.startTime >= plage.start && e.startTime < plage.end))
+                                                                );
+                                                                return (
+                                                                    <TableCell key={jour} className="p-0 border-l">
+                                                                        <DroppableCell day={jour as any} time={plage.start}>
+                                                                            {matches.map(match => (
+                                                                                <DraggableTimetableEntry
+                                                                                    key={match.id}
+                                                                                    entry={match}
+                                                                                    teacher={teachers.find(t => t.id === match.teacherId)}
+                                                                                    canManage={true}
+                                                                                    color={match.color}
+                                                                                    onEdit={(e) => { setEditingEntry(e); setIsFormOpen(true); }}
+                                                                                    onDelete={async (e) => {
+                                                                                        if (confirm("Supprimer ce cours ?")) {
+                                                                                            await TimetableService.deleteEntry(schoolId!, e.id!);
+                                                                                        }
+                                                                                    }}
+                                                                                />
+                                                                            ))}
+                                                                        </DroppableCell>
+                                                                    </TableCell>
+                                                                );
+                                                            })}
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    </DndContext>
                                 </CardContent>
                             </Card>
                         </TabsContent>
@@ -358,6 +521,31 @@ export default function ClassDetailsClient() {
                     </div>
                 </Tabs>
             </div>
+            
+            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <DialogContent className="max-w-2xl bg-white/90 backdrop-blur-xl border-white/60 shadow-2xl rounded-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">
+                            {editingEntry ? 'Modifier le cours' : 'Ajouter un cours'}
+                        </DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium">
+                            Configurez les détails du cours dans l'emploi du temps de la classe.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {classData && (
+                        <TimetableForm 
+                            schoolId={schoolId!}
+                            entry={editingEntry}
+                            classes={[{ id: classId, ...classData }]}
+                            teachers={teachers}
+                            subjects={subjects}
+                            onSave={() => setIsFormOpen(false)}
+                            onCancel={() => setIsFormOpen(false)}
+                            defaultValues={{ classId }}
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

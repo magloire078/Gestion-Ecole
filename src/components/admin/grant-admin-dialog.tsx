@@ -10,15 +10,16 @@ import type { staff } from '@/lib/data-types';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { grantSuperAdmin } from '@/services/admin-services';
+import { grantSuperAdmin, grantCommercialAccess } from '@/services/admin-services';
 
 interface GrantAdminDialogProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     onAdminGranted: () => void;
+    roleToGrant?: 'admin' | 'commercial';
 }
 
-export function GrantAdminDialog({ isOpen, onOpenChange, onAdminGranted }: GrantAdminDialogProps) {
+export function GrantAdminDialog({ isOpen, onOpenChange, onAdminGranted, roleToGrant = 'admin' }: GrantAdminDialogProps) {
     const firestore = useFirestore();
     const { user: grantingAdmin } = useUser();
     const { toast } = useToast();
@@ -73,8 +74,13 @@ export function GrantAdminDialog({ isOpen, onOpenChange, onAdminGranted }: Grant
         if (!selectedUser || !grantingAdmin?.uid) return;
         setIsGranting(true);
         try {
-            await grantSuperAdmin(firestore, selectedUser.uid, grantingAdmin.uid);
-            toast({ title: 'Privilèges accordés', description: `${selectedUser.displayName} est maintenant super administrateur.` });
+            if (roleToGrant === 'commercial') {
+                await grantCommercialAccess(firestore, selectedUser.uid, grantingAdmin.uid);
+                toast({ title: 'Privilèges accordés', description: `${selectedUser.displayName} a maintenant un accès commercial.` });
+            } else {
+                await grantSuperAdmin(firestore, selectedUser.uid, grantingAdmin.uid);
+                toast({ title: 'Privilèges accordés', description: `${selectedUser.displayName} est maintenant super administrateur.` });
+            }
             onAdminGranted();
             onOpenChange(false);
         } catch (e: any) {
@@ -85,14 +91,18 @@ export function GrantAdminDialog({ isOpen, onOpenChange, onAdminGranted }: Grant
     };
 
     if (selectedUser) {
+        const isCommercial = roleToGrant === 'commercial';
         return (
             <AlertDialog open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Confirmer l&apos;octroi des droits</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Êtes-vous sûr de vouloir donner les privilèges de super administrateur à <strong>{selectedUser.displayName}</strong> ({selectedUser.email}) ?
-                            Cette personne aura un accès complet à toutes les données et fonctionnalités de la plateforme.
+                            Êtes-vous sûr de vouloir donner les privilèges {isCommercial ? 'de commercial' : 'de super administrateur'} à <strong>{selectedUser.displayName}</strong> ({selectedUser.email}) ?
+                            {isCommercial 
+                                ? " Cette personne aura un accès exclusif au CRM prospect."
+                                : " Cette personne aura un accès complet à toutes les données et fonctionnalités de la plateforme."
+                            }
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

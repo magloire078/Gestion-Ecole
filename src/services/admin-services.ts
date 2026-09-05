@@ -87,3 +87,64 @@ export async function revokeSuperAdmin(firestore: Firestore, userIdToRevoke: str
         throw new Error("Une erreur de base de données est survenue lors de la révocation.");
     }
 }
+
+export async function grantCommercialAccess(firestore: Firestore, userIdToGrant: string, grantingAdminId: string): Promise<void> {
+    if (!userIdToGrant || !grantingAdminId) {
+        throw new Error("Les ID utilisateur sont requis.");
+    }
+    
+    const batch = writeBatch(firestore);
+    const userRootRef = doc(firestore, 'users', userIdToGrant);
+
+    // 1. Update user's root document
+    batch.update(userRootRef, { commercialAccess: true });
+
+    // 2. Log the action
+    const logRef = doc(collection(firestore, 'system_logs'));
+    batch.set(logRef, {
+        adminId: grantingAdminId,
+        action: 'admin.grant_commercial',
+        target: userRootRef.path,
+        details: { grantedTo: userIdToGrant },
+        timestamp: new Date().toISOString(),
+    });
+
+    try {
+        await batch.commit();
+    } catch(e) {
+        console.error("Error committing grantCommercialAccess batch:", e);
+        throw new Error("Une erreur de base de données est survenue lors de l'octroi des privilèges commerciaux.");
+    }
+}
+
+export async function revokeCommercialAccess(firestore: Firestore, userIdToRevoke: string, revokingAdminId: string): Promise<void> {
+    if (!userIdToRevoke || !revokingAdminId) {
+        throw new Error("Les ID utilisateur sont requis.");
+    }
+    if (userIdToRevoke === revokingAdminId) {
+        throw new Error("Vous ne pouvez pas révoquer vos propres privilèges.");
+    }
+
+    const batch = writeBatch(firestore);
+    const userRootRef = doc(firestore, 'users', userIdToRevoke);
+
+    // 1. Set commercialAccess to false in user's root doc
+    batch.update(userRootRef, { commercialAccess: false });
+    
+    // 2. Log the action
+    const logRef = doc(collection(firestore, 'system_logs'));
+    batch.set(logRef, {
+        adminId: revokingAdminId,
+        action: 'admin.revoke_commercial',
+        target: userRootRef.path,
+        details: { revokedFrom: userIdToRevoke },
+        timestamp: new Date().toISOString(),
+    });
+
+    try {
+        await batch.commit();
+    } catch(e) {
+        console.error("Error committing revokeCommercialAccess batch:", e);
+        throw new Error("Une erreur de base de données est survenue lors de la révocation commerciale.");
+    }
+}

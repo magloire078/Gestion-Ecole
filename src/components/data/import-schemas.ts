@@ -45,8 +45,14 @@ const studentSchema = z.object({
     dateOfBirth: z.preprocess(v => (v == null || v === '' ? undefined : v), z.union([z.string(), z.number()])).optional(),
     placeOfBirth: optionalString,
     gender: z.preprocess(
-        v => (v == null ? undefined : String(v).trim().toUpperCase()),
-        z.enum(['M', 'F', 'MASCULIN', 'FEMININ'], { errorMap: () => ({ message: 'Genre attendu: M ou F' }) }),
+        v => {
+            if (v == null) return undefined;
+            const str = String(v).trim().toUpperCase();
+            if (str === 'M' || str === 'GARÇON' || str === 'GARCON' || str === 'MASCULIN') return 'Masculin';
+            if (str === 'F' || str === 'FILLE' || str === 'FEMININ' || str === 'FÉMININ') return 'Féminin';
+            return str;
+        },
+        z.enum(['Masculin', 'Féminin'], { errorMap: () => ({ message: 'Genre attendu: M, F, Garçon ou Fille' }) }),
     ),
     className: requiredString,
     matricule: optionalString,

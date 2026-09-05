@@ -12,8 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, Upload, Download, Printer, Search, Users, School, GraduationCap, LayoutGrid, List, Calendar } from "lucide-react";
-import { useState, useMemo, useEffect } from "react";
+import { PlusCircle, Upload, Download, Printer, Search, Users, School, GraduationCap, LayoutGrid, List, Calendar, ArrowUpDown } from "lucide-react";
+import { useState, useMemo, useEffect, startTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -148,8 +148,10 @@ export default function StudentsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 150);
   const [selectedClass, setSelectedClass] = useState('all');
+  const [selectedCycle, setSelectedCycle] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('active');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [sortBy, setSortBy] = useState('name_asc');
 
   const { activeStudents, archivedStudents, filteredActiveStudents, filteredByClass } = useMemo(() => {
     const filteredBySearch = allStudents.filter(student =>
@@ -158,9 +160,15 @@ export default function StudentsPage() {
       student.matricule?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
     );
 
-    const filteredByClass = selectedClass === 'all'
-      ? filteredBySearch
-      : filteredBySearch.filter(student => student.classId === selectedClass);
+    let filtered = filteredBySearch;
+    if (selectedCycle !== 'all') {
+      const classesInCycle = classes.filter(c => c.cycleId === selectedCycle).map(c => c.id);
+      filtered = filtered.filter(student => classesInCycle.includes(student.classId));
+    }
+    if (selectedClass !== 'all') {
+      filtered = filtered.filter(student => student.classId === selectedClass);
+    }
+    const filteredByClass = filtered;
 
     const active = filteredByClass.filter(student => ['Actif', 'En attente'].includes(student.status));
     const archived = filteredByClass.filter(student => !['Actif', 'En attente'].includes(student.status));
@@ -171,9 +179,57 @@ export default function StudentsPage() {
       filteredActiveStudents: active,
       filteredByClass,
     }
-  }, [allStudents, debouncedSearchTerm, selectedClass]);
+  }, [allStudents, debouncedSearchTerm, selectedClass, selectedCycle, classes]);
 
   const studentsToShow = selectedStatus === 'active' ? filteredActiveStudents : archivedStudents;
+
+  const sortedStudentsToShow = useMemo(() => {
+    let sorted = [...studentsToShow];
+    switch (sortBy) {
+      case 'name_asc':
+        sorted.sort((a, b) => (a.lastName || '').localeCompare(b.lastName || ''));
+        break;
+      case 'name_desc':
+        sorted.sort((a, b) => (b.lastName || '').localeCompare(a.lastName || ''));
+        break;
+      case 'class_asc':
+        sorted.sort((a, b) => {
+          const classA = classes.find(c => c.id === a.classId)?.name || '';
+          const classB = classes.find(c => c.id === b.classId)?.name || '';
+          return classA.localeCompare(classB);
+        });
+        break;
+      case 'class_desc':
+        sorted.sort((a, b) => {
+          const classA = classes.find(c => c.id === a.classId)?.name || '';
+          const classB = classes.find(c => c.id === b.classId)?.name || '';
+          return classB.localeCompare(classA);
+        });
+        break;
+      case 'age_asc':
+        // Plus jeune au plus vieux (date de naissance plus grande -> plus jeune)
+        sorted.sort((a, b) => {
+          const dateA = a.dateOfBirth ? new Date(a.dateOfBirth).getTime() : 0;
+          const dateB = b.dateOfBirth ? new Date(b.dateOfBirth).getTime() : 0;
+          return dateB - dateA;
+        });
+        break;
+      case 'age_desc':
+        sorted.sort((a, b) => {
+          const dateA = a.dateOfBirth ? new Date(a.dateOfBirth).getTime() : 0;
+          const dateB = b.dateOfBirth ? new Date(b.dateOfBirth).getTime() : 0;
+          return dateA - dateB;
+        });
+        break;
+      case 'gender_asc':
+        sorted.sort((a, b) => (a.gender || '').localeCompare(b.gender || ''));
+        break;
+      case 'gender_desc':
+        sorted.sort((a, b) => (b.gender || '').localeCompare(a.gender || ''));
+        break;
+    }
+    return sorted;
+  }, [studentsToShow, sortBy, classes]);
 
   const stats = useMemo(() => {
     const listToUse = debouncedSearchTerm || selectedClass !== 'all' ? filteredActiveStudents : activeStudents;
@@ -252,7 +308,6 @@ export default function StudentsPage() {
   }
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [selectedCycle, setSelectedCycle] = useState('all');
 
   const handlePrint = () => {
     window.print();
@@ -274,12 +329,11 @@ export default function StudentsPage() {
       toast({ variant: 'destructive', title: 'Erreur', description: 'Erreur lors de la génération du PDF.' });
     }
   };
-
   const loading = schoolLoading || studentsLoading || classesLoading || feesLoading || niveauxLoading || userLoading || cyclesLoading;
 
   return (
-    <div className="p-4 md:p-6 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+    <div className="p-4 md:p-6 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 print:m-0 print:p-0 print:w-full">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 print:hidden">
         <div className="space-y-1">
           <div className="flex items-center gap-2 mb-1">
              <span className="px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest border border-indigo-200 dark:border-indigo-800">
@@ -322,9 +376,11 @@ export default function StudentsPage() {
         </div>
       </div>
 
-      <StudentsStatsCards stats={stats} isLoading={loading} />
+      <div className="print:hidden">
+        <StudentsStatsCards stats={stats} isLoading={loading} />
+      </div>
 
-      <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-white/40 dark:border-slate-800/40 p-4 rounded-xl shadow-sm flex flex-col md:flex-row gap-4 items-end">
+      <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-white/40 dark:border-slate-800/40 p-4 rounded-xl shadow-sm flex flex-col md:flex-row gap-4 items-end print:hidden">
         <div className="flex-1 w-full space-y-2">
           <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Recherche rapide</label>
           <div className="relative group">
@@ -339,7 +395,7 @@ export default function StudentsPage() {
         </div>
         <div className="w-full md:w-[150px] space-y-2">
           <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Année Scolaire</label>
-          <Select value={effectiveAcademicYear} onValueChange={setSelectedAcademicYear}>
+          <Select value={effectiveAcademicYear} onValueChange={(val) => startTransition(() => setSelectedAcademicYear(val))}>
             <SelectTrigger className="h-12 bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800/50 rounded-xl focus:ring-indigo-500 text-indigo-700 dark:text-indigo-300 font-bold">
               <Calendar className="mr-2 h-4 w-4 text-indigo-500" />
               <SelectValue placeholder="Année" />
@@ -353,7 +409,7 @@ export default function StudentsPage() {
         </div>
         <div className="w-full md:w-[200px] space-y-2">
           <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Filtrer par Cycle</label>
-          <Select value={selectedCycle} onValueChange={setSelectedCycle}>
+          <Select value={selectedCycle} onValueChange={(val) => startTransition(() => setSelectedCycle(val))}>
             <SelectTrigger className="h-12 bg-white/50 dark:bg-slate-800/50 border-white/60 dark:border-slate-700/60 rounded-xl focus:ring-indigo-500">
               <SelectValue placeholder="Tous les cycles" />
             </SelectTrigger>
@@ -367,7 +423,7 @@ export default function StudentsPage() {
         </div>
         <div className="w-full md:w-[200px] space-y-2">
           <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Filtrer par Classe</label>
-          <Select value={selectedClass} onValueChange={setSelectedClass}>
+          <Select value={selectedClass} onValueChange={(val) => startTransition(() => setSelectedClass(val))}>
             <SelectTrigger className="h-12 bg-white/50 dark:bg-slate-800/50 border-white/60 dark:border-slate-700/60 rounded-xl focus:ring-indigo-500">
               <SelectValue placeholder="Toutes les classes" />
             </SelectTrigger>
@@ -377,11 +433,30 @@ export default function StudentsPage() {
             </SelectContent>
           </Select>
         </div>
+        <div className="w-full md:w-[200px] space-y-2">
+          <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Trier par</label>
+          <Select value={sortBy} onValueChange={(val) => startTransition(() => setSortBy(val))}>
+            <SelectTrigger className="h-12 bg-white/50 dark:bg-slate-800/50 border-white/60 dark:border-slate-700/60 rounded-xl focus:ring-indigo-500">
+              <ArrowUpDown className="mr-2 h-4 w-4 text-slate-400" />
+              <SelectValue placeholder="Trier par..." />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-white/40">
+              <SelectItem value="name_asc">Nom (A-Z)</SelectItem>
+              <SelectItem value="name_desc">Nom (Z-A)</SelectItem>
+              <SelectItem value="class_asc">Classe (A-Z)</SelectItem>
+              <SelectItem value="class_desc">Classe (Z-A)</SelectItem>
+              <SelectItem value="age_asc">Âge (Plus jeune)</SelectItem>
+              <SelectItem value="age_desc">Âge (Plus vieux)</SelectItem>
+              <SelectItem value="gender_asc">Sexe (A-Z)</SelectItem>
+              <SelectItem value="gender_desc">Sexe (Z-A)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 h-12">
           <Button
             variant={viewMode === 'list' ? 'secondary' : 'ghost'}
             size="icon"
-            onClick={() => setViewMode('list')}
+            onClick={() => startTransition(() => setViewMode('list'))}
             className={cn("rounded-xl transition-all", viewMode === 'list' && "bg-white dark:bg-slate-700 shadow-sm shadow-slate-200/50")}
           >
             <List className="h-4 w-4" />
@@ -389,7 +464,7 @@ export default function StudentsPage() {
           <Button
             variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
             size="icon"
-            onClick={() => setViewMode('grid')}
+            onClick={() => startTransition(() => setViewMode('grid'))}
             className={cn("rounded-xl transition-all", viewMode === 'grid' && "bg-white dark:bg-slate-700 shadow-sm shadow-slate-200/50")}
           >
             <LayoutGrid className="h-4 w-4" />
@@ -397,10 +472,10 @@ export default function StudentsPage() {
         </div>
       </div>
 
-      <Card className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/40 dark:border-slate-800/40 shadow-xl shadow-slate-200/50 rounded-xl overflow-hidden">
+      <Card className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/40 dark:border-slate-800/40 shadow-xl shadow-slate-200/50 rounded-xl overflow-hidden print:shadow-none print:border-none print:bg-transparent print:m-0 print:p-0">
         <CardContent className="p-0">
           <Tabs value={selectedStatus} onValueChange={setSelectedStatus} className="w-full">
-            <div className="px-6 pt-4">
+            <div className="px-6 pt-4 print:hidden">
               <TabsList className="bg-slate-100 dark:bg-slate-800/50 p-1 rounded-xl h-auto w-auto">
                 <TabsTrigger value="active" className="rounded-lg px-6 py-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm font-bold">Actifs ({filteredActiveStudents.length})</TabsTrigger>
                 <TabsTrigger value="archived" className="rounded-lg px-6 py-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm font-bold">Archives ({archivedStudents.length})</TabsTrigger>
@@ -410,7 +485,7 @@ export default function StudentsPage() {
             <TabsContent value="active" className="mt-6 focus-visible:ring-0">
               {viewMode === 'list' ? (
                 <StudentsTable
-                  students={studentsToShow}
+                  students={sortedStudentsToShow}
                   isLoading={loading}
                   canManageUsers={canManageUsers}
                   actionType="active"
@@ -421,7 +496,7 @@ export default function StudentsPage() {
               ) : (
                 <div className="p-4 md:p-6">
                   <StudentsGrid
-                    students={studentsToShow}
+                    students={sortedStudentsToShow}
                     isLoading={loading}
                     actionType="active"
                     onEdit={handleOpenEditDialog}
@@ -435,7 +510,7 @@ export default function StudentsPage() {
             <TabsContent value="archived" className="mt-6 focus-visible:ring-0">
               {viewMode === 'list' ? (
                 <StudentsTable
-                  students={studentsToShow}
+                  students={sortedStudentsToShow}
                   isLoading={loading}
                   canManageUsers={canManageUsers}
                   actionType="archived"
@@ -446,7 +521,7 @@ export default function StudentsPage() {
               ) : (
                 <div className="p-4 md:p-6">
                   <StudentsGrid
-                    students={studentsToShow}
+                    students={sortedStudentsToShow}
                     isLoading={loading}
                     actionType="archived"
                     onEdit={handleOpenEditDialog}

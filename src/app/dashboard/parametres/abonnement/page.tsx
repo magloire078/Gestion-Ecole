@@ -264,17 +264,12 @@ export default function SubscriptionPage() {
                 </Card>
             )}
 
-            <motion.div
-                className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-            >
+            <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
                 {SUBSCRIPTION_PLANS.map(plan => {
                     const current = isCurrentPlan(plan.name);
                     const blockReason = !current ? downgradeBlockReason(plan.name as PlanName) : null;
                     return (
-                        <motion.div key={plan.name} variants={itemVariants}>
+                        <div key={plan.name}>
                             <Card className={cn("flex flex-col h-full transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl", current && "border-2 border-primary shadow-2xl scale-[1.02]")}>
                                 <CardHeader className="text-center">
                                     <CardTitle className="text-2xl flex items-center justify-center gap-2">
@@ -346,10 +341,10 @@ export default function SubscriptionPage() {
                                     )}
                                 </CardFooter>
                             </Card>
-                        </motion.div>
+                        </div>
                     )
                 })}
-            </motion.div>
+            </div>
             {error && (
                 <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />

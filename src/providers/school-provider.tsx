@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo } from 'react';
 import { useUser, useFirestore } from '@/firebase';
 import { doc, onSnapshot, serverTimestamp, updateDoc as firestoreUpdateDoc, FirestoreError, DocumentData, getDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
@@ -128,7 +128,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
         }
     }, [authSchoolId, firestore]);
 
-    const value = {
+    const value = useMemo(() => ({
         schoolId: authSchoolId,
         schoolData,
         schoolName: schoolData?.name,
@@ -142,7 +142,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
         error,
         updateSchoolData,
         reloadUser
-    };
+    }), [authSchoolId, schoolData, userLoading, loading, loadingTimeout, error, updateSchoolData, reloadUser]);
 
     return <SchoolContext.Provider value={value}>{children}</SchoolContext.Provider>;
 }

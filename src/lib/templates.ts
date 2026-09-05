@@ -41,7 +41,7 @@ export const SCHOOL_TEMPLATES: Record<string, SchoolTemplate> = {
     ],
     niveaux: {
       "Enseignement Préscolaire": ["Petite Section", "Moyenne Section", "Grande Section"],
-      "Enseignement Primaire": ["CP1", "CP2", "CE1", "CE2", "CM1", "CM2"],
+      "Enseignement Primaire": ["CPU", "CP1", "CP2", "CE1", "CE2", "CM1", "CM2"],
       "Enseignement Secondaire - Premier Cycle (Collège)": ["6ème", "5ème", "4ème", "3ème"],
       "Enseignement Secondaire - Deuxième Cycle (Lycée)": ["Seconde A", "Seconde C", "Première A", "Première C", "Première D", "Terminale A", "Terminale C", "Terminale D"],
       "Enseignement Technique et Professionnel (BT)": [

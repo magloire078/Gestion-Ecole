@@ -18,8 +18,9 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useState, useMemo, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Wallet, Sparkles, Tag, Receipt, Loader2, Paperclip, ExternalLink, Download } from 'lucide-react';
+import { Wallet, Sparkles, Tag, Receipt, Loader2, Paperclip, ExternalLink, Download, MessageCircle } from 'lucide-react';
 import type { student as Student, payment as Payment } from '@/lib/data-types';
+import { ReminderService } from '@/services/reminder-service';
 import { PaymentForm, type PaymentFormValues } from './payment-form';
 import { formatCurrency } from '@/lib/currency-utils';
 import { resolveAcademicYearForWrite, filterByAcademicYear } from '@/lib/academic-year-utils';
@@ -85,6 +86,19 @@ export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTab
         setIsReceiptOpen(true);
     };
 
+    const handleWhatsAppReminder = () => {
+        try {
+            const url = ReminderService.generateWhatsAppPaymentReminder(student, schoolData?.name || 'Notre École');
+            window.open(url, '_blank');
+        } catch (error: any) {
+            toast({
+                variant: "destructive",
+                title: "Impossible de relancer",
+                description: error.message || "Erreur lors de la génération du lien WhatsApp."
+            });
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -103,8 +117,20 @@ export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTab
                             <Card className="bg-muted/50 p-3 text-xs"><CardDescription className="flex items-start gap-2"><Tag className="h-4 w-4 mt-0.5 shrink-0" /><div><strong>Motif de la remise:</strong><p>{student.discountReason || 'Non spécifié'}</p></div></CardDescription></Card>
                         )}
                     </CardContent>
-                    <CardFooter>
-                        <Button className="w-full" onClick={() => setIsPaymentDialogOpen(true)}>Enregistrer un paiement</Button>
+                    <CardFooter className="flex flex-col gap-2">
+                        <div className="flex w-full gap-2">
+                            <Button variant="outline" className="w-1/2 text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => BillingService.generateInvoicePDF(schoolData as any, student, paymentHistory, schoolData?.mainLogoUrl)}>
+                                <Download className="mr-2 h-4 w-4" /> Facture
+                            </Button>
+                            <Button className="w-1/2 bg-blue-600 hover:bg-blue-700" onClick={() => setIsPaymentDialogOpen(true)}>
+                                Enregistrer
+                            </Button>
+                        </div>
+                        {(student.amountDue || 0) > 0 && (student.parent1Contact || student.parent2Contact) && (
+                            <Button variant="outline" className="w-full text-emerald-600 border-emerald-200 hover:bg-emerald-50 bg-emerald-50/50" onClick={handleWhatsAppReminder}>
+                                <MessageCircle className="mr-2 h-4 w-4" /> Relancer par WhatsApp
+                            </Button>
+                        )}
                     </CardFooter>
                 </Card>
                 <Card>

@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useForm } from 'react-hook-form';
+import { Switch } from '@/components/ui/switch';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -16,10 +17,16 @@ import { useToast } from '@/hooks/use-toast';
 import { StudentService } from '@/services/student-services';
 import { ImageUploader } from '@/components/image-uploader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Upload, Loader2, CheckCircle2, User } from 'lucide-react';
+import { Upload, Loader2, CheckCircle2, User, Plus, Trash2 } from 'lucide-react';
 import type { class_type as Class, fee as Fee, niveau as Niveau } from '@/lib/data-types';
 import { getTuitionInfoForClass } from '@/lib/school-utils';
 import { formatCurrency } from '@/lib/currency-utils';
+
+const paymentSchema = z.object({
+  amount: z.string().min(1, "Requis"),
+  date: z.string(),
+  method: z.enum(['Espèce', 'Mobile Money', 'Chèque', 'Virement']),
+});
 
 const registrationModalSchema = z.object({
   // Colonne 1: Élève
@@ -41,9 +48,17 @@ const registrationModalSchema = z.object({
   
   // Colonne 3: Scolarité & Paiement
   classId: z.string().min(1, "Veuillez choisir une classe"),
+  fraisInscription: z.string().default('0'),
+  fraisScolarite: z.string().default('0'),
+  fraisAnnexe: z.string().default('0'),
+  
+  isSimplifiedMode: z.boolean().default(true),
   paymentAmount: z.string().default('0'),
   paymentMethod: z.enum(['Espèce', 'Mobile Money', 'Chèque', 'Virement']).default('Espèce'),
   paymentDate: z.string().default(() => new Date().toISOString().split('T')[0]),
+  
+  payments: z.array(paymentSchema).default([]),
+  
   notifySMS: z.boolean().default(false),
 });
 
@@ -92,15 +107,27 @@ export function RegistrationModal({
       parent1Contact: '',
       parent1Email: '',
       classId: '',
+      fraisInscription: '0',
+      fraisScolarite: '0',
+      fraisAnnexe: '0',
+      isSimplifiedMode: true,
       paymentAmount: '0',
       paymentMethod: 'Espèce',
       paymentDate: new Date().toISOString().split('T')[0],
+      payments: [{ amount: '0', date: new Date().toISOString().split('T')[0], method: 'Espèce' }],
       notifySMS: false,
     },
   });
 
   const watchedClassId = form.watch('classId');
   const watchedStatusAff = form.watch('statusAff');
+
+  const { fields: paymentFields, append: appendPayment, remove: removePayment } = useFieldArray({
+    control: form.control,
+    name: "payments",
+  });
+  const watchedSimplified = form.watch('isSimplifiedMode');
+
 
   // Détermination des frais de scolarité de la classe sélectionnée
   const classFeeInfo = useMemo(() => {
@@ -157,22 +184,26 @@ export function RegistrationModal({
       // Enregistrement de l'élève
       const newStudentId = await StudentService.createStudent(schoolId, studentData, user.uid);
 
-      // Si paiement initial supérieur à 0, on crée un versement/reçu
-      const initialPayment = parseFloat(values.paymentAmount);
-      if (initialPayment > 0) {
-        // Enregistrer la transaction sous la collection eleves/{id}/paiements
-        const paymentData = {
-          studentId: newStudentId,
-          amount: initialPayment,
-          date: values.paymentDate,
-          method: values.paymentMethod,
-          reference: `REC-${Date.now().toString().slice(-6)}`,
-          academicYear: currentYear,
-          notes: 'Paiement initial lors de l\'inscription',
-          createdAt: serverTimestamp(),
-        };
-        const paymentRef = doc(collection(firestore, `ecoles/${schoolId}/eleves/${newStudentId}/paiements`));
-        await setDoc(paymentRef, paymentData);
+      // Si paiement initial supérieur à 0, on crée un ou plusieurs versements/reçus
+      const paymentsToProcess = values.isSimplifiedMode 
+        ? [{ amount: parseFloat(values.paymentAmount), date: values.paymentDate, method: values.paymentMethod }]
+        : values.payments.map(p => ({ amount: parseFloat(p.amount), date: p.date, method: p.method }));
+
+      for (const p of paymentsToProcess) {
+        if (p.amount > 0) {
+          const paymentData = {
+            studentId: newStudentId,
+            amount: p.amount,
+            date: p.date,
+            method: p.method,
+            reference: `REC-${Date.now().toString().slice(-6)}`,
+            academicYear: currentYear,
+            notes: 'Paiement initial lors de l\'inscription',
+            createdAt: serverTimestamp(),
+          };
+          const paymentRef = doc(collection(firestore, `ecoles/${schoolId}/eleves/${newStudentId}/paiements`));
+          await setDoc(paymentRef, paymentData);
+        }
       }
 
       toast({
@@ -206,10 +237,10 @@ export function RegistrationModal({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 bg-slate-50/50 p-2 md:p-4 rounded-[2rem]">
               
               {/* Colonne 1 : Saisie Administrative de l'Élève */}
-              <div className="space-y-4 border-r lg:pr-8 border-slate-100">
+              <div className="space-y-4 bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-slate-200/60 hover:shadow-xl hover:shadow-indigo-500/10 hover:border-indigo-100 hover:-translate-y-1 transition-all duration-500">
                 <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">1. Informations Élève</h3>
                 
                 <div className="grid grid-cols-2 gap-4">
@@ -301,7 +332,7 @@ export function RegistrationModal({
               </div>
 
               {/* Colonne 2 : Contacts Parents & Téléchargement Photo */}
-              <div className="space-y-4 border-r lg:pr-8 border-slate-100">
+              <div className="space-y-4 bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-slate-200/60 hover:shadow-xl hover:shadow-indigo-500/10 hover:border-indigo-100 hover:-translate-y-1 transition-all duration-500">
                 <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">2. Parents & Contact</h3>
 
                 <div className="flex justify-center mb-4">
@@ -365,7 +396,7 @@ export function RegistrationModal({
               </div>
 
               {/* Colonne 3 : Classe & Scolarité / Règlement */}
-              <div className="space-y-4">
+              <div className="space-y-4 bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-slate-200/60 hover:shadow-xl hover:shadow-indigo-500/10 hover:border-indigo-100 hover:-translate-y-1 transition-all duration-500">
                 <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">3. Classe & Paiement</h3>
 
                 <FormField control={form.control} name="classId" render={({ field }) => (
@@ -381,49 +412,133 @@ export function RegistrationModal({
                   </FormItem>
                 )} />
 
-                <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-2">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-slate-500 font-medium">Scolarité totale :</span>
+                <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-4">
+                  <div className="flex justify-between items-center text-sm border-b pb-2">
+                    <span className="text-slate-500 font-black text-xs uppercase tracking-widest">Montant à payer par rubrique</span>
                     <span className="font-mono font-bold text-slate-900">{formatCurrency(classFeeInfo)}</span>
                   </div>
-                  <div className="flex justify-between items-center text-xs border-t pt-2">
-                    <span className="text-slate-400 font-medium">Type :</span>
-                    <span className="text-slate-600 font-bold uppercase tracking-wider">{watchedStatusAff}</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    <FormField control={form.control} name="fraisInscription" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] uppercase text-slate-400 font-bold">Inscription</FormLabel>
+                        <FormControl><Input type="number" className="rounded-lg font-mono text-xs h-8" {...field} /></FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="fraisScolarite" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] uppercase text-slate-400 font-bold">Scolarité</FormLabel>
+                        <FormControl><Input type="number" className="rounded-lg font-mono text-xs h-8" {...field} /></FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="fraisAnnexe" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] uppercase text-slate-400 font-bold">Annexe</FormLabel>
+                        <FormControl><Input type="number" className="rounded-lg font-mono text-xs h-8" {...field} /></FormControl>
+                      </FormItem>
+                    )} />
                   </div>
                 </div>
 
-                <FormField control={form.control} name="paymentAmount" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs font-black uppercase tracking-widest text-slate-400">Acompte / Montant Versé (F CFA)</FormLabel>
-                    <FormControl><Input type="number" min="0" max={classFeeInfo.toString()} className="rounded-xl font-mono text-lg text-emerald-600 font-bold" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
+                <div className="pt-2">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-sm font-black text-emerald-600 flex items-center gap-2">
+                      <span className="bg-emerald-100 p-1 rounded-md">$</span> Paiements
+                    </h4>
+                    <FormField control={form.control} name="isSimplifiedMode" render={({ field }) => (
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        <FormLabel className="text-xs text-slate-500">Mode simplifié</FormLabel>
+                      </FormItem>
+                    )} />
+                  </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField control={form.control} name="paymentMethod" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs font-black uppercase tracking-widest text-slate-400">Mode Règlement</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          <SelectItem value="Espèce">Espèce</SelectItem>
-                          <SelectItem value="Mobile Money">Mobile Money</SelectItem>
-                          <SelectItem value="Chèque">Chèque</SelectItem>
-                          <SelectItem value="Virement">Virement</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-
-                  <FormField control={form.control} name="paymentDate" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs font-black uppercase tracking-widest text-slate-400">Date Règlement</FormLabel>
-                      <FormControl><Input type="date" className="rounded-xl" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+                  {watchedSimplified ? (
+                    <div className="grid grid-cols-12 gap-2 bg-emerald-50/50 p-2 rounded-xl border border-emerald-100">
+                      <div className="col-span-4">
+                        <FormField control={form.control} name="paymentAmount" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-[10px] font-bold uppercase text-slate-400">Montant</FormLabel>
+                            <FormControl><Input type="number" min="0" className="rounded-lg font-mono text-xs h-8 bg-white" {...field} /></FormControl>
+                          </FormItem>
+                        )} />
+                      </div>
+                      <div className="col-span-4">
+                        <FormField control={form.control} name="paymentDate" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-[10px] font-bold uppercase text-slate-400">Date</FormLabel>
+                            <FormControl><Input type="date" className="rounded-lg text-xs h-8 bg-white" {...field} /></FormControl>
+                          </FormItem>
+                        )} />
+                      </div>
+                      <div className="col-span-4">
+                        <FormField control={form.control} name="paymentMethod" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-[10px] font-bold uppercase text-slate-400">Mode</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl><SelectTrigger className="rounded-lg h-8 text-xs bg-white"><SelectValue /></SelectTrigger></FormControl>
+                              <SelectContent>
+                                <SelectItem value="Espèce">Espèces</SelectItem>
+                                <SelectItem value="Mobile Money">Mobile M.</SelectItem>
+                                <SelectItem value="Chèque">Chèque</SelectItem>
+                                <SelectItem value="Virement">Virement</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        )} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-12 gap-2 px-2">
+                        <div className="col-span-4 text-[10px] font-bold uppercase text-slate-400">Montant</div>
+                        <div className="col-span-4 text-[10px] font-bold uppercase text-slate-400">Date</div>
+                        <div className="col-span-3 text-[10px] font-bold uppercase text-slate-400">Mode</div>
+                      </div>
+                      {paymentFields.map((field, index) => (
+                        <div key={field.id} className="grid grid-cols-12 gap-2 items-center bg-emerald-50/30 p-2 rounded-xl border border-emerald-100/50">
+                          <div className="col-span-4">
+                            <FormField control={form.control} name={`payments.${index}.amount`} render={({ field }) => (
+                              <FormItem><FormControl><Input type="number" className="rounded-lg font-mono text-xs h-8 bg-white" {...field} /></FormControl></FormItem>
+                            )} />
+                          </div>
+                          <div className="col-span-4">
+                            <FormField control={form.control} name={`payments.${index}.date`} render={({ field }) => (
+                              <FormItem><FormControl><Input type="date" className="rounded-lg text-xs h-8 bg-white" {...field} /></FormControl></FormItem>
+                            )} />
+                          </div>
+                          <div className="col-span-3">
+                            <FormField control={form.control} name={`payments.${index}.method`} render={({ field }) => (
+                              <FormItem>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl><SelectTrigger className="rounded-lg h-8 text-xs bg-white px-2"><SelectValue /></SelectTrigger></FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="Espèce">Espèces</SelectItem>
+                                    <SelectItem value="Mobile Money">Mobile M.</SelectItem>
+                                    <SelectItem value="Chèque">Chèque</SelectItem>
+                                    <SelectItem value="Virement">Virement</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormItem>
+                            )} />
+                          </div>
+                          <div className="col-span-1 flex justify-center">
+                            <Button type="button" variant="ghost" size="icon" onClick={() => removePayment(index)} className="h-6 w-6 text-rose-500 hover:bg-rose-50 rounded-full">
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => appendPayment({ amount: '0', date: new Date().toISOString().split('T')[0], method: 'Espèce' })}
+                        className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 w-full mt-2 text-xs h-8"
+                      >
+                        <Plus className="h-3 w-3 mr-1" /> Ajouter un paiement
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <FormField control={form.control} name="notifySMS" render={({ field }) => (

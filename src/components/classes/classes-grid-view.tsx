@@ -14,7 +14,7 @@ import { Users, User, MapPin, BookOpen, MoreVertical, Edit } from 'lucide-react'
 import Link from 'next/link';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { classe as Classe, staff as Staff } from '@/lib/data-types';
+import type { classe as Classe, staff as Staff, cycle as Cycle } from '@/lib/data-types';
 import { useUser } from '@/firebase';
 
 interface ClassCardProps {
@@ -106,9 +106,10 @@ interface ClassesGridViewProps {
   cycleId: string;
   searchQuery: string;
   onEdit: (classe: Classe & { id: string }) => void;
+  cycles: (Cycle & { id: string })[];
 }
 
-export function ClassesGridView({ cycleId, searchQuery, onEdit }: ClassesGridViewProps) {
+export function ClassesGridView({ cycleId, searchQuery, onEdit, cycles }: ClassesGridViewProps) {
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const firestore = useFirestore();
 
@@ -143,6 +144,24 @@ export function ClassesGridView({ cycleId, searchQuery, onEdit }: ClassesGridVie
     return classes.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
   }, [classes, searchQuery]);
 
+  const groupedClasses = useMemo(() => {
+    const groups = new Map<string, typeof filteredClasses>();
+    filteredClasses.forEach(c => {
+      const g = c.cycleId || 'unassigned';
+      if (!groups.has(g)) groups.set(g, []);
+      groups.get(g)!.push(c);
+    });
+    return Array.from(groups.entries()).map(([cId, cls]) => {
+      const cycleInfo = cycles.find(cy => cy.id === cId);
+      return {
+        cycleId: cId,
+        cycleName: cycleInfo ? cycleInfo.name : 'Sans cycle',
+        order: cycleInfo?.order ?? 999,
+        classes: cls,
+      };
+    }).sort((a, b) => a.order - b.order);
+  }, [filteredClasses, cycles]);
+
   const isLoading = schoolLoading || classesLoading || teachersLoading;
 
   if (isLoading) {
@@ -164,14 +183,21 @@ export function ClassesGridView({ cycleId, searchQuery, onEdit }: ClassesGridVie
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {filteredClasses.map((classe) => (
-        <ClassCard
-          key={classe.id}
-          classe={classe}
-          teacherName={classe.mainTeacherId ? teacherMap.get(classe.mainTeacherId) : undefined}
-          onEdit={onEdit}
-        />
+    <div className="space-y-8">
+      {groupedClasses.map(group => (
+        <div key={group.cycleId} className="space-y-4">
+          <h3 className="text-lg font-bold text-slate-900 border-b pb-2">{group.cycleName}</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {group.classes.map((classe) => (
+              <ClassCard
+                key={classe.id}
+                classe={classe}
+                teacherName={classe.mainTeacherId ? teacherMap.get(classe.mainTeacherId) : undefined}
+                onEdit={onEdit}
+              />
+            ))}
+          </div>
+        </div>
       ))}
     </div>
   );

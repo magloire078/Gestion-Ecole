@@ -170,12 +170,7 @@ function BillingDashboardContent() {
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="space-y-6"
-    >
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <Card className="rounded-2xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-border/60 shadow-xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-black tracking-tight text-slate-900 dark:text-white">
@@ -339,7 +334,7 @@ function BillingDashboardContent() {
           </Table>
         </CardContent>
       </Card>
-    </motion.div>
+    </div>
   );
 }
 

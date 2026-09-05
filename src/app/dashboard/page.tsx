@@ -11,6 +11,8 @@ import { QuickActions } from '@/components/dashboard/quick-actions';
 import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { FinanceOverview } from '@/components/dashboard/finance-overview';
 import { CalendarNotes } from '@/components/dashboard/calendar-notes';
+import { TodaysAbsences } from '@/components/dashboard/todays-absences';
+import { MonthlyBirthdays } from '@/components/dashboard/monthly-birthdays';
 import { useUserSession } from '@/hooks/use-user-session';
 import { BillingAlerts } from '@/components/billing-alerts';
 import { AnnouncementBanner } from '@/components/announcement-banner';
@@ -102,11 +104,11 @@ const RegularDashboard = () => {
   return (
     <div className="space-y-4">
       {/* Premium Banner with Mesh Gradient and Glassmorphism */}
-      <div className="relative w-full min-h-[170px] md:h-56 overflow-hidden rounded-2xl shadow-2xl border border-white/10 group bg-slate-950">
+      <div className="relative w-full min-h-[170px] md:h-56 overflow-hidden rounded-2xl shadow-xl border border-white/60 group bg-white/40 backdrop-blur-xl">
         {/* Animated Mesh Gradient Background */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-[#0a0b10] via-[#0f111a] to-[#0a0b10] z-0" />
-        <div className="absolute top-0 -left-16 w-96 h-96 bg-indigo-600 rounded-full mix-blend-screen filter blur-[120px] opacity-25 animate-blob" />
-        <div className="absolute bottom-0 -right-16 w-96 h-96 bg-blue-600 rounded-full mix-blend-screen filter blur-[120px] opacity-25 animate-blob animation-delay-2000" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-slate-50 via-white/50 to-slate-50 z-0" />
+        <div className="absolute top-0 -left-16 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-[120px] opacity-30 animate-blob" />
+        <div className="absolute bottom-0 -right-16 w-96 h-96 bg-slate-300 rounded-full mix-blend-multiply filter blur-[120px] opacity-30 animate-blob animation-delay-2000" />
         
         {/* Glass Content Overlay */}
         <div className="absolute inset-0 z-10 flex flex-col justify-center px-6 md:px-12 py-6 backdrop-blur-[2px]">
@@ -116,31 +118,31 @@ const RegularDashboard = () => {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="max-w-[70%] space-y-3"
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 border border-white/80 shadow-sm backdrop-blur-md">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
               </span>
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200/90">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-700">
                 Année en cours : {effectiveAcademicYear}
               </span>
             </div>
             
-            <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight drop-shadow-md">
-              Tableau de <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-blue-400 to-emerald-400">Bord</span>
+            <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight drop-shadow-sm">
+              Tableau de <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-blue-500 to-slate-800">Bord</span>
             </h1>
             
-            <p className="text-slate-300 text-sm md:text-base font-semibold max-w-xl leading-relaxed tracking-wide">
+            <p className="text-slate-600 text-sm md:text-base font-semibold max-w-xl leading-relaxed tracking-wide">
               {schoolData?.name || 'Gérez votre établissement avec une excellence technologique.'}
             </p>
 
-            <div className="inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-slate-400 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl backdrop-blur-md">
+            <div className="inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-slate-500 bg-white/60 border border-white/80 shadow-sm px-3 py-1.5 rounded-xl backdrop-blur-md">
               <div className="flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+                <Calendar className="w-3.5 h-3.5 text-blue-600" />
                 <span>{currentTime.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
               </div>
-              <span className="text-white/20">•</span>
-              <div className="tabular-nums font-mono text-indigo-300">
+              <span className="text-slate-300">•</span>
+              <div className="tabular-nums font-mono text-blue-600 font-black">
                 {currentTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </div>
             </div>
@@ -150,8 +152,8 @@ const RegularDashboard = () => {
         {/* Floating Glassmorphic Logo Container */}
         {schoolData?.mainLogoUrl && (
           <div className="absolute top-1/2 -translate-y-1/2 right-6 md:right-12 z-20 hidden sm:block transition-all duration-300 hover:scale-105">
-            <div className="p-2 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-2xl">
-              <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-xl overflow-hidden bg-white flex items-center justify-center p-1">
+            <div className="p-2 bg-white/60 backdrop-blur-md rounded-2xl border border-white/80 shadow-xl">
+              <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-xl overflow-hidden bg-white flex items-center justify-center p-1 shadow-sm">
                 <SafeImage
                   src={schoolData.mainLogoUrl}
                   alt="Logo École"
@@ -168,8 +170,8 @@ const RegularDashboard = () => {
       <div className="flex justify-end">
         <div className="w-full md:w-[200px] space-y-1">
           <Select value={effectiveAcademicYear} onValueChange={(val) => startTransition(() => setSelectedAcademicYear(val))}>
-            <SelectTrigger className="h-10 bg-white/50 dark:bg-slate-800/50 border-white/60 dark:border-slate-700/60 rounded-xl focus:ring-indigo-500 shadow-sm backdrop-blur-md">
-              <Calendar className="mr-2 h-4 w-4 text-indigo-500" />
+            <SelectTrigger className="h-10 bg-white/50 dark:bg-slate-800/50 border-white/60 dark:border-slate-700/60 rounded-xl focus:ring-blue-500 shadow-sm backdrop-blur-md">
+              <Calendar className="mr-2 h-4 w-4 text-blue-500" />
               <SelectValue placeholder="Année" />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
@@ -186,14 +188,21 @@ const RegularDashboard = () => {
       <StatCards schoolId={schoolId} academicYear={effectiveAcademicYear} />
 
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
+        {/* Left Column (Main) */}
         <div className="lg:col-span-2 flex flex-col gap-4">
           <div className="shrink-0">
             <FinanceOverview schoolId={schoolId} academicYear={effectiveAcademicYear} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 shrink-0">
+            <TodaysAbsences />
+            <MonthlyBirthdays />
           </div>
           <div className="flex-1 min-h-[400px]">
             <RecentActivity schoolId={schoolId} />
           </div>
         </div>
+        
+        {/* Right Column (Side) */}
         <div className="lg:col-span-1 flex flex-col gap-4">
           <div className="shrink-0">
             <QuickActions />

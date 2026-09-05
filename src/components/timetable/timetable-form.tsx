@@ -361,8 +361,8 @@ export function TimetableForm({ schoolId, entry, classes, teachers, subjects, on
 
                         if (durationMinutes > 0) {
                             return (
-                                <div className="mt-2 flex items-center gap-2 text-indigo-600 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 animate-in fade-in zoom-in-95 duration-300">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse" />
+                                <div className="mt-2 flex items-center gap-2 text-blue-600 bg-blue-50/50 p-3 rounded-xl border border-blue-100 animate-in fade-in zoom-in-95 duration-300">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
                                     <p className="text-xs font-black uppercase tracking-tighter">
                                         Durée totale : {hours > 0 && `${hours} heure${hours > 1 ? 's' : ''} `}{minutes > 0 && `${minutes} minute${minutes > 1 ? 's' : ''}`}
                                     </p>
@@ -387,7 +387,7 @@ export function TimetableForm({ schoolId, entry, classes, teachers, subjects, on
 
                 <DialogFooter className="pt-6 border-t border-slate-100 gap-3">
                     <Button type="button" variant="ghost" onClick={onCancel} className="h-12 px-6 rounded-xl font-bold text-slate-500 hover:bg-slate-50">Annuler</Button>
-                    <Button type="submit" disabled={isSubmitting} className="h-12 px-8 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black shadow-lg shadow-indigo-100 transition-all hover:scale-105 active:scale-95">
+                    <Button type="submit" disabled={isSubmitting} className="h-12 px-8 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black shadow-lg shadow-blue-100 transition-all hover:scale-105 active:scale-95">
                         {isSubmitting ? 'Enregistrement...' : entry ? 'Mettre à jour' : 'Confirmer la création'}
                     </Button>
                 </DialogFooter>

@@ -142,7 +142,7 @@ export function DraggableTimetableEntry({
         </p>
         
         {showClass && classInfo && (
-            <p className="text-indigo-600 font-black text-[10px] uppercase tracking-wider">
+            <p className="text-blue-600 font-black text-[10px] uppercase tracking-wider">
                 {classInfo.name}
             </p>
         )}

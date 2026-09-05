@@ -233,7 +233,7 @@ export default function DashboardLayoutContent({ children }: { children: React.R
           </div>
         </aside>
 
-        <div className={cn("flex flex-col transition-all duration-500", isNavCollapsed ? "sm:pl-20" : "sm:pl-64")}>
+        <div className={cn("flex flex-col transition-all duration-500 print:pl-0", isNavCollapsed ? "sm:pl-20" : "sm:pl-64")}>
 
           <header className={cn(
             "sticky top-0 z-40 flex h-auto py-4 pt-safe items-center justify-between gap-4 border-b border-white/5 bg-background/60 backdrop-blur-xl px-4 sm:px-6 print:hidden overflow-hidden"
@@ -293,10 +293,10 @@ export default function DashboardLayoutContent({ children }: { children: React.R
               </Breadcrumb>
 
               {schoolData?.name && (
-                <div className="hidden lg:flex items-center ml-4 px-4 py-1.5 rounded-xl bg-primary/10 border border-primary/20 shadow-sm backdrop-blur-md transition-all hover:bg-primary/15 group">
+                <div className="hidden lg:flex items-center ml-4 px-4 py-1.5 rounded-xl bg-white/40 dark:bg-slate-800/40 border border-white/60 dark:border-slate-700/60 shadow-sm backdrop-blur-md transition-all hover:bg-white/60 group">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-[#2D9CDB] leading-none group-hover:text-[#0C365A] dark:group-hover:text-primary transition-colors">Établissement Actif :</span>
-                    <span className="text-sm font-black text-[#0C365A] dark:text-white leading-none tracking-tight truncate max-w-[250px] xl:max-w-[400px]">{schoolData.name}</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 leading-none group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">Établissement Actif :</span>
+                    <span className="text-sm font-black text-slate-900 dark:text-white leading-none tracking-tight truncate max-w-[250px] xl:max-w-[400px]">{schoolData.name}</span>
                   </div>
                 </div>
               )}
@@ -363,7 +363,7 @@ export default function DashboardLayoutContent({ children }: { children: React.R
             </div>
           )}
 
-          <main className="flex-1 px-4 pt-4 sm:px-6 sm:pt-6 pb-24 lg:pb-6 print:p-0 overflow-auto mesh-gradient relative">
+          <main className="flex-1 px-4 pt-4 sm:px-6 sm:pt-6 pb-24 lg:pb-6 print:p-0 overflow-auto print:overflow-visible mesh-gradient relative print:w-full">
             <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:32px_32px] pointer-events-none" />
             <div className="mb-4 print:hidden">
               <ArchiveYearBanner />

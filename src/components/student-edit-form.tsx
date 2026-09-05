@@ -150,8 +150,16 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
       feedback: values.feedback || '',
       enrollments: updatedEnrollments,
       inscriptionYear: (startYearInt && !isNaN(startYearInt)) ? startYearInt : undefined,
+      academicYear: values.academicYear || '2024-2025',
       updatedBy: user.uid,
     };
+
+    // Remove undefined values to prevent Firestore error
+    Object.keys(updatedData).forEach(key => {
+      if ((updatedData as any)[key] === undefined) {
+        delete (updatedData as any)[key];
+      }
+    });
 
     try {
       const { StudentService } = await import('@/services/student-services');

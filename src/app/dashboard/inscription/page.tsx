@@ -22,6 +22,7 @@ import {
   Copy,
   Check,
   Printer,
+  Upload,
   X
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -409,6 +410,48 @@ export default function InscriptionDashboard() {
         <TabsContent value="inscrits" className="border-none p-0 mt-0 focus-visible:ring-0">
           <Card className="rounded-2xl border-none shadow-md overflow-hidden bg-white/70 backdrop-blur-xl">
             <CardContent className="p-0">
+              {currentStudents.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+                  <div className="h-20 w-20 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-6">
+                    <Users className="h-10 w-10" />
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight mb-2">Votre liste d&apos;élèves est vide</h3>
+                  <p className="text-slate-500 max-w-md mx-auto mb-8">
+                    Ajoutez vos premiers élèves pour démarrer la gestion des inscriptions et des paiements.
+                  </p>
+                  
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <Button 
+                      onClick={() => setIsUnitaryOpen(true)}
+                      className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white gap-2 transition-all hover:scale-105 active:scale-95 px-6"
+                    >
+                      <UserPlus className="h-4 w-4" /> Ajouter un élève
+                    </Button>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      <Button 
+                        variant="outline"
+                        onClick={() => setIsBulkOpen(true)}
+                        className="rounded-xl border-slate-200/80 hover:bg-slate-50 gap-2 transition-all hover:scale-105 active:scale-95"
+                      >
+                        <TableIcon className="h-4 w-4" /> Ajouter plusieurs
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => setIsReRegistrationOpen(true)}
+                        className="rounded-xl border-slate-200/80 hover:bg-slate-50 gap-2 transition-all hover:scale-105 active:scale-95"
+                      >
+                        <RefreshCw className="h-4 w-4" /> Réinscrire des élèves
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        className="rounded-xl border-slate-200/80 hover:bg-slate-50 gap-2 transition-all hover:scale-105 active:scale-95"
+                      >
+                        <Upload className="h-4 w-4" /> Importer des données
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
               <Table>
                 <TableHeader className="bg-slate-50/70 border-b">
                   <TableRow>
@@ -471,6 +514,7 @@ export default function InscriptionDashboard() {
                   )}
                 </TableBody>
               </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

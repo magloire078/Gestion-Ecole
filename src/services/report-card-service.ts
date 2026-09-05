@@ -264,7 +264,7 @@ export class ReportCardService {
         }
 
         // 2. School Info Section (Banner-like)
-        doc.setFillColor(12, 54, 90); // #0C365A
+        doc.setFillColor(15, 23, 42); // slate-900
         doc.rect(15, currentY, 180, 25, 'F');
         
         if (schoolLogo) {
@@ -287,7 +287,7 @@ export class ReportCardService {
         currentY += 35;
 
         // 3. Document Title
-        doc.setTextColor(12, 54, 90);
+        doc.setTextColor(15, 23, 42);
         doc.setFontSize(14);
         doc.setFont("helvetica", "bold");
         doc.text(`BULLETIN DE NOTES - ${data.term.toUpperCase()}`, pageWidth / 2, currentY, { align: 'center' });
@@ -352,7 +352,7 @@ export class ReportCardService {
             head: [headers],
             body: tableBody,
             theme: 'grid',
-            headStyles: { fillColor: [12, 54, 90], fontSize: 9, halign: 'center' },
+            headStyles: { fillColor: [15, 23, 42], textColor: 255, fontSize: 9, halign: 'center', fontStyle: 'bold' },
             bodyStyles: { fontSize: 9 },
             columnStyles: {
                 0: { cellWidth: 60 },
@@ -363,15 +363,31 @@ export class ReportCardService {
                 5: { halign: 'center' },
                 6: { halign: 'right', fontStyle: 'bold' }
             },
-            margin: { left: 15, right: 15 }
+            margin: { left: 15, right: 15 },
+            didParseCell: function(data: any) {
+                if (data.section === 'body') {
+                    // Coloration conditionnelle pour la Moyenne / 20 (colonne 2)
+                    if (data.column.index === 2) {
+                        const grade = parseFloat(data.cell.raw);
+                        if (!isNaN(grade)) {
+                            if (grade < 10) {
+                                data.cell.styles.textColor = [220, 38, 38]; // text-red-600
+                            } else if (grade >= 16) {
+                                data.cell.styles.textColor = [5, 150, 105]; // text-emerald-600
+                            }
+                        }
+                    }
+                }
+            }
         });
 
         // 6. Final Statistics & Signatures
         currentY = (doc as any).lastAutoTable.finalY + 10;
 
         // Summary Box
-        doc.setDrawColor(12, 54, 90);
-        doc.rect(pageWidth - 85, currentY, 70, 20);
+        doc.setFillColor(248, 250, 252); // slate-50
+        doc.setDrawColor(15, 23, 42); // slate-900
+        doc.rect(pageWidth - 85, currentY, 70, 20, 'FD');
         
         doc.setFontSize(10);
         doc.text(`TOTAL POINTS : ${stats.totalPoints} / ${stats.totalCoef * 20}`, pageWidth - 80, currentY + 7);

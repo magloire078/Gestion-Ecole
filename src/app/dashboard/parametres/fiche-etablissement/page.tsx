@@ -8,7 +8,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { SchoolInfoSheet } from '@/components/school-info-sheet';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Building2, AlertCircle } from 'lucide-react';
-import { motion } from 'framer-motion';
 import type { school as School } from '@/lib/data-types';
 
 export default function SchoolSheetPage() {
@@ -85,12 +84,7 @@ export default function SchoolSheetPage() {
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="space-y-6"
-    >
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
@@ -104,7 +98,7 @@ export default function SchoolSheetPage() {
       </div>
 
       <SchoolInfoSheet school={school} />
-    </motion.div>
+    </div>
   );
 }
 

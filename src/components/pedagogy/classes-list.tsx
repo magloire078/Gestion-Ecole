@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, startTransition } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -75,7 +75,7 @@ export function ClassesList({ academicYear }: ClassesListProps) {
                                 <Input placeholder="Rechercher par nom..." className="pl-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                             </div>
                             <div className="flex items-center gap-2 w-full">
-                                <Select value={selectedCycle} onValueChange={setSelectedCycle}>
+                                <Select value={selectedCycle} onValueChange={(val) => startTransition(() => setSelectedCycle(val))}>
                                     <SelectTrigger className="w-full sm:w-[180px]">
                                         <SelectValue placeholder="Filtrer par cycle" />
                                     </SelectTrigger>
@@ -85,10 +85,10 @@ export function ClassesList({ academicYear }: ClassesListProps) {
                                     </SelectContent>
                                 </Select>
                                 <div className="flex items-center gap-2">
-                                    <Button variant="outline" size="icon" onClick={() => setViewMode('list')} className={cn(viewMode === 'list' && 'bg-accent')}>
+                                    <Button variant="outline" size="icon" onClick={() => startTransition(() => setViewMode('list'))} className={cn(viewMode === 'list' && 'bg-accent')}>
                                         <List className="h-4 w-4" />
                                     </Button>
-                                    <Button variant="outline" size="icon" onClick={() => setViewMode('grid')} className={cn(viewMode === 'grid' && 'bg-accent')}>
+                                    <Button variant="outline" size="icon" onClick={() => startTransition(() => setViewMode('grid'))} className={cn(viewMode === 'grid' && 'bg-accent')}>
                                         <LayoutGrid className="h-4 w-4" />
                                     </Button>
                                 </div>
@@ -103,9 +103,9 @@ export function ClassesList({ academicYear }: ClassesListProps) {
                 </CardHeader>
                 <CardContent>
                     {viewMode === 'grid' ? (
-                        <ClassesGridView cycleId={selectedCycle} searchQuery={debouncedSearchQuery} onEdit={handleOpenForm} />
+                        <ClassesGridView cycleId={selectedCycle} searchQuery={debouncedSearchQuery} onEdit={handleOpenForm} cycles={cycles} />
                     ) : (
-                        <ClassesListView cycleId={selectedCycle} searchQuery={debouncedSearchQuery} onEdit={handleOpenForm} />
+                        <ClassesListView cycleId={selectedCycle} searchQuery={debouncedSearchQuery} onEdit={handleOpenForm} cycles={cycles} />
                     )}
                 </CardContent>
             </Card>

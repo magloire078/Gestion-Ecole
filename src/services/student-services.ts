@@ -29,6 +29,7 @@ async function checkStudentLimit(schoolId: string): Promise<string> {
         const activeStudentsQuery = query(
             collection(db, `ecoles/${schoolId}/${COLLECTION_NAME}`),
             where('status', '==', 'Actif'),
+            where('academicYear', '==', schoolData.currentAcademicYear || "2024-2025")
         );
         const countSnap = await getCountFromServer(activeStudentsQuery);
         const currentCount = countSnap.data().count;

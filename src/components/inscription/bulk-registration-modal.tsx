@@ -62,7 +62,7 @@ export function BulkRegistrationModal({
   const { user } = useUser();
   const firestore = useFirestore();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSimplifiedMode, setIsSimplifiedMode] = useState(true);
+  const [isSimplifiedMode, setIsSimplifiedMode] = useState(false);
 
   // Ligne par défaut pour initialiser le tableau
   const createEmptyRow = (): StudentRow => ({
@@ -248,10 +248,10 @@ export function BulkRegistrationModal({
                 {/* Colonnes Comptables */}
                 {!isSimplifiedMode && (
                   <>
-                    <TableHead className="w-[100px] text-xs font-black uppercase tracking-widest text-slate-400">Inscrip. (F)</TableHead>
-                    <TableHead className="w-[100px] text-xs font-black uppercase tracking-widest text-slate-400">Scolarité (F)</TableHead>
-                    <TableHead className="w-[100px] text-xs font-black uppercase tracking-widest text-slate-400">Annexes (F)</TableHead>
-                    <TableHead className="w-[110px] text-xs font-black uppercase tracking-widest text-slate-400">Acompte (F)</TableHead>
+                    <TableHead className="w-[100px] text-xs font-black uppercase tracking-widest text-slate-400">Frais Inscription</TableHead>
+                    <TableHead className="w-[100px] text-xs font-black uppercase tracking-widest text-slate-400">Frais Scolarité</TableHead>
+                    <TableHead className="w-[100px] text-xs font-black uppercase tracking-widest text-slate-400">Frais Annexe</TableHead>
+                    <TableHead className="w-[110px] text-xs font-black uppercase tracking-widest text-slate-400">1er Paiement</TableHead>
                     <TableHead className="w-[120px] text-xs font-black uppercase tracking-widest text-slate-400">Règlement</TableHead>
                   </>
                 )}

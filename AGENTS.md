@@ -17,7 +17,7 @@ Ce fichier documente les conventions du projet pour les agents IA (Claude Code, 
 ### Tokens de couleurs
 | Rôle | Classe Tailwind |
 |---|---|
-| Actions primaires | `indigo-600` |
+| Actions primaires | `blue-600` |
 | Positif / Succès | `emerald-600` |
 | Négatif / Danger | `rose-600` |
 | Titres | `slate-900` |

@@ -105,6 +105,19 @@ export default function SettingsPage() {
     }
   };
 
+  const handleRegenerateCode = async () => {
+    if (!schoolData || !schoolData.name) return;
+    try {
+      const prefix = schoolData.name.substring(0, 3).toUpperCase().replace(/\s/g, '');
+      const randomNumber = Math.floor(1000 + Math.random() * 9000);
+      const newCode = `${prefix}-${randomNumber}`;
+      await updateSchoolData({ schoolCode: newCode });
+      toast({ title: "Code régénéré !", description: `Nouveau code : ${newCode}` });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible de régénérer le code." });
+    }
+  };
+
   const handleResetAccount = async () => {
     if (!user || !user.authUser || !firestore) return;
     try {
@@ -136,7 +149,7 @@ export default function SettingsPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mt-6">
           <div className="lg:col-span-1 flex flex-col gap-6">
-            <Card className="rounded-xl border-none shadow-xl bg-gradient-to-b from-white to-neutral-50/50 backdrop-blur-md flex-1 flex flex-col">
+            <Card className="rounded-2xl bg-white/40 backdrop-blur-xl border border-white/60 shadow-xl flex-1 flex flex-col transition-all hover:shadow-2xl">
               <CardHeader className="pb-2 shrink-0">
                 <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                   <Users className="h-4 w-4" />
@@ -161,7 +174,7 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
-            <Card className="rounded-xl border-none shadow-xl bg-gradient-to-br from-red-50/50 to-white/50 backdrop-blur-md border border-red-100/50 overflow-hidden shrink-0">
+            <Card className="rounded-2xl bg-white/40 backdrop-blur-xl border border-red-100 shadow-xl overflow-hidden shrink-0 transition-all hover:shadow-2xl hover:border-red-200">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-semibold uppercase tracking-wider text-red-600 flex items-center gap-2">
                   <AlertCircle className="h-4 w-4" />
@@ -224,7 +237,7 @@ export default function SettingsPage() {
                 </div>
               </Tabs>
 
-              <div className="mt-auto flex items-center justify-between pt-6 border-t sticky bottom-6 bg-white/80 backdrop-blur-xl p-6 rounded-xl z-20 shadow-2xl border-white/50 ring-1 ring-black/5">
+              <div className="mt-auto flex items-center justify-between pt-6 border-t border-white/60 sticky bottom-6 bg-white/40 backdrop-blur-xl p-6 rounded-2xl z-20 shadow-xl">
                 <div className="hidden md:block">
                   <div className="text-sm text-muted-foreground font-semibold flex items-center gap-3">
                     <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">

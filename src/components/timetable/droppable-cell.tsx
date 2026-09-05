@@ -25,7 +25,7 @@ export function DroppableCell({ day, time, children }: DroppableCellProps) {
       ref={setNodeRef}
       className={cn(
         "p-2 align-top min-h-[120px] w-full relative transition-all duration-300 border-r border-slate-50 last:border-r-0",
-        isOver ? "bg-indigo-600/10 scale-[0.98] ring-2 ring-indigo-600/20 ring-inset z-10" : "hover:bg-white/20"
+        isOver ? "bg-blue-600/10 scale-[0.98] ring-2 ring-blue-600/20 ring-inset z-10" : "hover:bg-white/20"
       )}
     >
       {children}

@@ -53,7 +53,8 @@ import {
   Image,
   Play,
   Calculator,
-  FileDown
+  FileDown,
+  Facebook
 } from 'lucide-react';
 import type { UserProfile } from '@/lib/data-types';
 
@@ -220,6 +221,7 @@ export const NAV_LINKS: NavGroup[] = [
     links: [
       { href: '/dashboard/messagerie', label: 'Messagerie', icon: Send, permission: 'manageCommunication' },
       { href: '/dashboard/support', label: 'Support', icon: LifeBuoy },
+      { href: '/dashboard/communication/facebook', label: 'Facebook', icon: Facebook, permission: 'manageCommunication' },
     ]
   },
   {

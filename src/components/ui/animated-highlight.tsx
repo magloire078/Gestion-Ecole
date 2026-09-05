@@ -25,7 +25,7 @@ export function AnimatedHighlight({
         return (
             <div
                 className={cn(
-                    "absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#2D9CDB]/40 to-transparent z-20 pointer-events-none",
+                    "absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-600/40 to-transparent z-20 pointer-events-none",
                     className
                 )}
             />
@@ -43,7 +43,7 @@ export function AnimatedHighlight({
                 ease: "easeInOut"
             }}
             className={cn(
-                "absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#2D9CDB] to-transparent z-20 pointer-events-none",
+                "absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-600 to-transparent z-20 pointer-events-none",
                 className
             )}
         />

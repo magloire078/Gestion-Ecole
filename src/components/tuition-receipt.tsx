@@ -6,10 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Printer } from 'lucide-react';
+import { Printer, Download } from 'lucide-react';
 import { Logo } from './logo';
 import { usePrint } from '@/hooks/use-print';
 import { formatCurrency } from '@/lib/currency-utils';
+import { TuitionReceiptService } from '@/services/tuition-receipt-service';
+import { useSchoolData } from '@/hooks/use-school-data';
 
 export interface ReceiptData {
   schoolName: string;
@@ -33,10 +35,21 @@ export const TuitionReceipt: React.FC<TuitionReceiptProps> = ({ receiptData }) =
   const receiptRef = useRef<HTMLDivElement>(null);
   const handlePrint = usePrint(`Recu_${receiptData.studentMatricule}`);
 
+  const { schoolData } = useSchoolData();
+
   const onPrintClick = () => {
       if (receiptRef.current) {
           handlePrint(receiptRef.current.innerHTML);
       }
+  };
+
+  const handleDownloadPDF = () => {
+      TuitionReceiptService.generateReceiptPDF({
+          ...receiptData,
+          schoolLogo: schoolData?.mainLogoUrl,
+          receiptNumber: `REC-${format(receiptData.date, 'yyyyMMdd')}-${receiptData.studentMatricule?.substring(0,4) || '0000'}`,
+          paymentMethod: receiptData.paymentMethod || 'Espèces'
+      });
   };
 
   return (
@@ -105,10 +118,14 @@ export const TuitionReceipt: React.FC<TuitionReceiptProps> = ({ receiptData }) =
                 <p className="text-[10px] text-slate-400 font-medium italic mt-4">Document confidentiel généré par le système de gestion scolaire de GèreEcole</p>
             </div>
         </div>
-        <div className="mt-6 flex justify-end no-print">
+        <div className="mt-6 flex justify-end gap-2 no-print">
+            <Button variant="outline" onClick={handleDownloadPDF} className="text-blue-600 border-blue-200 hover:bg-blue-50">
+                <Download className="mr-2 h-4 w-4" />
+                Télécharger PDF
+            </Button>
             <Button onClick={onPrintClick}>
                 <Printer className="mr-2 h-4 w-4" />
-                Imprimer le Reçu
+                Imprimer
             </Button>
         </div>
     </div>

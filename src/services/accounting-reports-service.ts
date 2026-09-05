@@ -85,7 +85,7 @@ export class AccountingReportsService {
             body: tableBody,
             theme: 'grid',
             headStyles: { 
-                fillColor: [79, 70, 229], // Indigo 600
+                fillColor: [37, 99, 235], // Blue 600
                 fontSize: 9, 
                 halign: 'center',
                 fontStyle: 'bold',

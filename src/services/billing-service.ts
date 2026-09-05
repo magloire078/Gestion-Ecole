@@ -5,6 +5,7 @@ import 'jspdf-autotable';
 import { getCountryByCode, CountryCode } from '@/lib/countries-data';
 import { student as Student, school as School, payment as Payment } from '@/lib/data-types';
 import { formatCurrency } from '@/lib/currency-utils';
+import { format } from 'date-fns';
 
 // Extension pour TypeScript
 declare module 'jspdf' {
@@ -48,8 +49,8 @@ export class BillingService {
             currentY = currentY + 20;
         }
 
-        // 2. Bannière de l'École
-        doc.setFillColor(12, 54, 90); // #0C365A
+        // 2. Bannière de l'École (Couleur Hyper-Premium Blue-600)
+        doc.setFillColor(37, 99, 235); // #2563EB
         doc.rect(15, currentY, 180, 25, 'F');
         
         if (schoolLogo) {
@@ -72,7 +73,7 @@ export class BillingService {
         currentY += 40;
 
         // 3. Titre du Document & Date
-        doc.setTextColor(12, 54, 90);
+        doc.setTextColor(37, 99, 235);
         doc.setFontSize(18);
         doc.setFont("helvetica", "bold");
         doc.text("REÇU DE PAIEMENT", pageWidth / 2, currentY, { align: 'center' });
@@ -90,7 +91,7 @@ export class BillingService {
         doc.setFillColor(249, 250, 251);
         doc.roundedRect(15, currentY, 180, 35, 3, 3, 'FD');
         
-        doc.setTextColor(12, 54, 90);
+        doc.setTextColor(37, 99, 235);
         doc.setFontSize(9);
         doc.setFont("helvetica", "bold");
         doc.text("ÉLÈVE", 20, currentY + 8);
@@ -116,7 +117,7 @@ export class BillingService {
                 [payment.description || "Paiement frais de scolarité", formatCurrency(payment.amount)],
             ],
             theme: 'grid',
-            headStyles: { fillColor: [12, 54, 90], fontSize: 10, halign: 'center' },
+            headStyles: { fillColor: [37, 99, 235], fontSize: 10, halign: 'center' },
             bodyStyles: { fontSize: 11, minCellHeight: 15 },
             columnStyles: {
                 0: { cellWidth: 130 },
@@ -163,7 +164,7 @@ export class BillingService {
     /**
      * Génère une facture globale (Bilan Personnel) pour un élève
      */
-    static generateInVoicePDF(
+    static generateInvoicePDF(
         school: School,
         student: Student,
         payments: Payment[],
@@ -171,13 +172,181 @@ export class BillingService {
     ) {
         const doc = new jsPDF();
         const pageWidth = 210;
+        const country = school.country ? getCountryByCode(school.country as CountryCode) : null;
         let currentY = 15;
 
-        // -- Similaire à Receipt mais avec la liste des paiements --
-        // (Pour gagner du temps j'implémente d'abord le reçu qui est le plus urgent)
+        // 1. En-tête Officiel National
+        if (country) {
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "bold");
+            
+            // Gauche : Pays & Devise
+            doc.text(country.officialName, 15, currentY);
+            doc.setFont("helvetica", "italic");
+            doc.setFontSize(8);
+            doc.text(country.motto, 15, currentY + 5);
+            
+            // Droite : Ministère
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(8);
+            const ministryLines = doc.splitTextToSize(country.ministryName, 70);
+            doc.text(ministryLines, pageWidth - 15, currentY, { align: 'right' });
+            
+            currentY = currentY + 20;
+        }
+
+        // 2. Bannière de l'École
+        doc.setFillColor(37, 99, 235); // Blue-600
+        doc.rect(15, currentY, 180, 25, 'F');
         
-        // Header... 
-        // Table of all installments...
-        // Summary of total paid vs total due...
+        if (schoolLogo) {
+            try {
+                doc.addImage(schoolLogo, 'PNG', 20, currentY + 2, 20, 20);
+            } catch (e) {
+                console.error("Error adding logo:", e);
+            }
+        }
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(16);
+        doc.setFont("helvetica", "bold");
+        doc.text(school.name.toUpperCase(), pageWidth / 2, currentY + 12, { align: 'center' });
+        
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text(school.address || "", pageWidth / 2, currentY + 19, { align: 'center' });
+
+        currentY += 40;
+
+        // 3. Titre du Document & Date
+        doc.setTextColor(37, 99, 235);
+        doc.setFontSize(18);
+        doc.setFont("helvetica", "bold");
+        doc.text("FACTURE / BILAN FINANCIER", pageWidth / 2, currentY, { align: 'center' });
+        
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Date : ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, pageWidth - 20, currentY, { align: 'right' });
+
+        currentY += 20;
+
+        // 4. Informations de l'Élève
+        doc.setDrawColor(230, 230, 230);
+        doc.setFillColor(249, 250, 251);
+        doc.roundedRect(15, currentY, 180, 25, 3, 3, 'FD');
+        
+        doc.setTextColor(37, 99, 235);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.text("INFORMATIONS DE L'ÉLÈVE", 20, currentY + 8);
+        
+        doc.setTextColor(0, 0, 0);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Nom : ${student.firstName} ${student.lastName}`, 20, currentY + 15);
+        doc.text(`Classe : ${student.class || 'N/A'}`, 110, currentY + 15);
+        doc.text(`Matricule : ${student.matricule || 'N/A'}`, 20, currentY + 20);
+
+        currentY += 35;
+
+        // 5. Récapitulatif
+        const totalDueInit = student.tuitionFee || 0;
+        const discount = student.discountAmount || 0;
+        const remaining = student.amountDue || 0;
+        const totalPaid = (totalDueInit - discount) - remaining;
+
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.text("1. RÉCAPITULATIF SCOLARITÉ", 15, currentY);
+        currentY += 5;
+
+        (doc as any).autoTable({
+            startY: currentY,
+            head: [['SCOLARITÉ', 'REMISE', 'TOTAL PAYÉ', 'RESTE À PAYER']],
+            body: [
+                [
+                    formatCurrency(totalDueInit),
+                    formatCurrency(discount),
+                    formatCurrency(totalPaid),
+                    formatCurrency(remaining)
+                ]
+            ],
+            theme: 'grid',
+            headStyles: { fillColor: [37, 99, 235], fontSize: 10, halign: 'center' },
+            bodyStyles: { fontSize: 10, halign: 'center' },
+            margin: { left: 15, right: 15 }
+        });
+
+        currentY = (doc as any).lastAutoTable.finalY + 15;
+
+        // 6. Historique des paiements
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.text("2. HISTORIQUE DES VERSEMENTS", 15, currentY);
+        currentY += 5;
+
+        const tableBody = payments
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+            .map(p => [
+                format(new Date(p.date), 'dd/MM/yyyy'),
+                p.description || 'Paiement',
+                p.method,
+                formatCurrency(p.amount)
+            ]);
+
+        if (tableBody.length === 0) {
+            tableBody.push(['', 'Aucun paiement enregistré', '', '']);
+        }
+
+        (doc as any).autoTable({
+            startY: currentY,
+            head: [['DATE', 'DESCRIPTION', 'MÉTHODE', 'MONTANT']],
+            body: tableBody,
+            theme: 'grid',
+            headStyles: { fillColor: [71, 85, 105], fontSize: 9, halign: 'center' },
+            bodyStyles: { fontSize: 9 },
+            columnStyles: {
+                0: { cellWidth: 30, halign: 'center' },
+                1: { cellWidth: 80 },
+                2: { cellWidth: 30, halign: 'center' },
+                3: { halign: 'right', fontStyle: 'bold' }
+            },
+            margin: { left: 15, right: 15 }
+        });
+
+        currentY = (doc as any).lastAutoTable.finalY + 15;
+
+        // 7. Statut global
+        doc.setDrawColor(226, 232, 240);
+        doc.setFillColor(remaining <= 0 ? 240 : 254, remaining <= 0 ? 253 : 242, remaining <= 0 ? 244 : 242);
+        doc.rect(15, currentY, 180, 20, 'FD');
+        
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(30, 41, 59);
+        doc.text("STATUT GLOBAL :", 25, currentY + 13);
+        
+        if (remaining <= 0) {
+            doc.setTextColor(22, 163, 74); // text-green-600
+            doc.text("SOLDÉ", pageWidth - 25, currentY + 13, { align: 'right' });
+        } else {
+            doc.setTextColor(220, 38, 38); // text-red-600
+            doc.text("IMPAYÉ (Solde dû)", pageWidth - 25, currentY + 13, { align: 'right' });
+        }
+
+        // 8. Bas de page
+        currentY += 35;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0, 0, 0);
+        doc.text("La Direction", 170, currentY, { align: 'center' });
+        
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "italic");
+        doc.setTextColor(100, 100, 100);
+        doc.text("Ce document est généré électroniquement.", pageWidth / 2, 285, { align: 'center' });
+
+        const fileName = `Facture_${student.lastName}_${student.firstName}.pdf`;
+        doc.save(fileName);
     }
 }

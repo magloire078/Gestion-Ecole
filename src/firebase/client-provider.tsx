@@ -2,7 +2,7 @@
 
 'use client';
 
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode, useMemo } from 'react';
 import { FirebaseApp } from 'firebase/app';
 import { Auth } from 'firebase/auth';
 import { Firestore } from 'firebase/firestore';
@@ -26,12 +26,12 @@ const FirebaseContext = createContext<FirebaseContextValue>({
 
 export function FirebaseClientProvider({ children }: { children: ReactNode }) {
   // On récupère les instances qui sont maintenant garanties d'être initialisées côté client
-  const contextValue: FirebaseContextValue = {
+  const contextValue = useMemo<FirebaseContextValue>(() => ({
     firebaseApp,
     auth: firebaseAuth,
     firestore: firebaseFirestore,
     storage: firebaseStorage,
-  };
+  }), []);
 
   return (
     <FirebaseContext.Provider value={contextValue}>

@@ -200,11 +200,11 @@ export function RecentActivity({ schoolId: propSchoolId }: RecentActivityProps) 
             transition={{ duration: 0.5, delay: 0.1 }}
             className="h-full"
         >
-            <Card className="glass-card h-full overflow-hidden relative flex flex-col">
+            <Card className="bg-white/40 backdrop-blur-xl border border-white/60 shadow-xl rounded-2xl h-full overflow-hidden relative flex flex-col">
                 <div className="absolute top-0 left-0 w-32 h-32 bg-primary/5 rounded-full -ml-16 -mt-16 blur-3xl" />
                 <CardHeader>
-                    <CardTitle className="text-xl font-bold">Activité Récente</CardTitle>
-                    <CardDescription>Derniers événements dans votre établissement.</CardDescription>
+                    <CardTitle className="text-xl font-bold text-slate-900">Activité Récente</CardTitle>
+                    <CardDescription className="text-slate-500">Derniers événements dans votre établissement.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1">
                     <div className="space-y-4 relative z-10">
@@ -247,8 +247,8 @@ export function RecentActivity({ schoolId: propSchoolId }: RecentActivityProps) 
                                             )}>
                                                 <item.icon className="h-5 w-5" />
                                             </div>
-                                            <div className="flex-1 min-w-0 bg-white/5 p-3 rounded-xl border border-transparent group-hover:border-white/10 group-hover:bg-white/10 transition-all duration-500 backdrop-blur-sm">
-                                                <p className="text-sm font-black truncate group-hover:text-primary transition-colors leading-tight">
+                                            <div className="flex-1 min-w-0 bg-white/60 p-3 rounded-xl border border-white/80 group-hover:border-blue-200 group-hover:bg-blue-50/50 transition-all duration-500 backdrop-blur-sm shadow-sm">
+                                                <p className="text-sm font-black truncate text-slate-800 group-hover:text-primary transition-colors leading-tight">
                                                     {item.content}
                                                 </p>
                                                 <div className="flex items-center gap-2 mt-1">

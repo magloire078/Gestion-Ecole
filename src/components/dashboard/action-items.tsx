@@ -79,7 +79,7 @@ export function ActionItems() {
 
     if (loading) {
         return (
-            <Card className="glass-card overflow-hidden">
+            <Card className="bg-white/40 backdrop-blur-xl border border-white/60 shadow-xl rounded-2xl overflow-hidden">
                 <CardHeader className="pb-2">
                     <Skeleton className="h-6 w-1/3 bg-white/10" />
                 </CardHeader>
@@ -112,7 +112,7 @@ export function ActionItems() {
 
     if (loading) {
         return (
-            <Card className="glass-card overflow-hidden">
+            <Card className="bg-white/40 backdrop-blur-xl border border-white/60 shadow-xl rounded-2xl overflow-hidden">
                 <CardHeader className="pb-2">
                     <Skeleton className="h-6 w-1/3 bg-white/10" />
                 </CardHeader>
@@ -134,7 +134,7 @@ export function ActionItems() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
         >
-            <Card className="glass-card relative overflow-hidden group border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 transition-all duration-500">
+            <Card className="bg-white/40 backdrop-blur-xl border border-white/60 shadow-xl rounded-2xl relative overflow-hidden group hover:bg-amber-500/10 transition-all duration-500">
                 {/* Animated urgency glow background */}
                 <div className="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 bg-amber-500/10 blur-[60px] rounded-full group-hover:bg-amber-500/20 transition-all duration-700" />
                 

@@ -167,12 +167,14 @@ export function DecisionQueue() {
             const body = await res.json().catch(() => ({}));
             if (!res.ok) {
                 toast({ variant: 'destructive', title: 'Chargement impossible', description: body.error || `HTTP ${res.status}` });
+                setPending([]);
                 return;
             }
             setPending(body.pending ?? []);
             setDecided(body.decided ?? []);
         } catch (err: any) {
             toast({ variant: 'destructive', title: 'Erreur réseau', description: err?.message });
+            setPending([]);
         } finally {
             setLoading(false);
         }

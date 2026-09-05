@@ -1,5 +1,6 @@
-﻿
+
 'use client';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 
 import { useMemo } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
@@ -21,7 +22,26 @@ interface ClassWithId extends Class { id: string; }
 interface StaffWithId extends Staff { id: string; }
 
 
-export default function DataIntegrityPage() {
+class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean, error: Error | null}> {
+    constructor(props: {children: ReactNode}) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+    static getDerivedStateFromError(error: Error) {
+        return { hasError: true, error };
+    }
+    componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+        console.error("ErrorBoundary caught error:", error, errorInfo);
+    }
+    render() {
+        if (this.state.hasError) {
+            return <div className="p-4 bg-red-100 text-red-900 rounded-md"><h1>Something went wrong.</h1><pre>{this.state.error?.message}</pre><pre>{this.state.error?.stack}</pre></div>;
+        }
+        return this.props.children; 
+    }
+}
+
+function DataIntegrityPageContent() {
     const firestore = useFirestore();
     const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
 
@@ -43,7 +63,7 @@ export default function DataIntegrityPage() {
     const isLoading = schoolLoading || studentsLoading || classesLoading || staffLoading;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-2xl font-bold">Maintenance des Données</h1>
@@ -203,6 +223,14 @@ export default function DataIntegrityPage() {
                 </TabsContent>
             </Tabs>
         </div>
+    );
+}
+
+export default function DataIntegrityPage() {
+    return (
+        <ErrorBoundary>
+            <DataIntegrityPageContent />
+        </ErrorBoundary>
     );
 }
 

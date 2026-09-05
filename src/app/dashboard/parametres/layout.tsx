@@ -15,12 +15,12 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
         </p>
       </div>
       <Separator className="my-6 opacity-50" />
-      <div className="flex flex-col space-y-4 lg:flex-row lg:space-x-12 lg:space-y-0">
-        <aside className="lg:w-1/4">
+      <div className="flex flex-col space-y-4 lg:flex-row lg:space-x-8 lg:space-y-0">
+        <aside className="lg:w-56 shrink-0">
           <SettingsSidebar />
         </aside>
-        <div className="flex-1 min-w-0 max-w-full lg:max-w-5xl">
-          <div className="rounded-xl border bg-card/50 backdrop-blur-sm p-1 md:p-6 shadow-xl shadow-primary/5">
+        <div className="flex-1 min-w-0 w-full">
+          <div className="rounded-2xl border border-white/60 bg-white/40 backdrop-blur-xl p-1 md:p-6 shadow-xl">
             {children}
           </div>
         </div>

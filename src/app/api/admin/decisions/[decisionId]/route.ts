@@ -20,8 +20,8 @@ async function requireAdmin(request: NextRequest): Promise<
         return { error: 'Invalid token', status: 401 };
     }
     const userSnap = await getAdminDb().collection('users').doc(decoded.uid).get();
-    const profile = userSnap.data()?.profile;
-    if (!profile?.isAdmin) {
+    const data = userSnap.data();
+    if (!data?.isSuperAdmin && !data?.profile?.isAdmin) {
         return { error: 'Admin access required', status: 403 };
     }
     return { uid: decoded.uid, email: decoded.email ?? null };

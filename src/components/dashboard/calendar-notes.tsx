@@ -78,12 +78,12 @@ export function CalendarNotes() {
   };
 
   return (
-    <Card className="glass-card border-white/10 bg-card/40 backdrop-blur-2xl shadow-2xl overflow-hidden relative h-full flex flex-col">
-      <div className="absolute -top-10 -right-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-[40px] pointer-events-none" />
+    <Card className="bg-white/40 backdrop-blur-xl border border-white/60 shadow-xl rounded-2xl overflow-hidden relative h-full flex flex-col">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none" />
       
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-black flex items-center gap-2">
-          <CalendarDays className="w-4 h-4 text-indigo-500" />
+        <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">
+          <CalendarDays className="w-5 h-5 text-primary" />
           Calendrier & Notes
         </CardTitle>
       </CardHeader>
@@ -109,14 +109,14 @@ export function CalendarNotes() {
           
           <Textarea
             placeholder="Prenez des notes pour cette journée..."
-            className="min-h-[100px] resize-none bg-white/5 border-white/10 rounded-xl focus-visible:ring-indigo-500 placeholder:text-muted-foreground/30 text-sm"
+            className="min-h-[100px] resize-none bg-white/5 border-white/10 rounded-xl focus-visible:ring-blue-500 placeholder:text-muted-foreground/30 text-sm"
             value={note}
             onChange={(e) => setNote(e.target.value)}
             disabled={!date || loading}
           />
           
           <Button 
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-9"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-9"
             onClick={handleSave}
             disabled={!date || saving || loading}
           >

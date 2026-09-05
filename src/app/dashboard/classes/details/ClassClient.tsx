@@ -18,6 +18,7 @@ import { formatCurrency } from '@/lib/currency-utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { ClassListReportService } from '@/services/class-list-service';
 
 function ClassDetailsSkeleton() {
     return (
@@ -43,7 +44,7 @@ export default function ClassDetailsClient() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const classId = searchParams.get('id') as string;
-    const { schoolId, loading: schoolLoading } = useSchoolData();
+    const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
     const firestore = useFirestore();
     const { toast } = useToast();
 
@@ -181,8 +182,11 @@ export default function ClassDetailsClient() {
                         {/* Tab 1: Liste des élèves */}
                         <TabsContent value="eleves" className="focus-visible:ring-0">
                             <Card className="border-none shadow-none bg-transparent">
-                                <CardHeader className="px-0 pt-0">
+                                <CardHeader className="px-0 pt-0 flex flex-row items-center justify-between">
                                     <CardTitle className="text-base font-bold text-slate-700">Registre des Élèves</CardTitle>
+                                    <Button variant="outline" size="sm" className="text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => ClassListReportService.generateClassListPDF(schoolData as any, classData, students, schoolData?.mainLogoUrl)}>
+                                        <Download className="mr-2 h-4 w-4" /> Liste PDF
+                                    </Button>
                                 </CardHeader>
                                 <CardContent className="p-0">
                                     <Table>

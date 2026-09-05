@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, Fragment } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { MoreHorizontal, Edit } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
-import type { classe as Classe } from '@/lib/data-types';
+import type { classe as Classe, cycle as Cycle } from '@/lib/data-types';
 import { useUser } from '@/firebase';
 import { cn } from '@/lib/utils';
 
@@ -21,9 +21,10 @@ interface ClassesListViewProps {
     cycleId: string;
     searchQuery: string;
     onEdit: (classe: Classe & { id: string }) => void;
+    cycles: (Cycle & { id: string })[];
 }
 
-export function ClassesListView({ cycleId, searchQuery, onEdit }: ClassesListViewProps) {
+export function ClassesListView({ cycleId, searchQuery, onEdit, cycles }: ClassesListViewProps) {
     const { schoolId, loading: schoolLoading } = useSchoolData();
     const firestore = useFirestore();
     const { user } = useUser();
@@ -46,6 +47,24 @@ export function ClassesListView({ cycleId, searchQuery, onEdit }: ClassesListVie
         if (!searchQuery) return classes;
         return classes.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
     }, [classes, searchQuery]);
+
+    const groupedClasses = useMemo(() => {
+        const groups = new Map<string, typeof filteredClasses>();
+        filteredClasses.forEach(c => {
+            const g = c.cycleId || 'unassigned';
+            if (!groups.has(g)) groups.set(g, []);
+            groups.get(g)!.push(c);
+        });
+        return Array.from(groups.entries()).map(([cId, cls]) => {
+            const cycleInfo = cycles.find(cy => cy.id === cId);
+            return {
+                cycleId: cId,
+                cycleName: cycleInfo ? cycleInfo.name : 'Sans cycle',
+                order: cycleInfo?.order ?? 999,
+                classes: cls,
+            };
+        }).sort((a, b) => a.order - b.order);
+    }, [filteredClasses, cycles]);
 
     const isLoading = schoolLoading || classesLoading;
 
@@ -74,48 +93,57 @@ export function ClassesListView({ cycleId, searchQuery, onEdit }: ClassesListVie
                                 </TableRow>
                             ))
                         ) : filteredClasses.length > 0 ? (
-                            filteredClasses.map((classe) => (
-                                <TableRow key={classe.id}>
-                                    <TableCell className="font-medium">{classe.name}</TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-1.5 font-mono text-xs">
-                                            <span className={cn(
-                                                "font-bold",
-                                                (classe.studentCount || 0) >= (classe.maxStudents || 30) ? "text-rose-600 font-extrabold" : "text-indigo-600"
-                                            )}>
-                                                {classe.studentCount || 0}
-                                            </span>
-                                            <span className="text-slate-400">/</span>
-                                            <span className="text-slate-500">{classe.maxStudents || 30}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>{classe.mainTeacherName || 'N/A'}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={classe.status === 'active' ? 'secondary' : 'outline'}>{classe.status}</Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem asChild>
-                                                    <Link href={`/dashboard/classes/details?id=${classe.id}`}>
-                                                        Voir les détails
-                                                    </Link>
-                                                </DropdownMenuItem>
-                                                {canManageClasses && (
-                                                    <>
-                                                        <DropdownMenuItem onClick={() => onEdit(classe)}>
-                                                            <Edit className="mr-2 h-4 w-4" /> Modifier
+                            groupedClasses.map(group => (
+                                <Fragment key={group.cycleId}>
+                                    <TableRow className="bg-slate-50 hover:bg-slate-50">
+                                        <TableCell colSpan={5} className="font-semibold text-slate-700 py-3">
+                                            {group.cycleName}
+                                        </TableCell>
+                                    </TableRow>
+                                    {group.classes.map((classe) => (
+                                        <TableRow key={classe.id}>
+                                            <TableCell className="font-medium">{classe.name}</TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-1.5 font-mono text-xs">
+                                                    <span className={cn(
+                                                        "font-bold",
+                                                        (classe.studentCount || 0) >= (classe.maxStudents || 30) ? "text-rose-600 font-extrabold" : "text-indigo-600"
+                                                    )}>
+                                                        {classe.studentCount || 0}
+                                                    </span>
+                                                    <span className="text-slate-400">/</span>
+                                                    <span className="text-slate-500">{classe.maxStudents || 30}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>{classe.mainTeacherName || 'N/A'}</TableCell>
+                                            <TableCell>
+                                                <Badge variant={classe.status === 'active' ? 'secondary' : 'outline'}>{classe.status}</Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem asChild>
+                                                            <Link href={`/dashboard/classes/details?id=${classe.id}`}>
+                                                                Voir les détails
+                                                            </Link>
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem className="text-destructive">Archiver</DropdownMenuItem>
-                                                    </>
-                                                )}
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
+                                                        {canManageClasses && (
+                                                            <>
+                                                                <DropdownMenuItem onClick={() => onEdit(classe)}>
+                                                                    <Edit className="mr-2 h-4 w-4" /> Modifier
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem className="text-destructive">Archiver</DropdownMenuItem>
+                                                            </>
+                                                        )}
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </Fragment>
                             ))
                         ) : (
                             <TableRow>

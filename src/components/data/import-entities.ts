@@ -11,7 +11,7 @@
  * validations et écritures sans avoir à toucher au composant pour ajouter
  * une nouvelle entité.
  */
-import { collection, serverTimestamp, addDoc } from 'firebase/firestore';
+import { collection, serverTimestamp, addDoc, doc, updateDoc } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import type { class_type, student } from '@/lib/data-types';
 
@@ -94,23 +94,57 @@ export const ENTITY_DESCRIPTORS: EntityDescriptor[] = [
         ],
         async importRow(row, ctx) {
             if (!row.firstName || !row.lastName) throw new Error('Nom ou Prénom manquant');
-            const doc = clean(row, ctx.schoolId, ctx.rowYear);
-            const dob = parseDateOfBirth(doc.dateOfBirth);
-            if (dob) doc.dateOfBirth = dob;
-            if (doc.className) {
-                const target = ctx.existingClasses.find(c =>
-                    c.name.toLowerCase().trim() === String(doc.className).toLowerCase().trim()
+            
+            const cleanMatricule = row.matricule ? String(row.matricule).trim().toLowerCase() : null;
+            const cleanFirstName = String(row.firstName).trim().toLowerCase();
+            const cleanLastName = String(row.lastName).trim().toLowerCase();
+            
+            // Recherche d'un élève existant par matricule, ou à défaut par nom/prénom
+            const existingStudent = ctx.existingStudents.find(s => {
+                if (cleanMatricule && s.matricule && String(s.matricule).trim().toLowerCase() === cleanMatricule) return true;
+                if (!cleanMatricule && s.firstName?.toLowerCase() === cleanFirstName && s.lastName?.toLowerCase() === cleanLastName) return true;
+                return false;
+            });
+
+            const docData = clean(row, ctx.schoolId, ctx.rowYear);
+            const dob = parseDateOfBirth(docData.dateOfBirth);
+            if (dob) docData.dateOfBirth = dob;
+            
+            if (docData.className) {
+                let target = ctx.existingClasses.find(c =>
+                    c.name.toLowerCase().trim() === String(docData.className).toLowerCase().trim()
                     && (!c.academicYear || c.academicYear === ctx.rowYear),
                 );
-                if (!target) throw new Error(`Classe "${doc.className}" introuvable pour ${ctx.rowYear}`);
-                doc.classId = target.id;
-                doc.class = target.name;
+                
+                if (!target) {
+                    // Fallback: chercher la classe juste par son nom (pour les imports historiques)
+                    target = ctx.existingClasses.find(c =>
+                        c.name.toLowerCase().trim() === String(docData.className).toLowerCase().trim()
+                    );
+                }
+                
+                if (!target) throw new Error(`Classe "${docData.className}" introuvable (vérifiez l'orthographe exacte)`);
+                docData.classId = target.id;
+                docData.class = target.name;
             }
-            doc.inscriptionYear = ctx.rowYear;
-            doc.status = doc.status || 'Actif';
-            doc.tuitionStatus = doc.tuitionStatus || 'Non payé';
-            doc.amountDue = Number(doc.amountDue) || 0;
-            await addDoc(collection(ctx.firestore, `ecoles/${ctx.schoolId}/eleves`), doc);
+            
+            docData.inscriptionYear = ctx.rowYear;
+            docData.status = docData.status || 'Actif';
+            docData.tuitionStatus = docData.tuitionStatus || 'Non payé';
+            docData.amountDue = Number(docData.amountDue) || 0;
+
+            if (existingStudent) {
+                // Mise à jour si l'élève existe déjà
+                // On retire createdAt pour ne pas l'écraser, mais on peut mettre un updatedAt
+                delete docData.createdAt;
+                await updateDoc(doc(ctx.firestore, `ecoles/${ctx.schoolId}/eleves/${existingStudent.id}`), {
+                    ...docData,
+                    updatedAt: serverTimestamp(),
+                });
+            } else {
+                // Création normale
+                await addDoc(collection(ctx.firestore, `ecoles/${ctx.schoolId}/eleves`), docData);
+            }
         },
     },
 

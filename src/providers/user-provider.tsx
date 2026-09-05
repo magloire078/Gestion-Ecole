@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo } from 'react';
 import { onIdTokenChanged, getAuth, User as FirebaseUser } from 'firebase/auth';
 import { useFirestore, useAuth } from '@/firebase';
 import { AppUser } from '@/lib/data-types';
@@ -136,7 +136,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }
     }, [auth, firestore, reloadUser]);
 
-    const value = {
+    const value = useMemo(() => ({
         user,
         loading,
         loadingTimeout,
@@ -145,7 +145,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         isDirector: user?.profile?.role === 'directeur',
         reloadUser,
         setActiveSchool,
-    };
+    }), [user, loading, loadingTimeout, reloadUser, setActiveSchool]);
 
     return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }
