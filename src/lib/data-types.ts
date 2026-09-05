@@ -560,6 +560,8 @@ export type subject = {
     name: string;
     code?: string;
     color?: string;
+    /** Coefficient officiel de la matière, utilisé pour pondérer la moyenne générale (distinct du coefficient d'une note individuelle). */
+    coefficient?: number;
     id?: string;
 };
 
