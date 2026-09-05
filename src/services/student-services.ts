@@ -282,6 +282,86 @@ export const StudentService = {
             throw error;
         }
     },
+    /**
+     * Met un élève à la corbeille (status "Supprimé", réversible) en
+     * synchronisant l'effectif de sa classe et les agrégats financiers —
+     * contrairement à `archiveStudent`, qui marque "Radié" (sortie
+     * définitive) : la corbeille et le retrait sont deux statuts distincts.
+     */
+    moveToTrash: async (schoolId: string, student: Student) => {
+        if (!schoolId || !student || !student.id) {
+            throw new Error("Les informations de l'école et de l'élève sont requises.");
+        }
+
+        const wasActive = ['Actif', 'En attente'].includes(student.status);
+
+        const batch = writeBatch(db);
+        const studentDocRef = doc(db, `ecoles/${schoolId}/${COLLECTION_NAME}/${student.id}`);
+
+        batch.update(studentDocRef, {
+            status: 'Supprimé',
+            updatedAt: serverTimestamp(),
+        });
+
+        if (wasActive && student.classId) {
+            const classDocRef = doc(db, `ecoles/${schoolId}/classes/${student.classId}`);
+            batch.update(classDocRef, { studentCount: increment(-1) });
+        }
+
+        if (wasActive) {
+            const statsRef = doc(db, `ecoles/${schoolId}/stats/finance`);
+            batch.set(statsRef, {
+                totalTuitionFees: increment(-(student.tuitionFee || 0)),
+                totalAmountDue: increment(-(student.amountDue || 0)),
+                studentCount: increment(-1),
+                lastUpdated: serverTimestamp()
+            }, { merge: true });
+        }
+
+        try {
+            await batch.commit();
+        } catch (error) {
+            console.error("Error moving student to trash:", error);
+            throw error;
+        }
+    },
+
+    /**
+     * Restaure un élève de la corbeille (status "Actif") en synchronisant
+     * l'effectif de classe et les agrégats financiers.
+     */
+    restoreFromTrash: async (schoolId: string, student: Student) => {
+        if (!schoolId || !student || !student.id) {
+            throw new Error("Les informations de l'école et de l'élève sont requises.");
+        }
+
+        const batch = writeBatch(db);
+        const studentDocRef = doc(db, `ecoles/${schoolId}/${COLLECTION_NAME}/${student.id}`);
+        batch.update(studentDocRef, {
+            status: 'Actif',
+            updatedAt: serverTimestamp(),
+        });
+
+        if (student.classId) {
+            const classDocRef = doc(db, `ecoles/${schoolId}/classes/${student.classId}`);
+            batch.update(classDocRef, { studentCount: increment(1) });
+        }
+
+        const statsRef = doc(db, `ecoles/${schoolId}/stats/finance`);
+        batch.set(statsRef, {
+            totalTuitionFees: increment(student.tuitionFee || 0),
+            totalAmountDue: increment(student.amountDue || 0),
+            studentCount: increment(1),
+            lastUpdated: serverTimestamp()
+        }, { merge: true });
+
+        try {
+            await batch.commit();
+        } catch (error) {
+            console.error("Error restoring student from trash:", error);
+            throw error;
+        }
+    },
 };
 
 // Legacy exports for backward compatibility
