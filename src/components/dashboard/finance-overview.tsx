@@ -41,10 +41,21 @@ export function FinanceOverview({ schoolId: propSchoolId, academicYear }: Financ
         return { totalFees, totalDue, paidPercentage };
     }, [students]);
 
-    const chartData = useMemo(() => [
-        { name: 'Encaissé', value: financeStats.totalFees - financeStats.totalDue, color: 'hsl(var(--primary))' },
-        { name: 'Solde Dû', value: financeStats.totalDue, color: 'rgba(239, 68, 68, 0.4)' },
-    ], [financeStats]);
+    const hasFeeData = financeStats.totalFees > 0;
+
+    // Un total de 0 (aucun élève inscrit pour l'année sélectionnée, ou
+    // aucune scolarité configurée) donnerait deux parts à 0 : Recharts ne
+    // dessine alors aucun anneau, laissant un grand vide autour du "100 %"
+    // par défaut — trompeur puisqu'il ne s'agit pas d'une collecte réelle.
+    const chartData = useMemo(() => {
+        if (!hasFeeData) {
+            return [{ name: 'Aucune donnée', value: 1, color: 'hsl(var(--muted))' }];
+        }
+        return [
+            { name: 'Encaissé', value: financeStats.totalFees - financeStats.totalDue, color: 'hsl(var(--primary))' },
+            { name: 'Solde Dû', value: financeStats.totalDue, color: 'rgba(239, 68, 68, 0.4)' },
+        ];
+    }, [financeStats, hasFeeData]);
 
     if (loading) {
         return (
@@ -136,8 +147,16 @@ export function FinanceOverview({ schoolId: propSchoolId, academicYear }: Financ
 
                         {/* Center Content */}
                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <span className="text-2xl font-black tracking-tighter">{financeStats.paidPercentage.toFixed(0)}%</span>
-                            <span className="text-[9px] uppercase font-black text-muted-foreground/60 leading-none">Collecté</span>
+                            {hasFeeData ? (
+                                <>
+                                    <span className="text-2xl font-black tracking-tighter">{financeStats.paidPercentage.toFixed(0)}%</span>
+                                    <span className="text-[9px] uppercase font-black text-muted-foreground/60 leading-none">Collecté</span>
+                                </>
+                            ) : (
+                                <span className="text-[10px] uppercase font-black text-muted-foreground/50 text-center px-6 leading-tight">
+                                    Aucune donnée<br />pour cette année
+                                </span>
+                            )}
                         </div>
                     </div>
 

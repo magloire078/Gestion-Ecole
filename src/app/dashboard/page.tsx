@@ -102,14 +102,16 @@ const RegularDashboard = () => {
   return (
     <div className="space-y-4">
       {/* Premium Banner with Mesh Gradient and Glassmorphism */}
-      <div className="relative w-full min-h-[170px] md:h-56 overflow-hidden rounded-2xl shadow-2xl border border-white/10 group bg-slate-950">
+      <div className="relative w-full min-h-[170px] md:min-h-[224px] overflow-hidden rounded-2xl shadow-2xl border border-white/10 group bg-slate-950">
         {/* Animated Mesh Gradient Background */}
         <div className="absolute inset-0 bg-gradient-to-tr from-[#0a0b10] via-[#0f111a] to-[#0a0b10] z-0" />
         <div className="absolute top-0 -left-16 w-96 h-96 bg-indigo-600 rounded-full mix-blend-screen filter blur-[120px] opacity-25 animate-blob" />
         <div className="absolute bottom-0 -right-16 w-96 h-96 bg-blue-600 rounded-full mix-blend-screen filter blur-[120px] opacity-25 animate-blob animation-delay-2000" />
-        
-        {/* Glass Content Overlay */}
-        <div className="absolute inset-0 z-10 flex flex-col justify-center px-6 md:px-12 py-6 backdrop-blur-[2px]">
+
+        {/* Glass Content Overlay — en flux normal (pas absolute) pour que la
+            bannière grandisse avec le contenu au lieu de le rogner quand le
+            nom de l'école ou la date font plus de 170px de haut. */}
+        <div className="relative z-10 flex flex-col justify-center min-h-[170px] md:min-h-[224px] px-6 md:px-12 py-6 backdrop-blur-[2px]">
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -181,7 +183,7 @@ const RegularDashboard = () => {
         </div>
       </div>
 
-      <BillingAlerts schoolId={schoolId} studentCount={studentCount} cycleCount={cycleCount} />
+      <BillingAlerts schoolId={schoolId} studentCount={studentCount} cycleCount={cycleCount} academicYear={effectiveAcademicYear} />
       <AnnouncementBanner />
       <StatCards schoolId={schoolId} academicYear={effectiveAcademicYear} />
 
