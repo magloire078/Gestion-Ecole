@@ -437,7 +437,18 @@ export default function AccountingPage() {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-xl font-black text-slate-900 tracking-tight">Êtes-vous sûr(e) ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. La transaction <strong>{transactionToDelete?.description}</strong> sera définitivement supprimée.
+              Cette action est irréversible. La transaction <strong>{transactionToDelete?.description}</strong> du{' '}
+              {transactionToDelete?.date && format(new Date(transactionToDelete.date), 'dd/MM/yyyy')} sera définitivement supprimée.
+              {transactionToDelete && transactionToDelete.academicYear && transactionToDelete.academicYear !== selectedYear && (
+                <span className="block mt-2 font-semibold text-amber-600">
+                  Attention : cette transaction appartient à l&apos;année scolaire {transactionToDelete.academicYear}, différente de l&apos;année actuellement affichée ({selectedYear}).
+                </span>
+              )}
+              {transactionToDelete && !transactionToDelete.academicYear && (
+                <span className="block mt-2 font-semibold text-amber-600">
+                  Attention : cette transaction n&apos;est rattachée à aucune année scolaire précise ; vérifiez sa date avant de confirmer.
+                </span>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { useStudents } from '@/hooks/use-students';
 import {
   Printer,
   Calendar,
@@ -20,8 +21,10 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { student as Student, niveau as Niveau, class_type as Class, accountingTransaction as Transaction } from '@/lib/data-types';
+import type { niveau as Niveau, accountingTransaction as Transaction, payment as Payment } from '@/lib/data-types';
 import { PointFinancierClasse } from '@/components/rapports/point-financier-classe';
+import { AccountingReportsService } from '@/services/accounting-reports-service';
+import { BillingService } from '@/services/billing-service';
 
 export default function PaymentReportsPage() {
   const firestore = useFirestore();
@@ -30,10 +33,11 @@ export default function PaymentReportsPage() {
 
   const currentYear = schoolData?.currentAcademicYear || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
 
-  // Requête des élèves (pour le rapport de balance par niveau)
-  const studentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), where('status', '==', 'Actif')) : null, [firestore, schoolId]);
-  const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
-  const students = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
+  // Élèves actifs pour l'année sélectionnée, filtrés via inscriptions_classe /
+  // enrollments[] (comme le reste de l'application) plutôt que sur le seul
+  // statut "Actif", qui ne reflète pas fidèlement l'inscription réelle pour
+  // l'année en cours.
+  const { students, loading: studentsLoading } = useStudents(schoolId, undefined, 'active', currentYear);
 
   // Requête des niveaux (pour l'affichage statistique)
   const niveauxQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [firestore, schoolId]);
@@ -89,14 +93,74 @@ export default function PaymentReportsPage() {
     }).filter(r => r.count > 0); // Ne garder que les niveaux ayant des élèves inscrits
   }, [niveaux, students]);
 
-  // Impression des reçus de clôture journalière
+  const studentNameById = useMemo(() => {
+    const map: Record<string, { name: string; className: string }> = {};
+    students.forEach(s => {
+      if (!s.id) return;
+      map[s.id] = { name: `${s.lastName} ${s.firstName}`, className: s.class || 'N/A' };
+    });
+    return map;
+  }, [students]);
+
+  // Génère le PDF de clôture journalière (grand livre du jour)
   const handlePrintDailyClosing = () => {
-    toast({ title: "Impression", description: "L'état de clôture journalière a été envoyé à l'imprimante." });
+    if (!schoolData || todayTransactions.length === 0) return;
+    AccountingReportsService.generateGrandLivrePDF(
+      schoolData as any,
+      todayTransactions,
+      `Journée du ${new Date().toLocaleDateString('fr-FR')}`,
+      "CLÔTURE DE CAISSE DU JOUR"
+    );
+    toast({ title: "Document généré", description: "L'état de clôture journalière a été téléchargé." });
   };
 
-  // Impression de la balance des restes à payer
+  // Génère le PDF de la balance des restes à payer par niveau
   const handlePrintBalanceSheet = () => {
-    toast({ title: "Impression", description: "L'état de balance des restes à payer a été généré." });
+    if (!schoolData || reportByLevel.length === 0) return;
+    AccountingReportsService.generateBalanceNiveauPDF(schoolData as any, reportByLevel, currentYear);
+    toast({ title: "Document généré", description: "La balance des restes à payer a été téléchargée." });
+  };
+
+  // Génère le PDF listant les reçus émis aujourd'hui
+  const handlePrintReceiptsList = () => {
+    if (!schoolData || todayTransactions.length === 0) return;
+    AccountingReportsService.generateReceiptsListPDF(
+      schoolData as any,
+      todayTransactions,
+      studentNameById,
+      `Journée du ${new Date().toLocaleDateString('fr-FR')}`
+    );
+    toast({ title: "Document généré", description: "La liste des reçus a été téléchargée." });
+  };
+
+  // Réimprime le reçu officiel d'une transaction donnée
+  const handleReprintReceipt = async (t: Transaction & { id: string }) => {
+    if (!schoolId || !schoolData) return;
+    if (!t.studentId) {
+      toast({ variant: "destructive", title: "Impossible", description: "Cette transaction n'est liée à aucun élève." });
+      return;
+    }
+    const student = students.find(s => s.id === t.studentId);
+    if (!student) {
+      toast({ variant: "destructive", title: "Impossible", description: "Élève introuvable." });
+      return;
+    }
+    try {
+      const paymentsSnap = await getDocs(query(
+        collection(firestore, `ecoles/${schoolId}/eleves/${t.studentId}/paiements`),
+        where('accountingTransactionId', '==', t.id),
+        limit(1)
+      ));
+      if (paymentsSnap.empty) {
+        toast({ variant: "destructive", title: "Impossible", description: "Aucun paiement lié à cette transaction n'a été trouvé." });
+        return;
+      }
+      const payment = { id: paymentsSnap.docs[0].id, ...paymentsSnap.docs[0].data() } as Payment & { id: string };
+      BillingService.generateReceiptPDF(schoolData as any, student, payment, schoolData?.mainLogoUrl);
+    } catch (error) {
+      console.error("Erreur lors de la réimpression du reçu:", error);
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible de régénérer le reçu." });
+    }
   };
 
   const isLoading = schoolLoading || studentsLoading || niveauxLoading || todayTransactionsLoading;
@@ -194,11 +258,11 @@ export default function PaymentReportsPage() {
                           <TableCell className="text-xs text-slate-600">{t.description}</TableCell>
                           <TableCell className="font-mono font-bold text-slate-900">{formatCurrency(t.amount)}</TableCell>
                           <TableCell className="text-center">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               className="text-slate-600 hover:bg-slate-50 rounded-xl h-8 w-8"
-                              onClick={() => toast({ title: "Impression", description: "Le reçu a été envoyé à l'imprimante." })}
+                              onClick={() => handleReprintReceipt(t)}
                               title="Réimprimer le reçu"
                             >
                               <Printer className="h-4 w-4" />
@@ -222,15 +286,17 @@ export default function PaymentReportsPage() {
               <p className="text-xs text-slate-500 font-medium">Bilan global des inscriptions, versements perçus et restants à recouvrer.</p>
             </div>
             <div className="flex gap-2 self-start sm:self-center">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={handlePrintBalanceSheet}
+                disabled={reportByLevel.length === 0}
                 className="rounded-xl border-slate-200/80 hover:bg-slate-50 text-slate-700 gap-2 transition-all hover:scale-105 active:scale-95"
               >
                 <FileDown className="h-4 w-4" /> Restes à Payer
               </Button>
-              <Button 
-                onClick={() => toast({ title: "Impression", description: "La liste des reçus par niveau a été envoyée." })}
+              <Button
+                onClick={handlePrintReceiptsList}
+                disabled={todayTransactions.length === 0}
                 className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white gap-2 transition-all hover:scale-105 active:scale-95"
               >
                 <Printer className="h-4 w-4" /> Liste des Reçus
