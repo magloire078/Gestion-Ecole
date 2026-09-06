@@ -8,8 +8,21 @@ import type { staff as Employe, school as OrganizationSettings } from '@/lib/dat
 import { TRANCHES_IGR } from './payroll-config';
 import { getCurrencyName } from "./currency-utils";
 
+/**
+ * Salaire de base effectif : pour un vacataire, c'est le taux horaire ×
+ * les heures effectuées, pas `baseSalary` (souvent vide/non pertinent pour
+ * ce type de contrat). Utilisé partout où la masse salariale est calculée
+ * (bulletin, paie mensuelle, graphiques RH) pour éviter qu'un vacataire
+ * apparaisse à 0 FCFA.
+ */
+export function getEffectiveBaseSalary(employee: Pick<Employe, 'contractType' | 'hourlyRate' | 'baseHours' | 'baseSalary'>): number {
+    return employee.contractType === 'Vacataire'
+        ? (employee.hourlyRate || 0) * (employee.baseHours || 0)
+        : (employee.baseSalary || 0);
+}
+
 // ====================================================================================
-// 1. DATA TYPES 
+// 1. DATA TYPES
 // ====================================================================================
 
 export type PayslipEarning = {
@@ -152,9 +165,7 @@ export async function getPayslipDetails(
     } = employee;
 
     // Calcul du salaire de base effectif
-    const effectiveBaseSalary = contractType === 'Vacataire'
-        ? hourlyRate * baseHours
-        : (employee.baseSalary || 0);
+    const effectiveBaseSalary = getEffectiveBaseSalary(employee);
 
     const seniorityInfo = calculateSeniority(employee.hireDate || '', payslipDate);
 
@@ -173,7 +184,8 @@ export async function getPayslipDetails(
         indemniteTransportImposable: { label: 'INDEMNITE DE TRANSPORT IMPOSABLE', amount: indemniteTransportImposable },
         indemniteSujetion: { label: 'INDEMNITE DE SUJETION', amount: indemniteSujetion },
         indemniteCommunication: { label: 'INDEMNITE DE COMMUNICATION', amount: indemniteCommunication },
-        indemniteRepresentation: { label: 'INDEMNITE DE REPRESENTATION', amount: indemniteResponsabilite },
+        indemniteResponsabilite: { label: 'INDEMNITE DE RESPONSABILITE', amount: indemniteResponsabilite },
+        indemniteRepresentation: { label: 'INDEMNITE DE REPRESENTATION', amount: indemniteRepresentation },
         indemniteLogement: { label: 'INDEMNITE DE LOGEMENT', amount: indemniteLogement },
     };
 

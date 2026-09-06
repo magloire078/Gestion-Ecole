@@ -462,6 +462,7 @@ export type accountingTransaction = {
     type: "Revenu" | "Dépense";
     amount: number;
     studentId?: string;
+    payrollRunId?: string;
     academicYear?: string;
 };
 
@@ -879,6 +880,8 @@ export type payrollRun = {
     status: "Terminé" | "En cours" | "Annulé";
     processedBy: string;
     processedByName?: string;
+    /** Transaction ecoles/{schoolId}/comptabilite créée pour cette paie (sortie de caisse). */
+    accountingTransactionId?: string;
 };
 
 export type payroll_payslip = {
