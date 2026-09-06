@@ -231,8 +231,21 @@ export default function StudentsPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedCycle, setSelectedCycle] = useState('all');
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    try {
+      const selectedClassName = selectedClass !== 'all' ? classes.find(c => c.id === selectedClass)?.name : undefined;
+      await StudentReportsService.generateStudentListPdf(
+        filteredByClass,
+        schoolData?.name || 'Notre École',
+        effectiveAcademicYear,
+        schoolData?.mainLogoUrl,
+        selectedClassName,
+        'print'
+      );
+    } catch (e) {
+      console.error(e);
+      toast({ variant: 'destructive', title: 'Erreur', description: "Erreur lors de la génération de l'impression." });
+    }
   };
 
   const handleExportPDF = async () => {

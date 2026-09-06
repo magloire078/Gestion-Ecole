@@ -83,7 +83,8 @@ export class StudentReportsService {
         schoolName: string,
         academicYear: string,
         logoUrl?: string,
-        className?: string
+        className?: string,
+        mode: 'save' | 'print' = 'save'
     ) {
         const doc = new jsPDF('p', 'mm', 'a4');
         const logoBase64 = logoUrl ? await this.getBase64ImageFromUrl(logoUrl) : '';
@@ -129,6 +130,13 @@ export class StudentReportsService {
         });
 
         this.addFooter(doc);
+
+        if (mode === 'print') {
+            doc.autoPrint();
+            window.open(doc.output('bloburl'), '_blank');
+            return;
+        }
+
         const fileName = `Liste_Eleves_${className ? className.replace(/\s+/g, '_') : 'Complete'}_${academicYear}.pdf`;
         doc.save(fileName);
     }
