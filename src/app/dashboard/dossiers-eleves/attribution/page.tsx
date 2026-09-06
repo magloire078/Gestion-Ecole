@@ -23,6 +23,38 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { student as Student, class_type as Class } from '@/lib/data-types';
+import { memo } from 'react';
+
+const StudentRow = memo(({ 
+  student, 
+  isSelected, 
+  onToggle 
+}: { 
+  student: Student & { id: string }, 
+  isSelected: boolean, 
+  onToggle: (id: string, checked: boolean) => void 
+}) => {
+  return (
+    <TableRow className="hover:bg-slate-50/40">
+      <TableCell>
+        <Checkbox 
+          checked={isSelected}
+          onCheckedChange={(checked) => onToggle(student.id, !!checked)}
+        />
+      </TableCell>
+      <TableCell className="font-bold text-slate-900">
+        {student.lastName} {student.firstName}
+      </TableCell>
+      <TableCell className="text-xs font-medium text-slate-600">
+        {student.class || <span className="text-amber-600 font-bold italic">Sans classe</span>}
+      </TableCell>
+      <TableCell className="text-xs text-slate-500 font-medium">
+        {student.gender === 'Masculin' ? 'M' : 'F'}
+      </TableCell>
+    </TableRow>
+  );
+});
+StudentRow.displayName = 'StudentRow';
 
 export default function ClassAssignmentPage() {
   const firestore = useFirestore();
@@ -228,23 +260,12 @@ export default function ClassAssignmentPage() {
                   </TableRow>
                 ) : (
                   filteredLeftStudents.map((s) => (
-                    <TableRow key={s.id} className="hover:bg-slate-50/40">
-                      <TableCell>
-                        <Checkbox 
-                          checked={!!selectedStudentIds[s.id]}
-                          onCheckedChange={(checked) => handleToggleSelectStudent(s.id, !!checked)}
-                        />
-                      </TableCell>
-                      <TableCell className="font-bold text-slate-900">
-                        {s.lastName} {s.firstName}
-                      </TableCell>
-                      <TableCell className="text-xs font-medium text-slate-600">
-                        {s.class || <span className="text-amber-600 font-bold italic">Sans classe</span>}
-                      </TableCell>
-                      <TableCell className="text-xs text-slate-500 font-medium">
-                        {s.gender === 'Masculin' ? 'M' : 'F'}
-                      </TableCell>
-                    </TableRow>
+                    <StudentRow 
+                      key={s.id}
+                      student={s}
+                      isSelected={!!selectedStudentIds[s.id]}
+                      onToggle={handleToggleSelectStudent}
+                    />
                   ))
                 )}
               </TableBody>

@@ -18,7 +18,7 @@ import {
   Bell
 } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, where, addDoc, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, addDoc, orderBy, limit, doc, getDoc } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -67,6 +67,23 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
     );
   }, [firestore, schoolId, todayStart, todayEnd, refreshLogs]);
 
+  const [curfewTime, setCurfewTime] = useState(new Date().getDay() >= 5 ? '23:00' : '22:00');
+  
+  useEffect(() => {
+    const fetchCurfew = async () => {
+        if (!schoolId) return;
+        try {
+            const settingsRef = doc(firestore, `ecoles/${schoolId}/parametres`, 'internat');
+            const docSnap = await getDoc(settingsRef);
+            if (docSnap.exists() && docSnap.data().curfewTime) {
+                setCurfewTime(docSnap.data().curfewTime);
+            }
+        } catch (e) {
+            console.error("Error fetching curfew time:", e);
+        }
+    };
+    fetchCurfew();
+  }, [firestore, schoolId]);
 
   const { data: buildingsData } = useCollection(buildingsQuery);
   const { data: occupantsData } = useCollection(occupantsQuery);
@@ -135,7 +152,7 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
 
         <Card>
           <CardHeader className="pb-2"><div className="flex items-center justify-between"><CardTitle className="text-sm font-medium">Couvre-feu</CardTitle><Bell className="h-4 w-4 text-muted-foreground" /></div></CardHeader>
-          <CardContent><div className="text-2xl font-bold">22:00</div><div className="text-xs text-muted-foreground mt-1">{new Date().getDay() >= 5 ? 'Week-end' : 'Semaine'}</div></CardContent>
+          <CardContent><div className="text-2xl font-bold">{curfewTime}</div><div className="text-xs text-muted-foreground mt-1">{new Date().getDay() >= 5 ? 'Week-end' : 'Semaine'}</div></CardContent>
         </Card>
       </div>
 

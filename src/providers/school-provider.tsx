@@ -113,8 +113,9 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
         if (!currentUser) throw new Error("Utilisateur non authentifié.");
 
         const schoolDocRef = doc(firestore, 'ecoles', authSchoolId);
+        const { subscription, ...safeData } = data;
         const dataToUpdate = {
-            ...data,
+            ...safeData,
             updatedAt: serverTimestamp(),
             updatedBy: currentUser.uid,
             updatedByName: currentUser.displayName,

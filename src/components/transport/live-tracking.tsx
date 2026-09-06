@@ -58,6 +58,12 @@ export function LiveTransportTracking({ schoolId }: { schoolId: string }) {
   const transportedStudents = useMemo(() => subscriptionsData?.length || 0, [subscriptionsData]);
   const activeBuses = useMemo(() => buses.filter(bus => bus.status === 'active').length, [buses]);
 
+  const punctuality = useMemo(() => {
+    if (routes.length === 0) return 'N/A';
+    const onTime = routes.filter(r => r.status === 'on_time').length;
+    return Math.round((onTime / routes.length) * 100) + '%';
+  }, [routes]);
+
   useEffect(() => {
     if (routes.length > 0 && !selectedRouteId) {
       setSelectedRouteId(routes[0].id);
@@ -76,7 +82,7 @@ export function LiveTransportTracking({ schoolId }: { schoolId: string }) {
         <StatCard title="Bus actifs" value={activeBuses} icon={BusIcon} loading={loading} />
         <StatCard title="En retard" value={routes.filter(r => r.status === 'delayed').length} icon={Clock} loading={loading} />
         <StatCard title="Élèves Transportés" value={transportedStudents} icon={Users} loading={loading} />
-        <StatCard title="Ponctualité" value="...%" icon={Percent} loading={loading} />
+        <StatCard title="Ponctualité" value={punctuality} icon={Percent} loading={loading} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

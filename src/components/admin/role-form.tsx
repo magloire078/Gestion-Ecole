@@ -6,7 +6,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useUser } from '@/firebase';
 import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
 import type { admin_role as AdminRole } from '@/lib/data-types';
 import { useToast } from '@/hooks/use-toast';
@@ -42,6 +42,7 @@ const categoryIcons: Record<string, any> = {
 
 export function RoleForm({ schoolId, role, onSave }: RoleFormProps) {
   const firestore = useFirestore();
+  const { user } = useUser();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<string>(permissionCategories[0].id);
@@ -104,6 +105,15 @@ export function RoleForm({ schoolId, role, onSave }: RoleFormProps) {
         
     try {
         await promise;
+
+        await addDoc(collection(firestore, `ecoles/${schoolId}/audit_logs`), {
+            action: role ? 'ROLE_UPDATED' : 'ROLE_CREATED',
+            details: `Le rôle "${values.name}" a été ${role ? 'modifié' : 'créé'}.`,
+            userRef: user?.uid || 'system',
+            userName: user?.displayName || 'Système',
+            timestamp: new Date().toISOString()
+        });
+
         toast({ title: `Rôle ${role ? 'modifié' : 'créé'}`, description: `Le rôle "${values.name}" a été enregistré.` });
         onSave();
     } catch(e) {

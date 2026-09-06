@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
+import { doc, setDoc, addDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import type { canteenReservation as CanteenReservation, student as Student } from '@/lib/data-types';
 import { format } from 'date-fns';
@@ -70,6 +70,22 @@ export function ReservationForm({ schoolId, students, reservation, onSave }: Res
     const dataToSave = { ...values };
 
     try {
+        const MAX_DAILY_MEALS = 500; // Constante pour la capacité max
+        
+        if (!reservation || reservation.date !== values.date) {
+            const dateQuery = query(
+                collection(firestore, `ecoles/${schoolId}/cantine_reservations`),
+                where('date', '==', values.date),
+                where('status', 'in', ['pending', 'confirmed', 'attended'])
+            );
+            const snapshot = await getDocs(dateQuery);
+            if (snapshot.size >= MAX_DAILY_MEALS) {
+                toast({ variant: 'destructive', title: 'Capacité atteinte', description: `La cantine a atteint sa limite de ${MAX_DAILY_MEALS} repas pour ce jour.` });
+                setIsSubmitting(false);
+                return;
+            }
+        }
+
         if (reservation && reservation.id) {
             const resRef = doc(firestore, `ecoles/${schoolId}/cantine_reservations/${reservation.id}`);
             await setDoc(resRef, dataToSave, { merge: true });
@@ -77,6 +93,22 @@ export function ReservationForm({ schoolId, students, reservation, onSave }: Res
             const resCollectionRef = collection(firestore, `ecoles/${schoolId}/cantine_reservations`);
             await addDoc(resCollectionRef, dataToSave);
         }
+
+        if (values.paymentStatus === 'paid' && (!reservation || reservation.paymentStatus !== 'paid')) {
+            const transactionRef = collection(firestore, `ecoles/${schoolId}/comptabilite`);
+            const student = students.find(s => s.id === values.studentId);
+            await addDoc(transactionRef, {
+                schoolId,
+                date: values.date,
+                description: `Cantine (Ticket): ${student?.firstName} ${student?.lastName}`,
+                category: 'Cantine',
+                type: 'Revenu',
+                amount: values.price,
+                studentId: values.studentId,
+                metadata: { source: 'cantine_reservation' }
+            });
+        }
+
         toast({ title: 'Réservation enregistrée', description: 'La réservation a été enregistrée avec succès.' });
         onSave();
     } catch (e) {

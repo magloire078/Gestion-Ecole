@@ -38,6 +38,7 @@ import QRCode from 'react-qr-code';
 import { RegistrationModal } from '@/components/inscription/registration-modal';
 import { BulkRegistrationModal } from '@/components/inscription/bulk-registration-modal';
 import { ReRegistrationModal } from '@/components/inscription/re-registration-modal';
+import { StudentService } from '@/services/student-services';
 import type { student as Student, class_type as Class, fee as Fee, niveau as Niveau } from '@/lib/data-types';
 
 export default function InscriptionDashboard() {
@@ -137,11 +138,10 @@ export default function InscriptionDashboard() {
   }, [currentStudents]);
 
   // Supprimer un élève (Mise à jour du statut)
-  const handleDeleteStudent = async (studentId: string) => {
+  const handleDeleteStudent = async (student: Student) => {
     if (!schoolId) return;
     try {
-      const docRef = doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`);
-      await updateDoc(docRef, { status: 'Supprimé' });
+      await StudentService.updateStudentStatus(schoolId, student, 'Supprimé');
       toast({
         title: "Élève mis à la corbeille",
         description: "Vous pouvez restaurer ce dossier depuis l'onglet Corbeille.",
@@ -153,11 +153,10 @@ export default function InscriptionDashboard() {
   };
 
   // Restaurer un élève de la corbeille
-  const handleRestoreStudent = async (studentId: string) => {
+  const handleRestoreStudent = async (student: Student) => {
     if (!schoolId) return;
     try {
-      const docRef = doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`);
-      await updateDoc(docRef, { status: 'Actif' });
+      await StudentService.updateStudentStatus(schoolId, student, 'Actif');
       toast({
         title: "Élève restauré !",
         description: "Le dossier a été replacé dans la liste active.",
@@ -502,7 +501,7 @@ export default function InscriptionDashboard() {
                             <Button 
                               variant="ghost" 
                               size="icon" 
-                              onClick={() => student.id && handleDeleteStudent(student.id)}
+                              onClick={() => handleDeleteStudent(student)}
                               className="text-rose-600 hover:bg-rose-50 rounded-xl h-8 w-8"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -610,7 +609,7 @@ export default function InscriptionDashboard() {
                             <Button 
                               variant="ghost" 
                               size="icon" 
-                              onClick={() => student.id && handleRestoreStudent(student.id)}
+                              onClick={() => handleRestoreStudent(student)}
                               className="text-indigo-600 hover:bg-indigo-50 rounded-xl h-8 w-8"
                               title="Restaurer"
                             >
@@ -658,6 +657,8 @@ export default function InscriptionDashboard() {
             schoolId={schoolId}
             schoolData={schoolData}
             classes={classes}
+            niveaux={niveaux}
+            fees={fees}
           />
         </>
       )}

@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MessageSquare, LifeBuoy } from 'lucide-react';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, where } from 'firebase/firestore';
 import { AdminChatPanel } from '@/components/admin/admin-chat-panel';
 import { SupportTicketList } from '@/components/support/ticket-list';
 import type { support_ticket as SupportTicket } from '@/lib/data-types';
@@ -17,24 +17,22 @@ export default function AdminSupportPage() {
 
     // Check if user is Super Admin
     const isSuperAdmin = user?.profile?.isSuperAdmin;
+    const canManageTickets = user?.profile?.permissions?.manageSupportTickets;
+    const { schoolId } = useSchoolData();
 
-    // Fetch ALL tickets across ALL schools (or filter as needed for system admin)
-    // Here we maintain the logic of fetching tickets for the context, but a System Admin might want to see EVERYTHING.
-    // For now, let's keep it consistent with previous logic but intended for the admin view.
-    // If the requirement is "System Admin sees requests from Directors", they likely need to see tickets where they are the assignee or just all tickets.
-    // Let's assume for now they want to see all tickets from the current school context OR all tickets globally.
-    // Given the multi-tenancy, usually "System Admin" implies handling platform-wide support.
-    // However, if the "System Admin" is just a role within a school, we stick to schoolId.
-    // The user said "Admin Système", implying THE platform administrator.
-
-    // If it's truly platform-wide, we shouldn't filter by schoolId. 
-    // BUT current firestore rules might restrict reading 'support_tickets' to 'schoolId'.
-    // Let's check firestore rules later. For now, assuming Global Admin context.
-
-    const ticketsBaseQuery = useMemo(() =>
-        query(collection(firestore, 'support_tickets'), orderBy('submittedAt', 'desc')),
-        [firestore]
-    );
+    const ticketsBaseQuery = useMemo(() => {
+        if (isSuperAdmin) {
+            return query(collection(firestore, 'support_tickets'), orderBy('submittedAt', 'desc'));
+        }
+        if (canManageTickets && schoolId) {
+            return query(
+                collection(firestore, 'support_tickets'), 
+                where('schoolId', '==', schoolId), 
+                orderBy('submittedAt', 'desc')
+            );
+        }
+        return null;
+    }, [firestore, isSuperAdmin, canManageTickets, schoolId]);
 
     const { data: ticketsData, loading: ticketsLoading } = useCollection(ticketsBaseQuery);
 
@@ -47,8 +45,8 @@ export default function AdminSupportPage() {
 
     const isLoading = userLoading || ticketsLoading;
 
-    if (!isSuperAdmin) {
-        return <div className="p-4 md:p-6 text-center text-red-500">Accès refusé. Réservé aux administrateurs système.</div>;
+    if (!isSuperAdmin && !canManageTickets) {
+        return <div className="p-4 md:p-6 text-center text-red-500">Accès refusé. Réservé aux administrateurs.</div>;
     }
 
     return (

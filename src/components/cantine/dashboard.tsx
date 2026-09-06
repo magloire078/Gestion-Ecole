@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { Utensils, Users, Ticket, CalendarClock } from 'lucide-react';
 import type { canteenReservation, canteenSubscription, student } from '@/lib/data-types';
-import { format } from 'date-fns';
+import { format, subDays, startOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -60,6 +60,19 @@ export function CantineDashboard({ schoolId }: { schoolId: string }) {
     const { data: recentReservationsData, loading: recentReservationsLoading } = useCollection(recentReservationsQuery);
     const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
 
+    const monthStartStr = useMemo(() => format(startOfMonth(new Date()), 'yyyy-MM-dd'), []);
+    const weekStartStr = useMemo(() => format(subDays(new Date(), 6), 'yyyy-MM-dd'), []);
+
+    const monthReservationsQuery = useMemo(() => 
+        query(collection(firestore, `ecoles/${schoolId}/cantine_reservations`), where('date', '>=', monthStartStr)),
+        [firestore, schoolId, monthStartStr]);
+    const { data: monthReservationsData } = useCollection(monthReservationsQuery);
+
+    const monthRevenueQuery = useMemo(() => 
+        query(collection(firestore, `ecoles/${schoolId}/comptabilite`), where('category', '==', 'Cantine'), where('date', '>=', monthStartStr)),
+        [firestore, schoolId, monthStartStr]);
+    const { data: monthRevenueData } = useCollection(monthRevenueQuery);
+
     const studentsMap = useMemo(() => {
         const map = new Map<string, string>();
         studentsData?.forEach(doc => {
@@ -81,9 +94,23 @@ export function CantineDashboard({ schoolId }: { schoolId: string }) {
     }, [recentReservationsData, studentsMap]);
 
 
+    const chartData = useMemo(() => {
+        const days = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = subDays(new Date(), i);
+            const dateStr = format(d, 'yyyy-MM-dd');
+            const dayName = format(d, 'EEE', { locale: fr });
+            const count = monthReservationsData?.filter(r => r.data().date === dateStr).length || 0;
+            days.push({ name: dayName, qty: count });
+        }
+        return days;
+    }, [monthReservationsData]);
+
     const stats = {
         reservationsToday: reservationsData?.length || 0,
         activeSubscriptions: subscriptionsData?.length || 0,
+        monthMeals: monthReservationsData?.length || 0,
+        monthRevenue: monthRevenueData?.reduce((sum, doc) => sum + (doc.data().amount || 0), 0) || 0,
     };
 
     const loading = reservationsLoading || subscriptionsLoading || recentReservationsLoading || studentsLoading;
@@ -99,8 +126,8 @@ export function CantineDashboard({ schoolId }: { schoolId: string }) {
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <StatCard title="Réservations (Aujourd'hui)" value={stats.reservationsToday} icon={Utensils} loading={loading} />
                     <StatCard title="Abonnés Actifs" value={stats.activeSubscriptions} icon={Users} loading={loading} />
-                    <StatCard title="Repas servis (Mois)" value={Math.round(stats.reservationsToday * 20)} icon={Ticket} loading={loading} />
-                    <StatCard title="Revenus (Mois)" value={stats.reservationsToday * 2500 * 20} icon={Ticket} loading={loading} />
+                    <StatCard title="Repas servis (Mois)" value={stats.monthMeals} icon={Ticket} loading={loading} />
+                    <StatCard title="Revenus (Mois)" value={stats.monthRevenue} icon={Ticket} loading={loading} />
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2">
@@ -114,15 +141,7 @@ export function CantineDashboard({ schoolId }: { schoolId: string }) {
                         </CardHeader>
                         <CardContent className="h-[300px]">
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={[
-                                    { name: 'Lun', qty: 45 },
-                                    { name: 'Mar', qty: 52 },
-                                    { name: 'Mer', qty: 38 },
-                                    { name: 'Jeu', qty: 65 },
-                                    { name: 'Ven', qty: 48 },
-                                    { name: 'Sam', qty: 12 },
-                                    { name: 'Dim', qty: 0 },
-                                ]}>
+                                <BarChart data={chartData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
                                     <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />

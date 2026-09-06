@@ -21,9 +21,14 @@ const InfoRow = ({ label, value, icon: Icon }: { label: string, value?: string |
 );
 
 export function StaffPayrollTab({ staff }: StaffPayrollTabProps) {
+    const effectiveBaseSalary = staff.contractType === 'Vacataire'
+        ? (staff.hourlyRate || 0) * (staff.baseHours || 0)
+        : (staff.baseSalary || 0);
+
     const earnings = [
-        { label: 'Salaire de base', value: staff.baseSalary, icon: Landmark },
+        { label: staff.contractType === 'Vacataire' ? `Heures vacations (${staff.baseHours}h)` : 'Salaire de base', value: effectiveBaseSalary, icon: Landmark },
         { label: 'Indemnité de transport (imposable)', value: staff.indemniteTransportImposable, icon: Car },
+        { label: 'Indemnité de transport (non imposable)', value: staff.transportNonImposable, icon: Car },
         { label: 'Indemnité de logement', value: staff.indemniteLogement, icon: Home },
         { label: 'Indemnité de sujétion', value: staff.indemniteSujetion, icon: Hand },
         { label: 'Indemnité de responsabilité', value: staff.indemniteResponsabilite, icon: Hand },
@@ -43,7 +48,6 @@ export function StaffPayrollTab({ staff }: StaffPayrollTabProps) {
                     {earnings.map(earning => (
                         (earning.value || 0) > 0 && <InfoRow key={earning.label} label={earning.label} value={earning.value} icon={earning.icon} />
                     ))}
-                    <InfoRow key="base" label="Salaire de base" value={staff.baseSalary || 0} icon={Landmark} />
                     <Separator className="my-2" />
                     <div className="flex justify-between items-center font-bold text-base pt-2">
                         <span>Total Brut Mensuel (estimé)</span>

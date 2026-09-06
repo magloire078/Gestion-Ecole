@@ -170,6 +170,20 @@ export default function AccountingPage() {
     }
   };
 
+  const handleFixYears = async () => {
+    if (!schoolId) return;
+    try {
+      const { updateDoc, doc, arrayUnion } = await import("firebase/firestore");
+      await updateDoc(doc(firestore, "ecoles", schoolId), {
+        archivedYears: arrayUnion("2023-2024", "2024-2025", "2025-2026")
+      });
+      toast({ title: "Succès", description: "Les années ont été ajoutées ! Rechargez la page." });
+    } catch (e: any) {
+      console.error(e);
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible d'ajouter les années: " + e.message });
+    }
+  };
+
   const isLoading = schoolLoading || transactionsLoading || studentsLoading;
 
   const stats = useMemo(() => {
@@ -255,6 +269,13 @@ export default function AccountingPage() {
             >
               {isGeneratingReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
               Rapport Email
+            </Button>
+            <Button
+              variant="default"
+              onClick={handleFixYears}
+              className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white gap-2"
+            >
+              🛠️ Ajouter Années Précédentes
             </Button>
           </div>
         </div>
@@ -357,17 +378,21 @@ export default function AccountingPage() {
                       </TableCell>
                       {canManageBilling && (
                         <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                                <MoreHorizontal className="h-4 w-4 text-slate-400" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="rounded-xl bg-white">
-                              <DropdownMenuItem onClick={() => handleOpenFormDialog(transaction)}>Modifier</DropdownMenuItem>
-                              <DropdownMenuItem className="text-rose-600" onClick={() => handleOpenDeleteDialog(transaction)}>Supprimer</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          {transaction.metadata?.source === 'manual' ? (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                                  <MoreHorizontal className="h-4 w-4 text-slate-400" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="rounded-xl bg-white">
+                                <DropdownMenuItem onClick={() => handleOpenFormDialog(transaction)}>Modifier</DropdownMenuItem>
+                                <DropdownMenuItem className="text-rose-600" onClick={() => handleOpenDeleteDialog(transaction)}>Supprimer</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          ) : (
+                            <span className="text-xs text-slate-300 italic" title="Écriture générée automatiquement">Auto</span>
+                          )}
                         </TableCell>
                       )}
                     </TableRow>

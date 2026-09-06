@@ -4,8 +4,8 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, where, doc, updateDoc } from 'firebase/firestore';
+import { useCollection, useFirestore, useUser } from '@/firebase';
+import { collection, query, where, doc, updateDoc, addDoc } from 'firebase/firestore';
 import {
   Shield,
   ShieldAlert,
@@ -30,6 +30,7 @@ export default function RhAdministrationPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const { schoolId, loading: schoolLoading } = useSchoolData();
+  const { user } = useUser();
 
   // États
   const [searchTerm, setSearchTerm] = useState('');
@@ -97,11 +98,26 @@ export default function RhAdministrationPage() {
     try {
       const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${selectedStaff.id}`);
       
+      const currentPerms = (selectedStaff as any).permissions || {};
+      const newPermissions = {
+        ...currentPerms,
+        ...permissions
+      };
+
       // Mettre à jour l'objet permissions et isAdmin dans Firestore
       await updateDoc(staffDocRef, {
-        isAdmin: Object.values(permissions).some(Boolean),
-        permissions: permissions,
+        isAdmin: Object.values(newPermissions).some(Boolean),
+        permissions: newPermissions,
         updatedAt: new Date().toISOString()
+      });
+
+      // Audit Log
+      await addDoc(collection(firestore, `ecoles/${schoolId}/audit_logs`), {
+        action: 'PERMISSIONS_UPDATED',
+        details: `Droits d'accès de ${selectedStaff.firstName} ${selectedStaff.lastName} mis à jour.`,
+        userRef: user?.uid || 'system',
+        userName: user?.displayName || 'Système',
+        timestamp: new Date().toISOString()
       });
 
       toast({

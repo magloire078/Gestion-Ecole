@@ -109,11 +109,12 @@ export class ReportCardService {
             // Calculer la moyenne par matière
             const subjectAverages: SubjectAverage[] = Object.keys(groupedBySubject).map(subject => {
                 const subjectGrades = groupedBySubject[subject];
-                const totalPoints = subjectGrades.reduce((acc, g) => acc + (g.grade), 0);
-                const avg = subjectGrades.length > 0 ? totalPoints / subjectGrades.length : 0;
+                const totalWeightedPoints = subjectGrades.reduce((acc, g) => acc + (g.grade * (g.coefficient || 1)), 0);
+                const totalAssignmentCoeff = subjectGrades.reduce((acc, g) => acc + (g.coefficient || 1), 0);
+                const avg = totalAssignmentCoeff > 0 ? totalWeightedPoints / totalAssignmentCoeff : 0;
 
-                // Utiliser le coefficient du dernier devoir saisi ou 1 par défaut
-                const coef = subjectGrades[0]?.coefficient || 1;
+                // En attendant une vraie gestion des coefficients par matière par classe, on fixe à 1
+                const coef = 1;
 
                 return {
                     subject,
@@ -137,6 +138,7 @@ export class ReportCardService {
         classStats: Record<string, ClassSubjectStats>;
         studentRanks: Record<string, { rank: number, average: number }>;
         totalStudents: number;
+        studentDataList: { id: string; averages: SubjectAverage[]; generalAvg: number }[];
     }> {
         try {
             // 1. Récupérer tous les élèves de la classe
@@ -187,7 +189,8 @@ export class ReportCardService {
             return {
                 classStats,
                 studentRanks,
-                totalStudents: studentDataList.length
+                totalStudents: studentDataList.length,
+                studentDataList
             };
         } catch (error) {
             console.error("Error calculating class statistics:", error);

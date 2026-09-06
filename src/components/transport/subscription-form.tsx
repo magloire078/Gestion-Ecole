@@ -7,7 +7,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
+import { doc, setDoc, addDoc, collection, getDoc, query, where, getDocs } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import type { transportSubscription as TransportSubscription, student as Student, route as Route } from '@/lib/data-types';
 import { format } from 'date-fns';
@@ -64,14 +64,52 @@ export function SubscriptionForm({ schoolId, students, routes, subscription, onS
   const handleSubmit = async (values: SubscriptionFormValues) => {
     setIsSubmitting(true);
     
-    const dataToSave = { ...values };
-
-    const promise = subscription && subscription.id
-        ? setDoc(doc(firestore, `ecoles/${schoolId}/transport_abonnements/${subscription.id}`), dataToSave, { merge: true })
-        : addDoc(collection(firestore, `ecoles/${schoolId}/transport_abonnements`), dataToSave);
-
     try {
+        if (!subscription || subscription.routeId !== values.routeId) {
+            const selectedRoute = routes.find(r => r.id === values.routeId);
+            if (selectedRoute && selectedRoute.busId) {
+                const busDoc = await getDoc(doc(firestore, `ecoles/${schoolId}/transport_buses/${selectedRoute.busId}`));
+                if (busDoc.exists()) {
+                    const capacity = busDoc.data().capacity || 0;
+                    const subsQuery = query(
+                        collection(firestore, `ecoles/${schoolId}/transport_abonnements`),
+                        where('routeId', '==', values.routeId),
+                        where('status', '==', 'active')
+                    );
+                    const subsSnapshot = await getDocs(subsQuery);
+                    
+                    if (subsSnapshot.size >= capacity) {
+                        toast({ variant: 'destructive', title: 'Capacité atteinte', description: `Le bus assigné à cette ligne a atteint sa capacité maximale de ${capacity} places.` });
+                        setIsSubmitting(false);
+                        return;
+                    }
+                }
+            }
+        }
+
+        const dataToSave = { ...values };
+
+        const promise = subscription && subscription.id
+            ? setDoc(doc(firestore, `ecoles/${schoolId}/transport_abonnements/${subscription.id}`), dataToSave, { merge: true })
+            : addDoc(collection(firestore, `ecoles/${schoolId}/transport_abonnements`), dataToSave);
+
         await promise;
+
+        if (values.paymentStatus === 'paid' && (!subscription || (subscription as any).paymentStatus !== 'paid')) {
+            const transactionRef = collection(firestore, `ecoles/${schoolId}/comptabilite`);
+            const student = students.find(s => s.id === values.studentId);
+            await addDoc(transactionRef, {
+                schoolId,
+                date: format(new Date(), 'yyyy-MM-dd'),
+                description: `Abonnement Transport (${values.type}): ${student?.firstName} ${student?.lastName}`,
+                category: 'Transport',
+                type: 'Revenu',
+                amount: values.price,
+                studentId: values.studentId,
+                metadata: { source: 'transport_abonnement' }
+            });
+        }
+
         toast({ title: 'Abonnement enregistré', description: 'L\'abonnement au transport a été mis à jour.' });
         onSave();
     } catch (e) {

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, doc, updateDoc } from 'firebase/firestore';
 import {
   Calculator,
   Printer,
@@ -25,7 +25,8 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import type { student as Student, class_type as Class, subject as Subject } from '@/lib/data-types';
-
+import { useClasses } from '@/hooks/use-classes';
+import { useStudents } from '@/hooks/use-students';
 export default function AveragesPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -38,9 +39,7 @@ export default function AveragesPage() {
   const [isPeriodLocked, setIsPeriodLocked] = useState(false);
 
   // Charger les classes
-  const classesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
-  const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
-  const classes = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class & { id: string })) || [], [classesData]);
+  const { classes, loading: classesLoading } = useClasses(schoolId);
 
   // Charger les matières de l'école
   const subjectsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/matieres`)) : null, [firestore, schoolId]);
@@ -48,17 +47,7 @@ export default function AveragesPage() {
   const subjects = useMemo(() => subjectsData?.map(d => ({ id: d.id, ...d.data() } as Subject)) || [], [subjectsData]);
 
   // Charger les élèves de la classe sélectionnée
-  const studentsQuery = useMemo(() => {
-    return (schoolId && selectedClassId)
-      ? query(
-          collection(firestore, `ecoles/${schoolId}/eleves`),
-          where('classId', '==', selectedClassId),
-          where('status', '==', 'Actif')
-        )
-      : null;
-  }, [firestore, schoolId, selectedClassId]);
-  const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
-  const students = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student & { id: string })) || [], [studentsData]);
+  const { students, loading: studentsLoading } = useStudents(schoolId, selectedClassId);
 
   const selectedClassInfo = useMemo(() => {
     return classes.find(c => c.id === selectedClassId);
@@ -74,72 +63,115 @@ export default function AveragesPage() {
     return ['Trimestre 1', 'Trimestre 2', 'Trimestre 3'];
   }, [selectedClassInfo]);
 
-  // Calcul déterministe des moyennes simulées pour chaque élève et chaque matière
-  const studentAverages = useMemo(() => {
-    if (students.length === 0 || subjects.length === 0) return [];
+  const [studentAveragesList, setStudentAveragesList] = useState<any[]>([]);
 
-    const computed = students.map((student) => {
-      let totalGrade = 0;
-      let totalCoef = 0;
+  // Effacer la liste quand la classe ou la période change
+  useMemo(() => {
+    setStudentAveragesList([]);
+  }, [selectedClassId, selectedPeriod]);
+
+  // Lancer le calcul réel
+  const handleCalculateAverages = async () => {
+    if (!schoolId || !selectedClassId) return;
+    setIsCalculating(true);
+    try {
+      const { ReportCardService } = await import('@/services/report-card-service');
+      const service = new ReportCardService(firestore);
       
-      const grades: Record<string, number> = {};
+      // Ici on pourrait passer des dates de début/fin si la période était rattachée à des dates
+      const stats = await service.getClassStatistics(schoolId, selectedClassId);
       
-      subjects.forEach((subject) => {
-        // Formule déterministe basée sur l'ID de l'élève et la matière
-        const code = (student.id.charCodeAt(0) || 0) + (subject.name.charCodeAt(0) || 0) + selectedPeriod.charCodeAt(selectedPeriod.length - 1);
-        const grade = 9 + (code % 11) + ((code % 3) * 0.25); // Note réaliste entre 9 et 20
-        const roundedGrade = Math.min(20, Math.max(0, parseFloat(grade.toFixed(2))));
+      const computed = stats.studentDataList.map((studentData) => {
+        const studentInfo = students.find(s => s.id === studentData.id);
         
-        grades[subject.name] = roundedGrade;
-        
-        // Simuler des coefficients (e.g. Math=4, Français=5, SVT=2, etc.)
-        let coef = 2;
-        if (subject.name.toLowerCase().includes('math')) coef = 4;
-        if (subject.name.toLowerCase().includes('français')) coef = 5;
-        
-        totalGrade += roundedGrade * coef;
-        totalCoef += coef;
+        const grades: Record<string, number> = {};
+        studentData.averages.forEach(sa => {
+          grades[sa.subject] = sa.average;
+        });
+
+        let observation = "Passable";
+        const averageG = studentData.generalAvg;
+        if (averageG >= 16) observation = "Excellent (Félicitations)";
+        else if (averageG >= 14) observation = "Très Bien (Tableau d'Honneur)";
+        else if (averageG >= 12) observation = "Assez Bien (Encouragements)";
+        else if (averageG >= 10) observation = "Passable";
+        else observation = "Avertissement travail";
+
+        return {
+          studentId: studentData.id,
+          name: studentInfo ? `${studentInfo.lastName} ${studentInfo.firstName}` : 'Inconnu',
+          matricule: studentInfo?.matricule || studentData.id.substring(0, 8),
+          grades,
+          averageG,
+          observation,
+          rank: stats.studentRanks[studentData.id]?.rank || 0
+        };
       });
 
-      const averageG = totalGrade / totalCoef;
+      // Trier les élèves par ordre décroissant de moyenne générale
+      computed.sort((a, b) => b.averageG - a.averageG);
 
-      let observation = "Passable";
-      if (averageG >= 16) observation = "Excellent (Félicitations)";
-      else if (averageG >= 14) observation = "Très Bien (Tableau d'Honneur)";
-      else if (averageG >= 12) observation = "Assez Bien (Encouragements)";
-      else if (averageG >= 10) observation = "Passable";
-      else observation = "Avertissement travail";
+      setStudentAveragesList(computed);
 
-      return {
-        studentId: student.id,
-        name: `${student.lastName} ${student.firstName}`,
-        matricule: student.matricule || student.id.substring(0, 8),
-        grades,
-        averageG: parseFloat(averageG.toFixed(2)),
-        observation
-      };
-    });
-
-    // Trier les élèves par ordre décroissant de moyenne générale
-    computed.sort((a, b) => b.averageG - a.averageG);
-
-    // Assigner les rangs
-    return computed.map((item, index) => ({
-      ...item,
-      rank: index + 1
-    }));
-  }, [students, subjects, selectedPeriod]);
-
-  // Lancer le calcul
-  const handleCalculateAverages = () => {
-    setIsCalculating(true);
-    setTimeout(() => {
-      setIsCalculating(false);
       toast({
         title: "Calcul terminé !",
-        description: `Les moyennes pour la classe ${selectedClassInfo?.name} ont été recalculées avec succès.`,
+        description: `Les moyennes réelles pour la classe ${selectedClassInfo?.name} ont été calculées avec succès.`,
       });
-    }, 1500);
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: err?.message || 'Impossible de calculer les moyennes.'
+      });
+    } finally {
+      setIsCalculating(false);
+    }
+  };
+
+  const handleToggleLock = async () => {
+    if (!schoolId || !selectedClassId) return;
+    try {
+      const classRef = doc(firestore, `ecoles/${schoolId}/classes`, selectedClassId);
+      const newLockedState = !isPeriodLocked;
+      await updateDoc(classRef, { locked: newLockedState });
+      setIsPeriodLocked(newLockedState);
+      
+      toast({ 
+        title: newLockedState ? "Période Verrouillée" : "Période Déverrouillée", 
+        description: newLockedState 
+          ? "Les enseignants ne peuvent plus modifier les notes de cette période." 
+          : "La saisie des notes est de nouveau ouverte." 
+      });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible de modifier l'état de la période." });
+    }
+  };
+
+  const handleExportCSV = () => {
+    if (!studentAveragesList || studentAveragesList.length === 0) return;
+    
+    const headers = ["Nom", "Matricule", "Moyenne Générale", "Rang"];
+    const rows = studentAveragesList.map((s: any) => {
+      return [
+        s.name,
+        s.matricule,
+        s.averageG.toFixed(2),
+        s.rank
+      ].join(",");
+    });
+    
+    const csvContent = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `matrice_${selectedClassInfo?.name || 'classe'}_${selectedPeriod}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({ title: "Exportation réussie", description: "La matrice a été téléchargée au format CSV." });
   };
 
   const isLoading = schoolLoading || classesLoading || subjectsLoading;
@@ -169,7 +201,7 @@ export default function AveragesPage() {
           <div className="flex gap-2">
             <Button
               variant="outline"
-              onClick={() => setIsPeriodLocked(!isPeriodLocked)}
+              onClick={handleToggleLock}
               className="rounded-xl border-slate-200/80 text-slate-700 gap-2 hover:bg-slate-50 text-xs font-bold"
             >
               {isPeriodLocked ? (
@@ -247,7 +279,7 @@ export default function AveragesPage() {
                 <CardTitle className="text-base font-bold text-slate-700">Tableau des Résultats — {selectedPeriod}</CardTitle>
                 <CardDescription className="text-xs">Visualisation générale des moyennes par matière.</CardDescription>
               </div>
-              <Button variant="outline" size="sm" className="rounded-xl text-xs gap-1.5 self-start sm:sm:self-center border-slate-200" onClick={() => toast({ title: "Exportation", description: "L'exportation Excel de la matrice a été lancée." })}>
+              <Button variant="outline" size="sm" className="rounded-xl text-xs gap-1.5 self-start sm:sm:self-center border-slate-200" onClick={handleExportCSV}>
                 <Download className="h-3.5 w-3.5" /> Exporter la Matrice
               </Button>
             </div>
@@ -272,14 +304,14 @@ export default function AveragesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {studentAverages.length === 0 ? (
+                {studentAveragesList.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5 + subjects.length} className="text-center py-12 text-slate-400">
                       Aucun élève trouvé dans cette classe.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  studentAverages.map((row) => (
+                  studentAveragesList.map((row) => (
                     <TableRow key={row.studentId} className="hover:bg-slate-50/40">
                       <TableCell className="text-center font-bold">
                         <Badge 

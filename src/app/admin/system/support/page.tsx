@@ -18,8 +18,8 @@ export default function AdminSupportPage() {
     const isSuperAdmin = user?.profile?.isSuperAdmin;
 
     const ticketsBaseQuery = useMemo(() =>
-        query(collection(firestore, 'support_tickets'), orderBy('submittedAt', 'desc')),
-        [firestore]
+        isSuperAdmin ? query(collection(firestore, 'support_tickets'), orderBy('submittedAt', 'desc')) : null,
+        [firestore, isSuperAdmin]
     );
 
     const { data: ticketsData, loading: ticketsLoading } = useCollection(ticketsBaseQuery);

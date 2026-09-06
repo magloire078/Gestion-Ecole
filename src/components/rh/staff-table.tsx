@@ -54,7 +54,7 @@ export const StaffTable = ({ staff, classes, onEdit, onDelete }: StaffTableProps
                                         <AvatarFallback>{fallback}</AvatarFallback>
                                     </Avatar>
                                     <div>
-                                        <Link href={`/dashboard/rh/details?id=${member.id}`} className="font-medium hover:underline">{fullName}</Link>
+                                        <Link href={`/dashboard/rh/${member.id}`} className="font-medium hover:underline">{fullName}</Link>
                                         <div className="text-xs text-muted-foreground">{member.email}</div>
                                     </div>
                                 </div>

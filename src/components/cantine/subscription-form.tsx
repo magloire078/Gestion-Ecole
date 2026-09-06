@@ -92,6 +92,19 @@ export function SubscriptionForm({ schoolId, students, subscription, onSave }: S
       mealType: 'dejeuner',
     };
 
+    if (!subscription) {
+      let remaining = 20;
+      switch (values.type as string) {
+        case 'hebdomadaire': remaining = 5; break;
+        case 'mensuel': remaining = 20; break;
+        case 'trimestriel': remaining = 60; break;
+        case 'annuel': remaining = 180; break;
+        case 'ponctuel': remaining = 1; break;
+      }
+      dataToSave.remainingMeals = remaining;
+      dataToSave.missedMeals = 0;
+    }
+
     try {
       if (subscription && subscription.id) {
         const subRef = doc(firestore, `ecoles/${schoolId}/cantine_abonnements/${subscription.id}`);
@@ -99,6 +112,20 @@ export function SubscriptionForm({ schoolId, students, subscription, onSave }: S
       } else {
         const subsCollectionRef = collection(firestore, `ecoles/${schoolId}/cantine_abonnements`);
         await addDoc(subsCollectionRef, dataToSave);
+
+        // Enregistrer la transaction comptable
+        const transactionRef = collection(firestore, `ecoles/${schoolId}/comptabilite`);
+        const student = students.find(s => s.id === values.studentId);
+        await addDoc(transactionRef, {
+            schoolId,
+            date: format(new Date(), 'yyyy-MM-dd'),
+            description: `Abonnement Cantine (${values.type}): ${student?.firstName} ${student?.lastName}`,
+            category: 'Cantine',
+            type: 'Revenu',
+            amount: values.price,
+            studentId: values.studentId,
+            metadata: { source: 'cantine_abonnement' }
+        });
       }
       toast({ title: 'Abonnement enregistré', description: 'L\'abonnement a été mis à jour.' });
       onSave();

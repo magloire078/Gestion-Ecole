@@ -29,12 +29,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Skeleton } from "@/components/ui/skeleton";
 import type { student as Student, class_type as Class, accountingTransaction as Transaction } from '@/lib/data-types';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { TuitionPaymentService } from '@/services/tuition-payment-service';
+import { BillingService } from '@/services/billing-service';
+import { useAcademicYear } from '@/providers/academic-year-provider';
+import { filterByAcademicYear, resolveAcademicYearForWrite } from '@/lib/academic-year-utils';
 
 export default function PaymentsJournalPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const { user } = useUser();
   const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
+  const { currentYear: appCurrentYear, selectedYear } = useAcademicYear();
 
   // Dialog versement
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
@@ -112,7 +119,7 @@ export default function PaymentsJournalPage() {
 
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    return transactions.filter(t => {
+    let filtered = transactions.filter(t => {
       // 1. Filtre temporel
       if (periodFilter === 'today' && t.date !== todayStr) return false;
       if (periodFilter === 'week' && new Date(t.date) < firstDayOfWeek) return false;
@@ -133,7 +140,10 @@ export default function PaymentsJournalPage() {
 
       return true;
     });
-  }, [transactions, periodFilter, searchTerm, students]);
+    
+    // 3. Filtre par année scolaire sélectionnée
+    return filterByAcademicYear(filtered, selectedYear, appCurrentYear);
+  }, [transactions, periodFilter, searchTerm, students, selectedYear, appCurrentYear]);
 
   // Saisir un versement
   const handleRegisterPayment = async (e: React.FormEvent) => {
@@ -147,8 +157,7 @@ export default function PaymentsJournalPage() {
     }
 
     setIsSubmittingPayment(true);
-    const batch = writeBatch(firestore);
-
+    
     try {
       const studentDocRef = doc(firestore, `ecoles/${schoolId}/eleves/${selectedStudentId}`);
       const studentSnap = await getDoc(studentDocRef);
@@ -170,49 +179,21 @@ export default function PaymentsJournalPage() {
         return;
       }
 
-      const newDue = Math.max(0, currentDue - amount);
-      const newStatus = newDue <= 0 ? 'Soldé' : 'Partiel';
-
-      // 1. Mettre à jour le solde sur le dossier de l'élève
-      batch.update(studentDocRef, {
-        amountDue: newDue,
-        tuitionStatus: newStatus,
-        updatedAt: new Date().toISOString()
+      const academicYearForPayment = resolveAcademicYearForWrite({
+        schoolCurrentYear: (schoolData as any)?.currentAcademicYear,
+        docDate: paymentDate,
       });
 
-      // 2. Enregistrer le versement dans la sous-collection `paiements` de l'élève
-      const payRef = doc(collection(firestore, `ecoles/${schoolId}/eleves/${selectedStudentId}/paiements`));
-      const receiptRef = `REC-${Date.now().toString().slice(-6)}`;
-      
-      batch.set(payRef, {
-        schoolId,
-        studentId: selectedStudentId,
+      const { receiptRef } = await TuitionPaymentService.registerPayment(firestore, schoolId, { ...studentData, id: selectedStudentId } as Student & { id: string }, {
+        amount,
         date: paymentDate,
-        amount: amount,
         description: paymentNotes,
         payerFirstName: studentData.parent1FirstName || 'Parent',
         payerLastName: studentData.parent1LastName || studentData.lastName,
+        payerContact: studentData.parent1Contact || '',
         method: paymentMethod,
-        academicYear: currentYear,
-        reference: receiptRef,
-        createdAt: new Date().toISOString()
+        academicYear: academicYearForPayment
       });
-
-      // 3. Enregistrer l'écriture de caisse dans `comptabilite`
-      const transRef = doc(collection(firestore, `ecoles/${schoolId}/comptabilite`));
-      batch.set(transRef, {
-        schoolId,
-        date: paymentDate,
-        description: `${paymentNotes} - ${studentData.firstName} ${studentData.lastName}`,
-        category: 'Scolarité',
-        type: 'Revenu',
-        amount: amount,
-        studentId: selectedStudentId,
-        academicYear: currentYear,
-        createdAt: new Date().toISOString()
-      });
-
-      await batch.commit();
 
       toast({
         title: "Paiement validé !",
@@ -240,31 +221,15 @@ export default function PaymentsJournalPage() {
       return;
     }
 
-    const batch = writeBatch(firestore);
     try {
-      // 1. Si la transaction est rattachée à un élève, on rajoute la dette
-      if (trans.studentId) {
-        const studentDocRef = doc(firestore, `ecoles/${schoolId}/eleves/${trans.studentId}`);
-        const studentSnap = await getDoc(studentDocRef);
-        
-        if (studentSnap.exists()) {
-          const studentData = studentSnap.data() as Student;
-          const currentDue = studentData.amountDue || 0;
-          const newDue = currentDue + (trans.amount || 0);
-          
-          batch.update(studentDocRef, {
-            amountDue: newDue,
-            tuitionStatus: 'Partiel',
-            updatedAt: new Date().toISOString()
-          });
-        }
-      }
-
-      // 2. Supprimer la transaction de caisse
-      const transDocRef = doc(firestore, `ecoles/${schoolId}/comptabilite/${trans.id}`);
-      batch.delete(transDocRef);
-
-      await batch.commit();
+      await TuitionPaymentService.cancelPayment(firestore, schoolId, {
+        id: trans.id,
+        schoolId: schoolId,
+        studentId: trans.studentId!,
+        date: trans.date,
+        amount: trans.amount,
+        method: (trans as any).method || 'Espèces',
+      });
       toast({ title: "Versement annulé !", description: "Le montant a été débité et la dette de l'élève a été réajustée." });
     } catch (err: any) {
       console.error(err);
@@ -425,7 +390,9 @@ export default function PaymentsJournalPage() {
                       <TableCell className="font-mono text-xs font-bold text-slate-500">
                         {t.id?.substring(0, 8).toUpperCase() || 'N/A'}
                       </TableCell>
-                      <TableCell className="text-xs text-slate-500 font-mono">{t.date}</TableCell>
+                      <TableCell className="text-xs text-slate-500 font-medium capitalize">
+                        {t.date ? format(new Date(t.date), 'dd MMM yyyy', { locale: fr }) : 'N/A'}
+                      </TableCell>
                       <TableCell className="font-bold text-slate-900">
                         {student ? `${student.lastName} ${student.firstName}` : 'Élève Externe'}
                       </TableCell>
@@ -434,7 +401,7 @@ export default function PaymentsJournalPage() {
                       </TableCell>
                       <TableCell className="text-xs text-slate-600">{t.description}</TableCell>
                       <TableCell className="text-xs font-semibold text-slate-500">
-                        Espèce
+                        {(t as any).method || 'Espèce'}
                       </TableCell>
                       <TableCell className="font-mono font-bold text-slate-900 text-sm">
                         {formatCurrency(t.amount)}
@@ -445,7 +412,13 @@ export default function PaymentsJournalPage() {
                             variant="ghost" 
                             size="icon" 
                             className="text-slate-600 hover:bg-slate-50 rounded-xl h-8 w-8"
-                            onClick={() => toast({ title: "Impression", description: "Le reçu de scolarité est envoyé à l'imprimante." })}
+                            onClick={() => {
+                               if (student) {
+                                   BillingService.generateReceiptPDF(schoolData as any, student, t as any, schoolData?.mainLogoUrl);
+                               } else {
+                                   toast({ title: "Action impossible", description: "L'élève n'est pas sélectionnable." });
+                               }
+                            }}
                             title="Imprimer le reçu"
                           >
                             <Printer className="h-4 w-4" />

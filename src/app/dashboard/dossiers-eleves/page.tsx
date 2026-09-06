@@ -78,42 +78,12 @@ export default function StudentsPage() {
 
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string | undefined>(undefined);
 
-  // Déterminer l'année scolaire par défaut (dernière inscription d'élève ou année en cours)
+  // Déterminer l'année scolaire par défaut
   useEffect(() => {
-    if (!schoolId) return;
-
-    const latestStudentQuery = query(
-      collection(firestore, `ecoles/${schoolId}/eleves`),
-      orderBy('createdAt', 'desc'),
-      limit(1)
-    );
-
-    getDocs(latestStudentQuery)
-      .then((snap) => {
-        if (!snap.empty) {
-          const data = snap.docs[0].data();
-          const enrollments = data.enrollments || [];
-          const latestEnrollment = enrollments[enrollments.length - 1];
-          let latestYear = latestEnrollment?.academicYear || data.academicYear;
-
-          if (!latestYear && data.inscriptionYear) {
-            latestYear = `${data.inscriptionYear}-${data.inscriptionYear + 1}`;
-          }
-
-          if (!latestYear && data.createdAt) {
-            const createdDate = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
-            latestYear = computeAcademicYearFromDate(createdDate);
-          }
-
-          if (latestYear) {
-            setSelectedAcademicYear(latestYear);
-          }
-        }
-      })
-      .catch((err) => {
-        console.error("Error fetching latest student for default year:", err);
-      });
-  }, [schoolId, firestore]);
+    if (schoolData?.currentAcademicYear) {
+      setSelectedAcademicYear(schoolData.currentAcademicYear);
+    }
+  }, [schoolData?.currentAcademicYear]);
 
   const effectiveAcademicYear = selectedAcademicYear || schoolData?.currentAcademicYear || computeAcademicYearFromDate();
 

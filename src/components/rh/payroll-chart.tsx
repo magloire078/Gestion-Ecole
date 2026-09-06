@@ -22,7 +22,11 @@ export function PayrollChart({ staff }: PayrollChartProps) {
 
     return Array.from(grouped, ([role, values]) => ({
       role: role.charAt(0).toUpperCase() + role.slice(1).replace(/_/g, ' '),
-      masseSalariale: sum(values, d => d.baseSalary || 0),
+      masseSalariale: sum(values, d => {
+        const base = d.contractType === 'Vacataire' ? ((d.hourlyRate || 0) * (d.baseHours || 0)) : (d.baseSalary || 0);
+        const indemnites = (d.indemniteTransportImposable || 0) + (d.indemniteLogement || 0) + (d.indemniteSujetion || 0) + (d.indemniteResponsabilite || 0) + (d.indemniteCommunication || 0) + (d.indemniteRepresentation || 0) + (d.transportNonImposable || 0);
+        return base + indemnites;
+      }),
     })).sort((a, b) => b.masseSalariale - a.masseSalariale);
 
   }, [staff]);

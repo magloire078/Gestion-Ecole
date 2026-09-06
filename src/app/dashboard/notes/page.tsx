@@ -157,22 +157,48 @@ export default function GradeEntryPage() {
   const stats = useMemo(() => {
     if (allGradesForSubject.length === 0) return null;
 
-    const totalCoeff = allGradesForSubject.reduce((acc, g) => acc + (g.coefficient || 1), 0);
-    const weightedSum = allGradesForSubject.reduce((acc, g) => acc + (g.grade * (g.coefficient || 1)), 0);
-    
-    const average = weightedSum / totalCoeff;
-    const gradesValues = allGradesForSubject.map(g => g.grade);
-    const max = Math.max(...gradesValues);
-    const min = Math.min(...gradesValues);
-    const successCount = gradesValues.filter(g => g >= 10).length;
-    const successRate = (successCount / gradesValues.length) * 100;
+    // Grouper les notes par étudiant
+    const gradesByStudent: Record<string, GradeEntry[]> = {};
+    allGradesForSubject.forEach(g => {
+      if (!gradesByStudent[g.studentId]) {
+        gradesByStudent[g.studentId] = [];
+      }
+      gradesByStudent[g.studentId].push(g);
+    });
+
+    let sumOfStudentAverages = 0;
+    let validStudentsCount = 0;
+    let max = -Infinity;
+    let min = Infinity;
+    let successCount = 0;
+
+    // Calculer la moyenne de chaque étudiant
+    Object.values(gradesByStudent).forEach(grades => {
+      const studentTotalCoeff = grades.reduce((acc, g) => acc + (g.coefficient || 1), 0);
+      const studentWeightedSum = grades.reduce((acc, g) => acc + (g.grade * (g.coefficient || 1)), 0);
+      
+      if (studentTotalCoeff > 0) {
+        const studentAverage = studentWeightedSum / studentTotalCoeff;
+        sumOfStudentAverages += studentAverage;
+        validStudentsCount++;
+        
+        if (studentAverage > max) max = studentAverage;
+        if (studentAverage < min) min = studentAverage;
+        if (studentAverage >= 10) successCount++;
+      }
+    });
+
+    if (validStudentsCount === 0) return null;
+
+    const average = sumOfStudentAverages / validStudentsCount;
+    const successRate = (successCount / validStudentsCount) * 100;
 
     return { 
       average: average.toFixed(2), 
       max: max.toFixed(2), 
       min: min.toFixed(2), 
       successRate: Math.round(successRate),
-      total: gradesValues.length
+      total: allGradesForSubject.length
     };
   }, [allGradesForSubject]);
 

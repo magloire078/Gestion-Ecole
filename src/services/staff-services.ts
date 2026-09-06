@@ -13,6 +13,7 @@ import {
     deleteField,
     where,
 } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import { firebaseFirestore as db } from '@/firebase/config';
 import type { staff as Staff, user_root } from '@/lib/data-types';
 
@@ -41,10 +42,36 @@ export const StaffService = {
     updateStaffMember: async (schoolId: string, staffId: string, data: Partial<Staff>) => {
         try {
             const docRef = doc(db, `ecoles/${schoolId}/${COLLECTION_NAME}`, staffId);
-            await updateDoc(docRef, {
+            const currentSnap = await getDoc(docRef);
+            
+            const batch = writeBatch(db);
+            batch.update(docRef, {
                 ...data,
                 updatedAt: serverTimestamp(),
             });
+
+            // Check for role modifications to log them
+            if (currentSnap.exists()) {
+                const currentData = currentSnap.data() as Staff;
+                if ((data.role && currentData.role !== data.role) || (data.adminRole !== undefined && currentData.adminRole !== data.adminRole)) {
+                    const currentUser = getAuth().currentUser;
+                    const auditRef = doc(collection(db, `ecoles/${schoolId}/audit_logs`));
+                    batch.set(auditRef, {
+                        action: 'UPDATE_ROLES',
+                        targetId: staffId,
+                        targetName: `${currentData.firstName} ${currentData.lastName}`,
+                        oldRole: currentData.role,
+                        newRole: data.role || currentData.role,
+                        oldAdminRole: currentData.adminRole || 'none',
+                        newAdminRole: data.adminRole === undefined ? currentData.adminRole || 'none' : data.adminRole,
+                        modifiedBy: currentUser?.uid || 'unknown',
+                        modifiedByEmail: currentUser?.email || 'unknown',
+                        timestamp: serverTimestamp(),
+                    });
+                }
+            }
+            
+            await batch.commit();
         } catch (error) {
             console.error('Error updating staff member:', error);
             throw error;

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useFirestore, useUser } from '@/firebase';
-import { collection, writeBatch, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, writeBatch, serverTimestamp, increment } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Trash, Loader2, CheckCircle2, Table as TableIcon } from 'lucide-react';
@@ -15,6 +15,7 @@ import type { class_type as Class, fee as Fee, niveau as Niveau } from '@/lib/da
 import { getTuitionInfoForClass } from '@/lib/school-utils';
 import { formatCurrency } from '@/lib/currency-utils';
 import { Label } from '@/components/ui/label';
+import { StudentService } from '@/services/student-services';
 
 interface BulkRegistrationModalProps {
   isOpen: boolean;
@@ -128,6 +129,20 @@ export function BulkRegistrationModal({
     }
 
     setIsSubmitting(true);
+    
+    try {
+      // Vérification du plafond d'élèves
+      await StudentService.checkStudentLimit(schoolId, rows.length);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Limite d'abonnés atteinte",
+        description: error.message || "Vous avez atteint la limite d'élèves pour votre abonnement.",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
     const batch = writeBatch(firestore);
     const currentYear = schoolData?.currentAcademicYear || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
 
@@ -142,7 +157,7 @@ export function BulkRegistrationModal({
           ? getTuitionInfoForClass(row.classId, classes, niveaux, fees).fee
           : parseFloat(row.inscriptionFee) + parseFloat(row.scolariteFee) + parseFloat(row.annexesFee);
 
-        const studentData = {
+        const studentData: any = {
           schoolId,
           matricule: `MAT-${Math.floor(100000 + Math.random() * 900000)}`,
           lastName: row.lastName,
@@ -166,8 +181,23 @@ export function BulkRegistrationModal({
           tuitionStatus: totalFee === 0 ? 'Soldé' : 'Partiel',
           inscriptionYear: parseInt(currentYear.split('-')[0]),
           academicYear: currentYear,
+          academicYears: [currentYear],
           createdAt: serverTimestamp(),
         };
+
+        const newEnrollment = {
+          schoolId,
+          studentId: studentRef.id,
+          academicYear: currentYear,
+          classId: row.classId,
+          status: 'Nouveau',
+          tuitionFee: totalFee,
+          amountDue: totalFee,
+          tuitionStatus: totalFee === 0 ? 'Soldé' : 'Partiel',
+          createdAt: new Date().toISOString(),
+          createdBy: 'bulk-registration'
+        };
+        studentData.enrollments = [newEnrollment];
 
         batch.set(studentRef, studentData);
 
@@ -185,7 +215,28 @@ export function BulkRegistrationModal({
             notes: 'Acompte initial d\'inscription en lot',
             createdAt: serverTimestamp(),
           });
+          
+          // Mettre à jour le solde (amountDue) puisque on a enregistré un paiement
+          batch.update(studentRef, {
+              amountDue: Math.max(0, totalFee - paymentVal)
+          });
         }
+        
+        // Update Class Count
+        if (row.classId) {
+            const classRef = doc(firestore, `ecoles/${schoolId}/classes/${row.classId}`);
+            batch.update(classRef, { studentCount: increment(1) });
+        }
+
+        // Update Finance Stats
+        const statsRef = doc(firestore, `ecoles/${schoolId}/stats/finance`);
+        const actualAmountDue = Math.max(0, totalFee - (!isSimplifiedMode ? paymentVal : 0));
+        batch.set(statsRef, {
+            totalTuitionFees: increment(totalFee),
+            totalAmountDue: increment(actualAmountDue),
+            studentCount: increment(1),
+            lastUpdated: serverTimestamp()
+        }, { merge: true });
       }
 
       await batch.commit();

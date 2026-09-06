@@ -88,6 +88,18 @@ export const runPayrollForMonth = async (
 
         batch.set(newRunRef, payrollRunData);
 
+        // Enregistrer la transaction comptable pour le total de la paie
+        const transactionRef = doc(collection(firestore, `ecoles/${schoolId}/comptabilite`));
+        batch.set(transactionRef, {
+            schoolId,
+            date: format(new Date(), 'yyyy-MM-dd'),
+            description: `Paie mensuelle: ${period}`,
+            category: 'Salaires',
+            type: 'Dépense',
+            amount: totalMass,
+            metadata: { source: 'payroll_run', runId: newRunRef.id }
+        });
+
         // Generate and store individual payslips
         for (const staffMember of staffMembers) {
             const payslipDetails = await getPayslipDetails(staffMember, payslipDate, schoolData);

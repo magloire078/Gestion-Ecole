@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,7 +36,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, PlusCircle, CheckCircle, XCircle } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, orderBy, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, doc, updateDoc, serverTimestamp, limit } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -64,7 +64,7 @@ export default function LeaveManagementPage() {
   } | null>(null);
 
   const leavesQuery = useMemo(() =>
-    schoolId ? query(collection(firestore, `ecoles/${schoolId}/conges_personnel`), orderBy('requestedAt', 'desc')) : null,
+    schoolId ? query(collection(firestore, `ecoles/${schoolId}/conges_personnel`), orderBy('requestedAt', 'desc'), limit(50)) : null,
     [firestore, schoolId]);
 
   const { data: leavesData, loading: leavesLoading } = useCollection(leavesQuery);

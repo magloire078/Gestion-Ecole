@@ -245,16 +245,21 @@ function PaymentPageContent() {
         }
         setIsLoadingProvider('free');
         try {
-            const endDate = addMonths(new Date(), selectedDuration).toISOString();
-            await updateSubscription({
-                plan: plan as any,
-                status: 'active',
-                endDate,
+            const res = await fetch('/api/gateway/free-upgrade', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ schoolId, plan })
             });
+            const data = await res.json();
+            
+            if (!res.ok) {
+                throw new Error(data.error || "Erreur lors de l'activation.");
+            }
+            
             router.push('/dashboard/parametres/abonnement/paiement-en-attente?payment_status=success');
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
-            setError("Erreur lors de l'activation de l'abonnement gratuit.");
+            setError(e.message || "Erreur lors de l'activation de l'abonnement gratuit.");
             setIsLoadingProvider(null);
         }
     };

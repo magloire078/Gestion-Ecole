@@ -242,18 +242,36 @@ service cloud.firestore {
     // =================================
     
     match /ecoles/{schoolId} {
+      function keepsSubscriptionIntact() {
+        return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['subscription']) || isSuperAdmin();
+      }
+
       allow read: if isSchoolMember(schoolId) || (isSignedIn() && resource.data.directorId == request.auth.uid);
       allow create: if isSignedIn() && request.resource.data.directorId == request.auth.uid;
-      allow update: if hasPermission(schoolId, 'manageSettings');
+      allow update: if hasPermission(schoolId, 'manageSettings') && keepsSubscriptionIntact();
       allow delete: if isSuperAdmin();
     
       // --- Sub-collections of /ecoles/{schoolId} ---
 
       match /personnel/{staffId} {
-        allow create: if hasPermission(schoolId, 'manageUsers') || (request.auth.uid == staffId);
+        function personnelNoRoleEscalation() {
+          let affectsAdminRole = request.resource.data.diff(resource.data).affectedKeys().hasAny(['adminRole']);
+          let affectsDirectorRole = request.resource.data.get('role', '') == 'directeur' && resource.data.get('role', '') != 'directeur';
+          let removesDirectorRole = resource.data.get('role', '') == 'directeur' && request.resource.data.get('role', '') != 'directeur';
+          
+          return (!affectsAdminRole && !affectsDirectorRole && !removesDirectorRole) || isDirector(schoolId) || isSuperAdmin();
+        }
+        function createNoRoleEscalation() {
+          return (!('adminRole' in request.resource.data) || request.resource.data.adminRole == null) || isDirector(schoolId) || isSuperAdmin();
+        }
+        function createNoDirectorRole() {
+          return request.resource.data.get('role', '') != 'directeur' || isDirector(schoolId) || isSuperAdmin();
+        }
+
+        allow create: if (hasPermission(schoolId, 'manageUsers') || (request.auth.uid == staffId)) && createNoRoleEscalation() && createNoDirectorRole();
         allow read: if isSchoolMember(schoolId);
-        allow update: if hasPermission(schoolId, 'manageUsers') || request.auth.uid == staffId;
-        allow delete: if hasPermission(schoolId, 'manageUsers') || (resource.data.email == request.auth.token.email);
+        allow update: if (hasPermission(schoolId, 'manageUsers') || request.auth.uid == staffId) && personnelNoRoleEscalation();
+        allow delete: if (hasPermission(schoolId, 'manageUsers') && resource.data.get('role', '') != 'directeur') || (resource.data.email == request.auth.token.email);
       }
 
       match /conges_personnel/{congeId} {
@@ -271,6 +289,11 @@ service cloud.firestore {
       match /admin_roles/{roleId} {
         allow read: if isSchoolMember(schoolId);
         allow write: if hasPermission(schoolId, 'manageSettings');
+      }
+
+      match /audit_logs/{logId} {
+        allow create: if isSchoolMember(schoolId);
+        allow read: if isDirector(schoolId) || isSuperAdmin();
       }
 
       // --- Élèves et leurs sous-collections ---

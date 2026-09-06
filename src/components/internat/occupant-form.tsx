@@ -61,7 +61,7 @@ export function OccupantForm({ schoolId, students, rooms, occupant, onSave }: Oc
   });
   const { reset } = form;
 
-  const availableRooms = useMemo(() => rooms.filter(room => room.status === 'available' || room.id === occupant?.roomId), [rooms, occupant]);
+  const sortedRooms = useMemo(() => [...rooms].sort((a, b) => a.number.localeCompare(b.number)), [rooms]);
 
   useEffect(() => {
     reset(occupant ? {
@@ -130,7 +130,7 @@ export function OccupantForm({ schoolId, students, rooms, occupant, onSave }: Oc
             <FormItem><FormLabel>Élève</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!!occupant}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un élève" /></SelectTrigger></FormControl><SelectContent>{students.map(s => <SelectItem key={s.id} value={s.id!}>{s.firstName} {s.lastName}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
           )} />
           <FormField control={form.control} name="roomId" render={({ field }) => (
-            <FormItem><FormLabel>Chambre</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner une chambre disponible" /></SelectTrigger></FormControl><SelectContent>{availableRooms.map(r => <SelectItem key={r.id} value={r.id}>{r.number}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+            <FormItem><FormLabel>Chambre</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner une chambre" /></SelectTrigger></FormControl><SelectContent>{sortedRooms.map(r => <SelectItem key={r.id} value={r.id} disabled={r.status === 'occupied' && r.id !== occupant?.roomId}>{r.number} {r.status === 'occupied' && r.id !== occupant?.roomId ? '(Pleine)' : ''}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
           )} />
           <div className="grid grid-cols-2 gap-4">
             <FormField control={form.control} name="startDate" render={({ field }) => (<FormItem><FormLabel>Date d&apos;entrée</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />

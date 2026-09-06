@@ -26,6 +26,7 @@ import { formatCurrency } from '@/lib/currency-utils';
 import { resolveAcademicYearForWrite, filterByAcademicYear } from '@/lib/academic-year-utils';
 import { useAcademicYear } from '@/providers/academic-year-provider';
 import { BillingService } from '@/services/billing-service';
+import { TuitionPaymentService } from '@/services/tuition-payment-service';
 
 
 interface PaymentHistoryEntry extends Payment {
@@ -55,10 +56,13 @@ export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTab
 
     const { data: paymentHistoryData, loading: paymentsLoading } = useCollection(paymentsQuery);
 
+    const [showAllHistory, setShowAllHistory] = useState(false);
+
     const paymentHistory: PaymentHistoryEntry[] = useMemo(() => {
         const all = paymentHistoryData?.map(d => ({ id: d.id, ...d.data() } as PaymentHistoryEntry)) || [];
+        if (showAllHistory) return all;
         return filterByAcademicYear(all, selectedYear, currentYear);
-    }, [paymentHistoryData, selectedYear, currentYear]);
+    }, [paymentHistoryData, selectedYear, currentYear, showAllHistory]);
 
     const handleViewReceipt = (payment: PaymentHistoryEntry) => {
         if (!student) return;
@@ -139,13 +143,42 @@ export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTab
                 </Card>
             </div>
             <Card>
-                <CardHeader>
-                    <CardTitle>Historique des Paiements</CardTitle>
-                    <CardDescription>Liste de tous les versements de scolarité effectués.</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <div>
+                        <CardTitle>Historique des Paiements</CardTitle>
+                        <CardDescription>Liste des versements de scolarité effectués.</CardDescription>
+                    </div>
+                    <div className="flex bg-slate-100 p-1 rounded-lg">
+                        <Button 
+                            variant={!showAllHistory ? "secondary" : "ghost"} 
+                            size="sm" 
+                            className="text-xs h-7"
+                            onClick={() => setShowAllHistory(false)}
+                        >
+                            Année en cours
+                        </Button>
+                        <Button 
+                            variant={showAllHistory ? "secondary" : "ghost"} 
+                            size="sm" 
+                            className="text-xs h-7"
+                            onClick={() => setShowAllHistory(true)}
+                        >
+                            Tout l'historique
+                        </Button>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <Table>
-                        <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Description</TableHead><TableHead>Mode</TableHead><TableHead className="text-right">Montant</TableHead><TableHead className="text-right">Action</TableHead></TableRow></TableHeader>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Date</TableHead>
+                                {showAllHistory && <TableHead>Année Scol.</TableHead>}
+                                <TableHead>Description</TableHead>
+                                <TableHead>Mode</TableHead>
+                                <TableHead className="text-right">Montant</TableHead>
+                                <TableHead className="text-right">Action</TableHead>
+                            </TableRow>
+                        </TableHeader>
                         <TableBody>
                             {paymentsLoading ? (
                                 <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
@@ -153,6 +186,11 @@ export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTab
                                 paymentHistory.map(payment => (
                                     <TableRow key={payment.id}>
                                         <TableCell>{format(new Date(payment.date), 'd MMMM yyyy', { locale: fr })}</TableCell>
+                                        {showAllHistory && (
+                                            <TableCell className="font-medium text-slate-500">
+                                                {payment.academicYear || 'Non définie'}
+                                            </TableCell>
+                                        )}
                                         <TableCell>{payment.description}</TableCell>
                                         <TableCell>{payment.method}</TableCell>
                                         <TableCell className="text-right font-mono">{formatCurrency(payment.amount)}</TableCell>
@@ -185,7 +223,7 @@ export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTab
                                     </TableRow>
                                 ))
                             ) : (
-                                <TableRow><TableCell colSpan={5} className="text-center h-24">Aucun paiement enregistré.</TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={showAllHistory ? 6 : 5} className="text-center h-24 text-slate-500">Aucun paiement enregistré.</TableCell></TableRow>
                             )}
                         </TableBody>
                     </Table>
@@ -248,61 +286,22 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
             }
 
             const amountPaid = values.paymentAmount;
-            const newAmountDue = Math.max(0, (student.amountDue || 0) - amountPaid);
-            const newStatus: "Soldé" | "Partiel" = newAmountDue <= 0 ? 'Soldé' : 'Partiel';
-
-            const batch = writeBatch(firestore);
-
-            const studentRef = doc(firestore, `ecoles/${schoolData.id}/eleves/${student.id}`);
-            batch.update(studentRef, {
-                amountDue: newAmountDue,
-                tuitionStatus: newStatus,
-                updatedAt: new Date().toISOString()
-            });
-
             const academicYearForPayment = resolveAcademicYearForWrite({
                 schoolCurrentYear: (schoolData as any)?.currentAcademicYear,
                 docDate: values.paymentDate,
             });
 
-            const accountingColRef = collection(firestore, `ecoles/${schoolData.id}/comptabilite`);
-            const newTransactionRef = doc(accountingColRef);
-            batch.set(newTransactionRef, {
-                schoolId: schoolData.id,
+            await TuitionPaymentService.registerPayment(firestore, schoolData.id, student, {
+                amount: amountPaid,
                 date: values.paymentDate,
                 description: values.paymentDescription || `Paiement scolarité pour ${student.firstName} ${student.lastName}`,
-                category: 'Scolarité',
-                type: 'Revenu',
-                amount: amountPaid,
-                studentId: student.id,
-                academicYear: academicYearForPayment,
-                createdAt: new Date().toISOString()
-            });
-
-            const statsRef = doc(firestore, `ecoles/${schoolData.id}/stats/finance`);
-            batch.set(statsRef, {
-                totalAmountDue: increment(-amountPaid),
-                lastUpdated: new Date().toISOString()
-            }, { merge: true });
-
-            const paymentHistoryRef = doc(collection(firestore, `ecoles/${schoolData.id}/eleves/${student.id}/paiements`));
-            batch.set(paymentHistoryRef, {
-                schoolId: schoolData.id,
-                studentId: student.id,
-                date: values.paymentDate,
-                amount: amountPaid,
-                description: values.paymentDescription,
-                accountingTransactionId: newTransactionRef.id,
                 payerFirstName: values.payerFirstName,
                 payerLastName: values.payerLastName,
                 payerContact: values.payerContact,
                 method: values.paymentMethod,
                 proofUrl: proofUrl || null,
                 academicYear: academicYearForPayment,
-                createdAt: new Date().toISOString()
             });
-
-            await batch.commit();
 
             toast({ title: "Paiement enregistré" });
             const amountDueBeforePayment = (student.amountDue || 0);
@@ -325,7 +324,6 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
                 payerLastName: values.payerLastName,
                 payerContact: values.payerContact,
                 description: values.paymentDescription,
-                accountingTransactionId: newTransactionRef.id,
                 schoolId: schoolData.id,
                 studentId: student.id
             }, schoolData?.mainLogoUrl);

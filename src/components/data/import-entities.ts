@@ -11,7 +11,7 @@
  * validations et écritures sans avoir à toucher au composant pour ajouter
  * une nouvelle entité.
  */
-import { collection, serverTimestamp, addDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, serverTimestamp, addDoc, doc, updateDoc, setDoc } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import type { class_type, student } from '@/lib/data-types';
 
@@ -129,21 +129,64 @@ export const ENTITY_DESCRIPTORS: EntityDescriptor[] = [
             }
             
             docData.inscriptionYear = ctx.rowYear;
+            docData.academicYear = docData.academicYear || ctx.rowYear;
+            docData.academicYears = [docData.academicYear];
             docData.status = docData.status || 'Actif';
             docData.tuitionStatus = docData.tuitionStatus || 'Non payé';
             docData.amountDue = Number(docData.amountDue) || 0;
+            docData.tuitionFee = Number(docData.tuitionFee) || 0;
+
+            const newEnrollment: any = {
+                schoolId: ctx.schoolId,
+                academicYear: docData.academicYear,
+                classId: docData.classId || "",
+                status: docData.status,
+                tuitionFee: docData.tuitionFee,
+                amountDue: docData.amountDue,
+                tuitionStatus: docData.tuitionStatus,
+                createdAt: new Date().toISOString(),
+                createdBy: 'import-system'
+            };
 
             if (existingStudent) {
                 // Mise à jour si l'élève existe déjà
                 // On retire createdAt pour ne pas l'écraser, mais on peut mettre un updatedAt
                 delete docData.createdAt;
+                
+                newEnrollment.studentId = existingStudent.id;
+                
+                // Merge enrollments (avoid duplicates)
+                let existingEnrollments = existingStudent.enrollments || [];
+                const enrollmentIndex = existingEnrollments.findIndex(e => e.academicYear === newEnrollment.academicYear);
+                if (enrollmentIndex >= 0) {
+                    existingEnrollments[enrollmentIndex] = { ...existingEnrollments[enrollmentIndex], ...newEnrollment };
+                } else {
+                    existingEnrollments.push(newEnrollment);
+                }
+
+                // Update academicYears array
+                let existingAcademicYears = existingStudent.academicYears || [];
+                if (existingStudent.academicYear && !existingAcademicYears.includes(existingStudent.academicYear)) {
+                    existingAcademicYears.push(existingStudent.academicYear);
+                }
+                if (!existingAcademicYears.includes(docData.academicYear)) {
+                    existingAcademicYears.push(docData.academicYear);
+                }
+
                 await updateDoc(doc(ctx.firestore, `ecoles/${ctx.schoolId}/eleves/${existingStudent.id}`), {
                     ...docData,
+                    enrollments: existingEnrollments,
+                    academicYears: existingAcademicYears,
                     updatedAt: serverTimestamp(),
                 });
             } else {
                 // Création normale
-                await addDoc(collection(ctx.firestore, `ecoles/${ctx.schoolId}/eleves`), docData);
+                const studentRef = doc(collection(ctx.firestore, `ecoles/${ctx.schoolId}/eleves`));
+                newEnrollment.studentId = studentRef.id;
+                docData.id = studentRef.id;
+                docData.schoolId = ctx.schoolId;
+                docData.enrollments = [newEnrollment];
+                await setDoc(studentRef, docData);
             }
         },
     },

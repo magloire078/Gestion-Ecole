@@ -160,6 +160,7 @@ export async function promoteStudents(
 
                 batch.update(doc(db, `ecoles/${schoolId}/eleves/${rule.studentId}`), {
                     currentClassId: rule.toClassId,
+                    status: 'En attente',
                     updatedAt: serverTimestamp(),
                 });
                 result.promoted += 1;

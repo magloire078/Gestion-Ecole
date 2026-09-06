@@ -295,6 +295,7 @@ export type student = {
     inscriptionYear?: number;
     enrollments?: student_enrollment[];
     academicYear?: string;
+    academicYears?: string[];
     nationality?: string;
     statusAff?: 'Affecté' | 'Non-Affecté';
     isRepeater?: boolean;
@@ -444,6 +445,7 @@ export type accountingTransaction = {
     amount: number;
     studentId?: string;
     academicYear?: string;
+    metadata?: { source?: string; [key: string]: any };
 };
 
 export type payment = {

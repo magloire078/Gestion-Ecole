@@ -7,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useFirestore } from '@/firebase';
-import { collection, query, where, getDocs, writeBatch, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, writeBatch, doc, serverTimestamp, arrayUnion, increment } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, RefreshCw, UserCheck, AlertCircle } from 'lucide-react';
-import type { class_type as Class, student as Student } from '@/lib/data-types';
+import type { class_type as Class, student as Student, niveau as Niveau, fee as Fee } from '@/lib/data-types';
+import { getTuitionInfoForClass } from '@/lib/school-utils';
 
 interface ReRegistrationModalProps {
   isOpen: boolean;
@@ -19,6 +20,8 @@ interface ReRegistrationModalProps {
   schoolId: string;
   schoolData: any;
   classes: Class[];
+  niveaux: Niveau[];
+  fees: Fee[];
 }
 
 export function ReRegistrationModal({
@@ -28,6 +31,8 @@ export function ReRegistrationModal({
   schoolId,
   schoolData,
   classes,
+  niveaux,
+  fees,
 }: ReRegistrationModalProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
@@ -143,14 +148,49 @@ export function ReRegistrationModal({
         if (!student.id) continue;
         const studentRef = doc(firestore, `ecoles/${schoolId}/eleves/${student.id}`);
         
+        // Recalcul des frais de scolarité pour la nouvelle classe
+        const newTuitionFee = selectedTargetClassId 
+          ? getTuitionInfoForClass(selectedTargetClassId, classes, niveaux, fees).fee 
+          : (student.tuitionFee || 0);
+          
         // Mettre à jour l'élève avec la nouvelle classe et la nouvelle année académique
+        const newEnrollment = {
+          schoolId,
+          studentId: student.id,
+          academicYear: currentAcademicYear,
+          classId: selectedTargetClassId,
+          status: 'Promu',
+          tuitionFee: newTuitionFee,
+          amountDue: newTuitionFee, // Remise à zéro avec les nouveaux frais
+          tuitionStatus: 'Non payé',
+          createdAt: new Date().toISOString(),
+          createdBy: 're-registration'
+        };
+
         batch.update(studentRef, {
           classId: selectedTargetClassId,
-          class: targetClassInfo?.name || 'N/A',
+          class: targetClassInfo?.name || student.class,
+          grade: targetClassInfo?.niveauId || student.grade,
           academicYear: currentAcademicYear,
+          academicYears: arrayUnion(currentAcademicYear),
+          status: 'Actif',
+          tuitionFee: newTuitionFee,
+          amountDue: newTuitionFee,
+          tuitionStatus: 'Non payé',
+          enrollments: arrayUnion(newEnrollment),
           inscriptionYear: parseInt(currentAcademicYear.split('-')[0]),
           updatedAt: serverTimestamp(),
         });
+        
+        // Mettre à jour les compteurs des classes
+        if (student.classId) {
+            const oldClassRef = doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`);
+            batch.update(oldClassRef, { studentCount: increment(-1) });
+        }
+        if (selectedTargetClassId) {
+            const newClassRef = doc(firestore, `ecoles/${schoolId}/classes/${selectedTargetClassId}`);
+            batch.update(newClassRef, { studentCount: increment(1) });
+        }
       }
 
       await batch.commit();

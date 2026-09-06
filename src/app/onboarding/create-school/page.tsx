@@ -149,19 +149,34 @@ export default function CreateSchoolPage() {
     const firstName = nameParts[0] || 'Directeur';
     const lastName = nameParts.slice(1).join(' ') || '';
 
-    const schoolService = new SchoolCreationService(firestore);
-
     try {
-      const result = await schoolService.createSchool({
-        ...values,
-        country: selectedCountry,
-        region: selectedCountry === 'CI' ? values.drena : values.region,
-        mainLogoUrl: logoUrl || '',
-        directorId: user.uid,
-        directorFirstName: firstName,
-        directorLastName: lastName,
-        directorEmail: user.email || values.email || '',
+      if (!user?.authUser) throw new Error("Utilisateur non authentifié.");
+      
+      const idToken = await (user as any).authUser.getIdToken();
+
+      const res = await fetch('/api/admin/create-school', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          ...values,
+          country: selectedCountry,
+          region: selectedCountry === 'CI' ? values.drena : values.region,
+          mainLogoUrl: logoUrl || '',
+          directorId: user.uid,
+          directorFirstName: firstName,
+          directorLastName: lastName,
+          directorEmail: user.email || values.email || '',
+        })
       });
+
+      const result = await res.json();
+      
+      if (!res.ok) {
+          throw new Error(result.error || "Erreur lors de la création.");
+      }
 
       if (result.success) {
         toast({

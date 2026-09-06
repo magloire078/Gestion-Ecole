@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Edit, Trash2, Search, Users, Shield, ShieldCheck, UserCheck, MoreVertical, LayoutGrid, List } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, doc, deleteDoc, where, getDocs, writeBatch, addDoc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -106,21 +106,41 @@ export default function RolesPage() {
 
     const handleDeleteRole = async () => {
         if (!schoolId || !roleToDelete) return;
-        const docRef = doc(firestore, `ecoles/${schoolId}/admin_roles`, roleToDelete.id);
-        deleteDoc(docRef)
-            .then(() => {
-                toast({ title: 'Rôle supprimé', description: `Le rôle "${roleToDelete.name}" a été supprimé.` });
-            }).catch(error => {
+        
+        try {
+            const docRef = doc(firestore, `ecoles/${schoolId}/admin_roles`, roleToDelete.id);
+            await deleteDoc(docRef);
+
+            // Cleanup: Remove this role from any staff members who have it
+            const staffQuery = query(collection(firestore, `ecoles/${schoolId}/personnel`), where('adminRole', '==', roleToDelete.id));
+            const staffDocs = await getDocs(staffQuery);
+            const batch = writeBatch(firestore);
+            staffDocs.forEach(staffDoc => {
+                batch.update(staffDoc.ref, { adminRole: null });
+            });
+            await batch.commit();
+
+            // Audit log
+            await addDoc(collection(firestore, `ecoles/${schoolId}/audit_logs`), {
+                action: 'ROLE_DELETED',
+                details: `Le rôle "${roleToDelete.name}" a été supprimé. ${staffDocs.size} membres impactés.`,
+                userRef: user?.uid || 'system',
+                userName: user?.displayName || 'Système',
+                timestamp: new Date().toISOString()
+            });
+
+            toast({ title: 'Rôle supprimé', description: `Le rôle "${roleToDelete.name}" a été supprimé.` });
+        } catch (error) {
                 console.error("Error deleting role: ", error);
                 toast({
                     variant: "destructive",
                     title: "Erreur de suppression",
                     description: "Impossible de supprimer le rôle. Vérifiez vos permissions.",
                 });
-            }).finally(() => {
-                setIsDeleteDialogOpen(false);
-                setRoleToDelete(null);
-            })
+        } finally {
+            setIsDeleteDialogOpen(false);
+            setRoleToDelete(null);
+        }
     };
 
     const formatPermissionName = (name: string) => {

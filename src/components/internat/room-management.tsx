@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, doc, deleteDoc, where, getDocs } from 'firebase/firestore';
 import type { building, room } from '@/lib/data-types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -69,6 +68,17 @@ export function RoomManagement({ schoolId }: { schoolId: string }) {
     const handleDeleteRoom = async () => {
         if (!schoolId || !roomToDelete) return;
         try {
+            const occupantsQuery = query(
+                collection(firestore, `ecoles/${schoolId}/internat_occupants`),
+                where('roomId', '==', roomToDelete.id),
+                where('status', 'in', ['active', 'pending'])
+            );
+            const snapshot = await getDocs(occupantsQuery);
+            if (!snapshot.empty) {
+                toast({ variant: 'destructive', title: 'Action impossible', description: 'Cette chambre a des occupants assignés. Retirez-les d\'abord.' });
+                return;
+            }
+
             await deleteDoc(doc(firestore, `ecoles/${schoolId}/internat_chambres`, roomToDelete.id));
             toast({ title: 'Chambre supprimée' });
         } catch (e) {

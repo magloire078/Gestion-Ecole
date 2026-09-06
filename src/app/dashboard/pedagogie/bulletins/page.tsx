@@ -20,13 +20,12 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { useSchoolData } from "@/hooks/use-school-data";
-import { useCollection, useFirestore } from "@/firebase";
-import { collection } from "firebase/firestore";
-import { Skeleton } from "@/components/ui/skeleton";
 import { FileDown, Calculator, Loader2, GraduationCap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ReportCardService, ReportCardData } from "@/services/report-card-service";
 import type { student as Student, class_type as Class } from "@/lib/data-types";
+import { useClasses } from '@/hooks/use-classes';
+import { useStudents } from '@/hooks/use-students';
 
 export default function BulletinsPage() {
     const firestore = useFirestore();
@@ -42,17 +41,13 @@ export default function BulletinsPage() {
     const [totalStudentsInClass, setTotalStudentsInClass] = useState(0);
     const [teacherComments, setTeacherComments] = useState<string>("");
 
-    const studentsQuery = useMemo(() => schoolId ? collection(firestore, `ecoles/${schoolId}/eleves`) : null, [firestore, schoolId]);
-    const classesQuery = useMemo(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
-
-    const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
-    const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
-
-    const students: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
-    const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
+    const { classes, loading: classesLoading } = useClasses(schoolId);
+    // On passe selectedClass (ou 'all' géré par useStudents)
+    const { students, loading: studentsLoading } = useStudents(schoolId, selectedClass);
 
     const filteredStudents = useMemo(() => {
         if (selectedClass === 'all') return [];
+        // useStudents gère déjà le filtre si selectedClass n'est pas 'all', mais au cas où :
         return students.filter(s => s.classId === selectedClass);
     }, [students, selectedClass]);
 
@@ -88,11 +83,26 @@ export default function BulletinsPage() {
 
             // 2. Map averages to state for UI display
             for (const studentId in statsData.studentRanks) {
-                // To get totalCoef, we still need to calculate it or we could have updated getClassStatistics to return it
-                // For performance, let's just use the general average for now in the list
+                // Trouver les matières et coefficients pour calculer le vrai totalCoef
+                let totalCoef = 0;
+                
+                // Get report data to know which subjects have grades
+                const reportData = await reportService.generateReportCard(
+                    schoolId,
+                    studentId,
+                    selectedPeriod.startDate,
+                    selectedPeriod.endDate
+                );
+                
+                if (reportData && reportData.subjects) {
+                    reportData.subjects.forEach(subj => {
+                        totalCoef += subj.coefficient || 1;
+                    });
+                }
+                
                 newAverages[studentId] = { 
                     average: statsData.studentRanks[studentId].average,
-                    totalCoef: 0 // Will be populated individually on PDF generation or we can optimize later
+                    totalCoef: totalCoef
                 };
             }
             
@@ -134,7 +144,7 @@ export default function BulletinsPage() {
                 studentId: student.id,
                 studentName: `${student.firstName} ${student.lastName}`,
                 className: className,
-                schoolYear: schoolData?.currentAcademicYear || "2023-2024",
+                schoolYear: schoolData?.currentAcademicYear || "",
                 term: selectedPeriodName,
                 subjectAverages: subjectAvgs,
                 generalAverage: stats.average,

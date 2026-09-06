@@ -43,8 +43,16 @@ async function seed() {
   });
 
   if (!schoolId) {
-    console.error("Could not find school Le Mini Monde.");
-    process.exit(1);
+    console.log("Could not find school Le Mini Monde. Creating it...");
+    const newSchoolRef = db.collection('ecoles').doc();
+    await newSchoolRef.set({
+      name: 'Le Mini Monde',
+      address: 'Abidjan',
+      contact: '0000000000',
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    schoolId = newSchoolRef.id;
+    schoolName = 'Le Mini Monde';
   }
   console.log(`Found school: ${schoolName} (${schoolId})`);
 
@@ -60,8 +68,16 @@ async function seed() {
   });
 
   if (!classId) {
-    console.error("Could not find class Moyenne Section - A.");
-    process.exit(1);
+    console.log("Could not find class Moyenne Section - A. Creating it...");
+    const newClassRef = db.collection(`ecoles/${schoolId}/classes`).doc();
+    await newClassRef.set({
+      name: 'Moyenne Section - A',
+      level: 'Moyenne Section',
+      capacity: 30,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    classId = newClassRef.id;
+    className = 'Moyenne Section - A';
   }
   console.log(`Found class: ${className} (${classId})`);
 

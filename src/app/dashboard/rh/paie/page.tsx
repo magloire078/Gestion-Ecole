@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FileText, Banknote, Loader2, Files, Users, DollarSign, History } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, where, getDoc, doc, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDoc, doc, orderBy, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useToast } from '@/hooks/use-toast';
 import type { staff as Staff, school as School, payrollRun as PayrollRun } from '@/lib/data-types';
@@ -95,6 +95,20 @@ export default function PaiePage() {
       const payslipDate = new Date().toISOString();
       const details = await getPayslipDetails(fullStaffDoc.data() as Staff, payslipDate, schoolData as School);
       setPayslipDetails(details);
+
+      try {
+        await addDoc(collection(firestore, `ecoles/${schoolId}/bulletins_paie`), {
+          staffId: staffMember.id,
+          staffName: `${staffMember.firstName} ${staffMember.lastName}`,
+          generatedAt: serverTimestamp(),
+          netAPayer: details.totals.netAPayer,
+          brutImposable: details.totals.brutImposable,
+          month: payslipDate.substring(0, 7),
+          type: 'Génération individuelle'
+        });
+      } catch (logError) {
+        console.error("Failed to save payslip log", logError);
+      }
     } catch (e) {
       console.error(e);
       toast({

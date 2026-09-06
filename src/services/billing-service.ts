@@ -6,6 +6,7 @@ import { getCountryByCode, CountryCode } from '@/lib/countries-data';
 import { student as Student, school as School, payment as Payment } from '@/lib/data-types';
 import { formatCurrency } from '@/lib/currency-utils';
 import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 // Extension pour TypeScript
 declare module 'jspdf' {
@@ -82,7 +83,7 @@ export class BillingService {
         doc.setFont("helvetica", "normal");
         doc.setTextColor(100, 100, 100);
         doc.text(`N° : ${payment.id?.substring(0, 8).toUpperCase() || 'REF-TEMP'}`, pageWidth - 20, currentY, { align: 'right' });
-        doc.text(`Date : ${new Date(payment.date).toLocaleDateString('fr-FR')}`, pageWidth - 20, currentY + 5, { align: 'right' });
+        doc.text(`Date : ${format(new Date(payment.date), 'dd MMMM yyyy', { locale: fr })}`, pageWidth - 20, currentY + 5, { align: 'right' });
 
         currentY += 20;
 
@@ -227,7 +228,7 @@ export class BillingService {
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(100, 100, 100);
-        doc.text(`Date : ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, pageWidth - 20, currentY, { align: 'right' });
+        doc.text(`Date : ${format(new Date(), 'dd MMMM yyyy à HH:mm', { locale: fr })}`, pageWidth - 20, currentY, { align: 'right' });
 
         currentY += 20;
 
@@ -288,7 +289,7 @@ export class BillingService {
         const tableBody = payments
             .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
             .map(p => [
-                format(new Date(p.date), 'dd/MM/yyyy'),
+                format(new Date(p.date), 'dd MMMM yyyy', { locale: fr }),
                 p.description || 'Paiement',
                 p.method,
                 formatCurrency(p.amount)

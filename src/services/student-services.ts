@@ -16,7 +16,7 @@ const COLLECTION_NAME = 'eleves';
  * Lève une erreur si le plafond est atteint. La limite est dérivée du plan
  * (SUBSCRIPTION_PLANS), pas d'un champ stocké qui peut dériver.
  */
-async function checkStudentLimit(schoolId: string): Promise<string> {
+export async function checkStudentLimit(schoolId: string, additionalCount: number = 0): Promise<string> {
     const schoolSnap = await getDoc(doc(db, `ecoles/${schoolId}`));
     const schoolData = schoolSnap.exists() ? schoolSnap.data() : null;
     if (!schoolData) return "2024-2025";
@@ -34,7 +34,7 @@ async function checkStudentLimit(schoolId: string): Promise<string> {
         const countSnap = await getCountFromServer(activeStudentsQuery);
         const currentCount = countSnap.data().count;
 
-        if (currentCount >= limits.maxStudents) {
+        if (currentCount + additionalCount > limits.maxStudents) {
             throw new Error(buildLimitReachedMessage('students', planName, limits.maxStudents));
         }
     }
@@ -45,6 +45,7 @@ async function checkStudentLimit(schoolId: string): Promise<string> {
  * Service for managing students in Firestore
  */
 export const StudentService = {
+    checkStudentLimit,
     /**
      * Create a new student
      */
@@ -149,7 +150,49 @@ export const StudentService = {
     },
 
     /**
-     * Delete a student (permanent deletion)
+     * Update student status (soft delete or restore) and sync aggregates
+     */
+    updateStudentStatus: async (schoolId: string, student: Student, newStatus: string) => {
+        try {
+            const batch = writeBatch(db);
+            const studentRef = doc(db, `ecoles/${schoolId}/${COLLECTION_NAME}/${student.id}`);
+
+            batch.update(studentRef, {
+                status: newStatus,
+                updatedAt: serverTimestamp(),
+            });
+
+            const diffMulti = newStatus === 'Supprimé' ? -1 : (newStatus === 'Actif' && student.status === 'Supprimé' ? 1 : 0);
+
+            if (diffMulti !== 0) {
+                // Adjust class count
+                if (student.classId) {
+                    const classRef = doc(db, `ecoles/${schoolId}/classes/${student.classId}`);
+                    batch.update(classRef, { studentCount: increment(diffMulti) });
+                }
+
+                // Adjust finances
+                const fee = student.tuitionFee || 0;
+                const due = student.amountDue || 0;
+                if (fee !== 0 || due !== 0) {
+                    const statsRef = doc(db, `ecoles/${schoolId}/stats/finance`);
+                    batch.set(statsRef, {
+                        totalTuitionFees: increment(fee * diffMulti),
+                        totalAmountDue: increment(due * diffMulti),
+                        lastUpdated: serverTimestamp()
+                    }, { merge: true });
+                }
+            }
+
+            await batch.commit();
+        } catch (error) {
+            console.error('Error updating student status:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Delete a student (Hard delete) (permanent deletion)
      */
     deleteStudent: async (schoolId: string, student: Student) => {
         try {

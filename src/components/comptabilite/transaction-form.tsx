@@ -41,8 +41,8 @@ export function TransactionForm({ schoolId, transaction: editingTransaction, onS
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [allCategories, setAllCategories] = useState({
-        Revenu: ['Scolarité', 'Dons', 'Événements'],
-        Dépense: ['Salaires', 'Fournitures', 'Maintenance', 'Services Publics', 'Marketing']
+        Revenu: ['Dons', 'Événements', 'Subventions', 'Autres Revenus'],
+        Dépense: ['Salaires', 'Fournitures', 'Maintenance', 'Services Publics', 'Marketing', 'Autres Dépenses']
     });
 
     const { schoolData } = useSchoolData();
@@ -89,7 +89,19 @@ export function TransactionForm({ schoolId, transaction: editingTransaction, onS
     const handleTransactionSubmit = async (values: TransactionFormValues) => {
         setIsSubmitting(true);
         const formattedDate = format(new Date(values.date), "yyyy-MM-dd");
-        const transactionData = {
+        
+        // Prevent manual entry of "Frais de scolarité" or "Scolarité" to force using the payment module
+        if (values.category.toLowerCase().includes('scolarité')) {
+            toast({
+                variant: 'destructive',
+                title: 'Action non autorisée',
+                description: 'Les paiements de scolarité doivent être saisis depuis le module Inscription/Paiements.',
+            });
+            setIsSubmitting(false);
+            return;
+        }
+
+        const transactionData: any = {
             ...values,
             schoolId,
             date: formattedDate,
@@ -98,6 +110,10 @@ export function TransactionForm({ schoolId, transaction: editingTransaction, onS
                 docDate: formattedDate,
             }),
         };
+
+        if (!editingTransaction) {
+            transactionData.metadata = { source: 'manual' };
+        }
 
         const collectionRef = collection(firestore, `ecoles/${schoolId}/comptabilite`);
 

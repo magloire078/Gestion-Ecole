@@ -21,7 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { doc, deleteDoc } from 'firebase/firestore';
+import { doc, updateDoc, deleteField } from 'firebase/firestore';
 import { signOut } from "firebase/auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
@@ -119,11 +119,15 @@ export default function SettingsPage() {
   };
 
   const handleResetAccount = async () => {
-    if (!user || !user.authUser || !firestore) return;
+    if (!user || !user.authUser || !firestore || !schoolData?.id) return;
     try {
-      await deleteDoc(doc(firestore, 'users', user.authUser.uid));
-      await signOut(auth);
-      window.location.href = '/login';
+      // Remove the school from the user's allowed schools
+      await updateDoc(doc(firestore, 'users', user.authUser.uid), {
+        [`schools.${schoolData.id}`]: deleteField(),
+        activeSchoolId: deleteField() // Reset active school to let the service pick a new one or redirect to onboarding
+      });
+      // Optionally sign out or redirect
+      window.location.href = '/dashboard';
     } catch (e) {
       toast({ variant: "destructive", title: "Erreur", description: "Échec de réinitialisation." });
     }

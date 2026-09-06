@@ -114,7 +114,7 @@ export async function fetchUserAppData(firestore: Firestore, firebaseUser: Fireb
                 } else if (userProfile.adminRole) {
                     const roleSnap = await getDoc(doc(firestore, `ecoles/${activeSchoolId}/admin_roles/${userProfile.adminRole}`));
                     if (roleSnap.exists()) {
-                        userProfile.permissions = roleSnap.data().permissions;
+                        userProfile.permissions = { ...roleSnap.data().permissions, ...(userProfile.permissions || {}) };
                     }
                 }
             }

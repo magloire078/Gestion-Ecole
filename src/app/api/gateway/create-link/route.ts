@@ -7,7 +7,8 @@ import { getOrangeMoneyPaymentLink } from '@/lib/orange-money';
 import { requestMtnMomoPayment, MTN_CURRENCY } from '@/lib/mtn-momo';
 import { createGeniusPayment } from '@/lib/genius-pay';
 import { buildPaymentReference } from '@/lib/payment-reference';
-import type { PlanName } from '@/lib/subscription-plans';
+import { getPlanPrice, SUBSCRIPTION_PLANS, type PlanName } from '@/lib/subscription-plans';
+import { getAdminDb } from '@/firebase/admin';
 
 function resolveBaseUrl(req: Request): string {
     const env = process.env.NEXT_PUBLIC_BASE_URL?.trim();
@@ -44,27 +45,67 @@ export async function POST(req: Request) {
 
         console.log("[CreateLinkAPI] Received body:", { provider, type, schoolId, rawAmount, planName });
 
-        const amount = typeof rawAmount === 'string' ? parseFloat(rawAmount) : rawAmount;
+        let amount = typeof rawAmount === 'string' ? parseFloat(rawAmount) : rawAmount;
 
         if (!provider || !type || !schoolId || !amount) {
-            console.error("[CreateLinkAPI] Validation failed. Missing params:", { 
-                hasProvider: !!provider, 
-                hasType: !!type, 
-                hasSchoolId: !!schoolId, 
-                hasAmount: !!amount,
-                amountValue: amount 
-            });
             return NextResponse.json({ error: "Paramètres manquants ou invalides (le montant doit être supérieur à 0)." }, { status: 400 });
         }
 
         const BASE_URL = resolveBaseUrl(req);
+        const adminDb = getAdminDb();
 
-        if (type === 'subscription' && !planName) {
-            return NextResponse.json({ error: "Nom de plan requis pour un abonnement." }, { status: 400 });
+        if (type === 'subscription') {
+            if (!planName) return NextResponse.json({ error: "Nom de plan requis pour un abonnement." }, { status: 400 });
+            
+            // Recalculate amount for subscription to prevent client spoofing
+            try {
+                // Pour Pro/Premium (facturation par élève), nous devons interroger le nombre d'élèves
+                // Mais pour l'instant, getPlanPrice retourne le prix de base. Si ce plan est facturé par élève,
+                // il faut le calculer avec estimateMonthlyRevenue.
+                // Or "getPlanPrice" gère les abonnements de base.
+                const expectedAmount = getPlanPrice(planName as PlanName, duration || 1);
+                
+                // Si expectedAmount est > 0 (comme pour les forfaits basiques s'il y en a) ou 0
+                // En fait, on devrait vérifier le total attendu pour l'école
+                if (planName === 'Essentiel') {
+                    amount = expectedAmount;
+                } else {
+                    // Pour Pro/Premium facturé par élève, on interroge l'école pour calculer
+                    const schoolSnap = await adminDb.doc(`ecoles/${schoolId}`).get();
+                    if (!schoolSnap.exists) {
+                         return NextResponse.json({ error: "École introuvable." }, { status: 404 });
+                    }
+                    const activeStudents = schoolSnap.data()?.stats?.activeStudents || 0;
+                    // Dynamically get the price per student from the plan configuration
+                    const planData = SUBSCRIPTION_PLANS.find(p => p.name === planName);
+                    const pricePerStudent = planData?.pricePerStudent || 0;
+                    amount = (pricePerStudent * activeStudents) * (duration || 1);
+                }
+            } catch (err) {
+                 return NextResponse.json({ error: "Calcul du montant d'abonnement échoué." }, { status: 500 });
+            }
+
+            if (amount <= 0) {
+                return NextResponse.json({ error: "Le montant calculé pour cet abonnement est de 0 (ou inférieur), ce qui n'est pas autorisé par les moyens de paiement." }, { status: 400 });
+            }
         }
-        if (type === 'tuition' && !studentId) {
-            return NextResponse.json({ error: "studentId requis pour une scolarité." }, { status: 400 });
+
+        if (type === 'tuition') {
+            if (!studentId) return NextResponse.json({ error: "studentId requis pour une scolarité." }, { status: 400 });
+            
+            // Validate tuition amount against student's debt
+            const studentSnap = await adminDb.doc(`ecoles/${schoolId}/eleves/${studentId}`).get();
+            if (!studentSnap.exists) {
+                return NextResponse.json({ error: "Élève introuvable." }, { status: 404 });
+            }
+            
+            const amountDue = studentSnap.data()?.amountDue || 0;
+            if (amount > amountDue) {
+                return NextResponse.json({ error: `Le montant payé (${amount} FCFA) dépasse le reste à payer (${amountDue} FCFA).` }, { status: 400 });
+            }
         }
+
+
 
         const referenceValue = type === 'tuition'
             ? buildPaymentReference({ type: 'tuition', schoolId, studentId, amount })
