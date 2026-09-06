@@ -5,28 +5,7 @@ import { requireSuperAdmin as requireAdmin } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 
-async function requireAdmin(request: NextRequest): Promise<
-    { uid: string; email: string | null } | { error: string; status: number }
-> {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-        return { error: 'Missing Authorization header', status: 401 };
-    }
-    const token = authHeader.slice(7);
-    let decoded;
-    try {
-        decoded = await getAdminAuth().verifyIdToken(token);
-    } catch (err) {
-        console.error('[Admin Decisions] verifyIdToken failed', err);
-        return { error: 'Invalid token', status: 401 };
-    }
-    const userSnap = await getAdminDb().collection('users').doc(decoded.uid).get();
-    const data = userSnap.data();
-    if (!data?.isSuperAdmin && !data?.profile?.isAdmin) {
-        return { error: 'Admin access required', status: 403 };
-    }
-    return { uid: decoded.uid, email: decoded.email ?? null };
-}
+
 
 interface ProposedAction {
     kind?: 'email' | 'none';
