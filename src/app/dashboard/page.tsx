@@ -116,14 +116,14 @@ const RegularDashboard = () => {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="max-w-[70%] space-y-3"
+            className="max-w-full sm:max-w-[70%] space-y-3"
           >
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 border border-white/80 shadow-sm backdrop-blur-md">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
               </span>
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-700">
+              <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest sm:tracking-[0.2em] text-blue-700">
                 Année en cours : {effectiveAcademicYear}
               </span>
             </div>
@@ -167,7 +167,7 @@ const RegularDashboard = () => {
         )}
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end -mt-2 sm:mt-0 relative z-30">
         <div className="w-full md:w-[200px] space-y-1">
           <Select value={effectiveAcademicYear} onValueChange={(val) => startTransition(() => setSelectedAcademicYear(val))}>
             <SelectTrigger className="h-10 bg-white/50 dark:bg-slate-800/50 border-white/60 dark:border-slate-700/60 rounded-xl focus:ring-blue-500 shadow-sm backdrop-blur-md">
@@ -189,28 +189,28 @@ const RegularDashboard = () => {
 
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
         {/* Left Column (Main) */}
-        <div className="lg:col-span-2 flex flex-col gap-4">
-          <div className="shrink-0">
+        <div className="contents lg:flex lg:col-span-2 lg:flex-col lg:gap-4">
+          <div className="shrink-0 order-1 lg:order-none">
             <FinanceOverview schoolId={schoolId} academicYear={effectiveAcademicYear} />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 shrink-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 shrink-0 order-2 lg:order-none">
             <TodaysAbsences />
             <MonthlyBirthdays />
           </div>
-          <div className="flex-1 min-h-[400px]">
+          <div className="lg:flex-1 lg:min-h-[400px] order-5 lg:order-none">
             <RecentActivity schoolId={schoolId} />
           </div>
         </div>
         
         {/* Right Column (Side) */}
-        <div className="lg:col-span-1 flex flex-col gap-4">
-          <div className="shrink-0">
+        <div className="contents lg:flex lg:col-span-1 lg:flex-col lg:gap-4">
+          <div className="shrink-0 order-3 lg:order-none">
             <QuickActions />
           </div>
-          <div className="shrink-0">
+          <div className="shrink-0 order-4 lg:order-none">
             <ActionItems />
           </div>
-          <div className="flex-1 min-h-[400px]">
+          <div className="lg:flex-1 lg:min-h-[400px] order-6 lg:order-none">
             <CalendarNotes />
           </div>
         </div>

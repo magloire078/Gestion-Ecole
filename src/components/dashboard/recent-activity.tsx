@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { User, CreditCard, UserX, UserPlus, ShieldAlert } from 'lucide-react';
+import { User, CreditCard, UserX, UserPlus, ShieldAlert, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { student, staff, absence, accountingTransaction, discipline_incident as DisciplineIncident } from '@/lib/data-types';
 import { formatCurrency } from '@/lib/currency-utils';
@@ -266,8 +266,11 @@ export function RecentActivity({ schoolId: propSchoolId }: RecentActivityProps) 
                                 </div>
                             </div>
                         ) : (
-                            <div className="text-center py-10">
-                                <p className="text-sm text-muted-foreground">Aucune activité récente à afficher.</p>
+                            <div className="text-center py-10 flex flex-col items-center justify-center gap-3">
+                                <div className="p-4 rounded-full bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+                                    <Activity className="w-8 h-8 text-slate-400" />
+                                </div>
+                                <p className="text-sm font-semibold text-slate-500">Aucune activité récente à afficher.</p>
                             </div>
                         )}
                     </div>

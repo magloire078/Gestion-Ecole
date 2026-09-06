@@ -34,13 +34,20 @@ export function MobileNav() {
                         <Link
                             key={item.href}
                             href={item.href}
+                            aria-current={isActive ? 'page' : undefined}
                             className={cn(
-                                "flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors",
+                                "flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors relative",
                                 isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
                             )}
                         >
-                            <Icon className={cn("h-5 w-5", isActive && "fill-current")} />
-                            <span className="text-[10px] font-medium uppercase tracking-wider">
+                            {isActive && (
+                                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-primary rounded-b-full shadow-[0_2px_10px_rgba(var(--primary),0.5)]" />
+                            )}
+                            <Icon className={cn("h-5 w-5 transition-transform duration-200", isActive && "stroke-[2.5] scale-110")} />
+                            <span className={cn(
+                                "text-[10px] uppercase tracking-wider transition-all duration-200",
+                                isActive ? "font-black" : "font-medium"
+                            )}>
                                 {item.title}
                             </span>
                         </Link>
