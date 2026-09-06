@@ -2,10 +2,12 @@
 
 import { notFound, useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { User, BookUser, Building, Hash, Pencil, CreditCard, FileText, CalendarDays, FileSignature } from 'lucide-react';
+import { User, BookUser, Building, Hash, Pencil, CreditCard, FileText, CalendarDays, FileSignature, Lock, Zap } from 'lucide-react';
 import React, { useMemo, useState, Suspense } from 'react';
 import { useDoc, useFirestore, useCollection, useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
+import { useEditableStudentIds } from '@/hooks/use-editable-student-ids';
+import Link from 'next/link';
 import { doc, collection, query, type DocumentReference, type DocumentData } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -43,6 +45,30 @@ function StudentProfilePageSkeleton() {
     );
 }
 
+function StudentLockedNotice() {
+    return (
+        <Card className="border-dashed">
+            <CardContent className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+                <div className="rounded-full bg-muted p-4">
+                    <Lock className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <div className="space-y-1">
+                    <h2 className="text-lg font-bold">Fiche verrouillée</h2>
+                    <p className="text-muted-foreground max-w-md">
+                        Votre abonnement a expiré : le compte est basculé sur le plan Essentiel, limité aux 50 premiers élèves inscrits.
+                        Cette fiche reste visible mais n&apos;est plus consultable tant que l&apos;abonnement n&apos;est pas renouvelé.
+                    </p>
+                </div>
+                <Button asChild>
+                    <Link href="/dashboard/parametres/abonnement">
+                        <Zap className="mr-2 h-4 w-4" /> Renouveler l&apos;abonnement
+                    </Link>
+                </Button>
+            </CardContent>
+        </Card>
+    );
+}
+
 interface StudentProfileContentProps {
     eleveId: string;
     schoolId: string;
@@ -56,6 +82,8 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
     const firestore = useFirestore();
     const { user } = useUser();
     const canManageUsers = user?.isParent ? false : (user?.profile?.permissions?.manageUsers ?? false);
+    const { subscription } = useSchoolData();
+    const { isLimited: isPlanDowngraded, editableStudentIds, loading: lockLoading } = useEditableStudentIds(schoolId, subscription);
 
     const { toast } = useToast();
 
@@ -88,7 +116,7 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
 
     const studentFullName = student ? `${student.lastName.toUpperCase()} ${student.firstName}` : '';
 
-    const isLoading = studentLoading || classLoading || teacherLoading || cycleLoading || (canManageUsers && (allClassesLoading || feesLoading || niveauxLoading));
+    const isLoading = studentLoading || classLoading || teacherLoading || cycleLoading || lockLoading || (canManageUsers && (allClassesLoading || feesLoading || niveauxLoading));
 
     if (isLoading) {
         return <StudentProfilePageSkeleton />;
@@ -96,6 +124,11 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
 
     if (!student) {
         notFound();
+    }
+
+    const isLocked = isPlanDowngraded && !!editableStudentIds && !editableStudentIds.has(eleveId);
+    if (isLocked) {
+        return <StudentLockedNotice />;
     }
 
     const getStatusBadgeVariant = (status: Student['status']) => {

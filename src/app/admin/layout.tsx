@@ -165,8 +165,8 @@ function AdminLayoutContent({
         );
     }
 
-    // This part will eventually check for a super admin role in the user profile.
-    if (!user?.profile?.isAdmin) {
+    // Accès complet (super-admin) OU restreint (commercial, pipeline prospects uniquement).
+    if (!user?.profile?.isAdmin && !user?.profile?.isCommercial) {
         return (
             <div className="flex flex-col items-center justify-center h-screen bg-muted text-center p-4 md:p-6">
                 <Card className="max-w-lg">

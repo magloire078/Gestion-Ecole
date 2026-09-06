@@ -47,7 +47,7 @@ async function testEmail() {
                     <p>Ceci est un email de test pour valider le système de notifications de <strong>GéreEcole</strong>.</p>
                     <p>Votre école <strong>${schoolName}</strong> est prête à être gérée.</p>
                     <div style="margin: 20px 0;">
-                      <a href="https://gereecole.com/dashboard" style="background-color: #2D9CDB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Accéder au tableau de bord</a>
+                      <a href="https://www.gerecole.com/dashboard" style="background-color: #2D9CDB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Accéder au tableau de bord</a>
                     </div>
                     <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
                     <p style="font-size: 0.8em; color: #777;">L'équipe GéreEcole - Test Technique</p>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminAuth, getAdminDb } from '@/firebase/admin';
+import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
+import { requireSuperAdmin as requireAdmin } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 

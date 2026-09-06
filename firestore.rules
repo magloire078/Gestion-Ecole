@@ -52,13 +52,22 @@ service cloud.firestore {
 
     function hasPermission(schoolId, permission) {
       let staffPath = /databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid);
-      
-      let hasExplicitPermission = exists(staffPath) &&
-        'adminRole' in get(staffPath).data &&
-        get(staffPath).data.adminRole != null &&
-        exists(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(staffPath).data.adminRole)) &&
-        permission in get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(staffPath).data.adminRole)).data.permissions &&
-        get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(staffPath).data.adminRole)).data.permissions[permission] == true;
+      // Résout le nom du rôle admin de l'utilisateur, ou un segment sentinelle
+      // s'il n'a pas de fiche personnel. La sentinelle garde rolePath comme
+      // référence de document valide ; exists() renverra simplement false et
+      // hasExplicitPermission restera false. (Inliner get(staffPath).data.adminRole
+      // directement dans $() à plusieurs reprises fait planter l'évaluation —
+      // les expressions dynamiques dans les templates de chemin sont fragiles.)
+      let adminRole = exists(staffPath) && 'adminRole' in get(staffPath).data && get(staffPath).data.adminRole is string
+                      ? get(staffPath).data.adminRole
+                      : '__none__';
+      let rolePath = /databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(adminRole);
+
+      let hasExplicitPermission = adminRole != '__none__' &&
+        exists(rolePath) &&
+        'permissions' in get(rolePath).data &&
+        permission in get(rolePath).data.permissions &&
+        get(rolePath).data.permissions[permission] == true;
 
       return isSuperAdmin() || isDirector(schoolId) || hasExplicitPermission;
     }
@@ -131,9 +140,16 @@ service cloud.firestore {
     }
     
     match /sessions_parents/{sessionId} {
-      allow create: if true; 
-      allow read: if true;
-      allow update, delete: if isSuperAdmin();
+      // La création reste ouverte (le staff génère un code depuis le client
+      // sans lien de permission direct ici — ParentAccessGenerator). En
+      // revanche `allow read: if true` rendait TOUS les codes d'accès
+      // parents énumérables via un simple listing de la collection, y
+      // compris sans authentification. Aucun code client ne lit réellement
+      // cette collection : la validation d'un code se fait côté serveur
+      // (SDK admin, hors règles) via /api/onboarding/join-parent. La lecture
+      // est donc verrouillée comme l'écriture.
+      allow create: if true;
+      allow read, update, delete: if isSuperAdmin();
     }
 
     match /mail/{mailId} {
@@ -219,15 +235,38 @@ service cloud.firestore {
       // leur helper requireAdmin). Seul un super-admin déjà en place
       // (grantSuperAdmin) ou l'Admin SDK côté serveur/seeding (hors règles)
       // peut modifier ces champs.
+      //
+      // `schools` est logé sur le même document et mérite la même garde :
+      // isSchoolMember()/isDirector()/hasPermission() ci-dessus ne lisent
+      // QUE schools[schoolId] pour décider de l'appartenance et du rôle sur
+      // une école. Sans cette contrainte, un simple compte authentifié
+      // pourrait s'octroyer 'directeur' sur n'importe quelle école connue
+      // (schoolId) en s'auto-écrivant users/{uid}.schools — sans code, sans
+      // invitation — et prendre le contrôle total de ses données (élèves,
+      // notes, paiements, comptabilité...). L'attribution d'une entrée
+      // `schools` ne doit donc passer QUE par les routes serveur (SDK admin,
+      // hors règles) qui valident un code d'école ou un code d'accès parent :
+      // /api/onboarding/{create-school,join-school,join-parent}.
+      //
+      // `commercialAccess` débloque le pipeline prospects (/admin/system/
+      // prospects et son API) sans donner accès au reste de l'espace admin.
+      // Même garde que les champs ci-dessus : seul un super-admin (via
+      // /api/admin/commercial, SDK admin) peut le positionner.
       function usersNoSelfEscalation() {
         return request.resource.data.get('isSuperAdmin', false) == false
-            && request.resource.data.get(['profile', 'isAdmin'], false) == false;
+            && request.resource.data.get(['profile', 'isAdmin'], false) == false
+            && request.resource.data.get('schools', {}) == {}
+            && request.resource.data.get('commercialAccess', false) == false;
       }
       function usersKeepsPrivileges() {
         return request.resource.data.get('isSuperAdmin', false)
                  == resource.data.get('isSuperAdmin', false)
             && request.resource.data.get(['profile', 'isAdmin'], false)
-                 == resource.data.get(['profile', 'isAdmin'], false);
+                 == resource.data.get(['profile', 'isAdmin'], false)
+            && request.resource.data.get('schools', {})
+                 == resource.data.get('schools', {})
+            && request.resource.data.get('commercialAccess', false)
+                 == resource.data.get('commercialAccess', false);
       }
 
       allow read, delete: if request.auth.uid == userId || isSuperAdmin();

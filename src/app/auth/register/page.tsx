@@ -13,6 +13,7 @@ import {
 } from 'firebase/auth';
 import { useEffect } from 'react';
 import { useAuth } from '@/firebase';
+import { useUser } from '@/hooks/use-user';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -67,6 +68,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const auth = useAuth();
   const { toast } = useToast();
+  const { reloadUser } = useUser();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,6 +91,11 @@ export default function RegisterPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(userCredential.user, { displayName });
+      // onIdTokenChanged ne se redéclenche pas après updateProfile (le token
+      // ID n'a pas changé) : sans ce reload, le contexte utilisateur garde le
+      // displayName vide capturé à la création du compte, ce qui bloque
+      // ensuite "Rejoindre (Staff)" sur /onboarding avec "Informations manquantes".
+      await reloadUser();
 
       toast({
         title: "Compte créé avec succès",

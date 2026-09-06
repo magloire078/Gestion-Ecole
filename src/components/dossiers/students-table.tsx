@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MoreHorizontal, Eye, Printer, FileText, CalendarDays, FileSignature, CreditCard, Edit, UserX, UserCheck, Camera } from "lucide-react";
+import { MoreHorizontal, Eye, Printer, FileText, CalendarDays, FileSignature, CreditCard, Edit, UserX, UserCheck, Camera, Lock } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -32,6 +32,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { student as Student } from "@/lib/data-types";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const getStatusBadgeVariant = (status: Student['status']) => {
     switch (status) {
@@ -76,9 +77,11 @@ interface StudentsTableProps {
     onEdit: (student: Student) => void;
     onArchive: (student: Student) => void;
     onRestore: (student: Student) => void;
+    /** IDs des élèves verrouillés (plan Essentiel après expiration de l'abonnement) : visibles mais non consultables/modifiables. */
+    lockedStudentIds?: Set<string>;
 }
 
-export const StudentsTable = ({ students, isLoading, canManageUsers, actionType, onEdit, onArchive, onRestore }: StudentsTableProps) => {
+export const StudentsTable = ({ students, isLoading, canManageUsers, actionType, onEdit, onArchive, onRestore, lockedStudentIds }: StudentsTableProps) => {
     const router = useRouter();
 
     return (
@@ -105,8 +108,10 @@ export const StudentsTable = ({ students, isLoading, canManageUsers, actionType,
                                 </TableRow>
                             ))
                         ) : students.length > 0 ? (
-                            students.map((student, index) => (
-                                <TableRow key={student.id}>
+                            students.map((student, index) => {
+                                const isLocked = !!student.id && !!lockedStudentIds?.has(student.id);
+                                return (
+                                <TableRow key={student.id} className={cn(isLocked && "opacity-60")}>
                                     <TableCell className="font-medium">{index + 1}</TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-3">
@@ -123,9 +128,19 @@ export const StudentsTable = ({ students, isLoading, canManageUsers, actionType,
                                             </div>
                                             <div>
                                                 <div className="flex items-center gap-2">
-                                                    <Link href={`/dashboard/dossiers-eleves/details?id=${student.id}`} className="hover:underline">
-                                                        <p className="font-bold text-slate-900">{student.lastName.toUpperCase()} {student.firstName}</p>
-                                                    </Link>
+                                                    {isLocked ? (
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <p className="font-bold text-slate-900 cursor-not-allowed">{student.lastName.toUpperCase()} {student.firstName}</p>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>Fiche verrouillée — passez à un plan supérieur pour la consulter.</TooltipContent>
+                                                        </Tooltip>
+                                                    ) : (
+                                                        <Link href={`/dashboard/dossiers-eleves/details?id=${student.id}`} className="hover:underline">
+                                                            <p className="font-bold text-slate-900">{student.lastName.toUpperCase()} {student.firstName}</p>
+                                                        </Link>
+                                                    )}
+                                                    {isLocked && <Lock className="h-3 w-3 text-muted-foreground shrink-0" />}
                                                     {student.statusAff === 'Affecté' && (
                                                         <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 hover:bg-emerald-50 text-[10px] py-0 px-1.5 font-bold border border-emerald-200/50 rounded-md">Affecté</Badge>
                                                     )}
@@ -154,6 +169,16 @@ export const StudentsTable = ({ students, isLoading, canManageUsers, actionType,
                                         </TableCell>
                                     }
                                     <TableCell className="text-right print:hidden">
+                                        {isLocked ? (
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Badge variant="outline" className="gap-1 text-muted-foreground cursor-not-allowed">
+                                                        <Lock className="h-3 w-3" /> Verrouillé
+                                                    </Badge>
+                                                </TooltipTrigger>
+                                                <TooltipContent>Passez à un plan supérieur pour consulter et modifier cette fiche.</TooltipContent>
+                                            </Tooltip>
+                                        ) : (
                                         <div className="flex justify-end gap-1">
                                             {actionType === 'active' && canManageUsers && (
                                                 <Button variant="outline" size="sm" onClick={() => onEdit(student)}>
@@ -200,9 +225,11 @@ export const StudentsTable = ({ students, isLoading, canManageUsers, actionType,
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </div>
+                                        )}
                                     </TableCell>
                                 </TableRow>
-                            ))
+                                );
+                            })
                         ) : (
                             <TableRow>
                                 <TableCell colSpan={8} className="h-24 text-center">Aucun élève trouvé.</TableCell>
