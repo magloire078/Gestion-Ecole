@@ -90,7 +90,7 @@ export function FinanceOverview({ schoolId: propSchoolId, academicYear }: Financ
                                 <PieChartIcon className="w-5 h-5 text-primary" />
                                 Finances
                             </CardTitle>
-                            <CardDescription className="text-[11px] font-medium text-muted-foreground/60 uppercase tracking-widest">
+                            <CardDescription className="text-[11px] font-medium text-muted-foreground/60 uppercase tracking-wide sm:tracking-widest">
                                 État des scolarités
                             </CardDescription>
                         </div>
@@ -173,7 +173,7 @@ export function FinanceOverview({ schoolId: propSchoolId, academicYear }: Financ
                 </CardContent>
 
                 <CardFooter className="pt-2">
-                    <Button className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl shadow-lg shadow-primary/20 font-black uppercase text-[11px] tracking-[0.2em] group/btn overflow-hidden relative" asChild>
+                    <Button className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl shadow-lg shadow-primary/20 font-black uppercase text-[11px] tracking-[0.08em] sm:tracking-[0.2em] group/btn overflow-hidden relative" asChild>
                         <Link href="/dashboard/paiements">
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:animate-[shine_1s_ease-in-out_infinite]" />
                             <Wallet className="mr-2 h-4 w-4 transition-transform group-hover/btn:-translate-y-0.5 group-hover/btn:translate-x-0.5" />

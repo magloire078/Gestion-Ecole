@@ -101,7 +101,7 @@ export function CalendarNotes() {
         
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+            <label className="text-[10px] font-black uppercase text-muted-foreground tracking-wide sm:tracking-widest">
               {date ? format(date, 'EEEE d MMMM yyyy', { locale: fr }) : 'Sélectionnez une date'}
             </label>
             {loading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
