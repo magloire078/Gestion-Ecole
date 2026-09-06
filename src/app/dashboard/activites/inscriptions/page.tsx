@@ -23,6 +23,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import type { activite as Activite, student as Student, inscriptionActivite as Inscription } from '@/lib/data-types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAcademicYear } from '@/providers/academic-year-provider';
+import { filterByAcademicYear } from '@/lib/academic-year-utils';
 
 const inscriptionSchema = z.object({
   studentId: z.string().min(1, { message: "Veuillez sélectionner un élève." }),
@@ -37,9 +39,10 @@ export default function InscriptionsPage() {
   const { user } = useUser();
   const { toast } = useToast();
   const canManageActivities = !!user?.profile?.permissions?.manageActivities;
+  const { selectedYear, currentYear, availableYears } = useAcademicYear();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
-  
+
   const inscriptionsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/inscriptions_activites`)) : null, [firestore, schoolId]);
   const { data: inscriptionsData, loading: inscriptionsLoading } = useCollection(inscriptionsQuery);
   const activitesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/activites`)) : null, [firestore, schoolId]);
@@ -53,13 +56,14 @@ export default function InscriptionsPage() {
     if (!inscriptionsData) return [];
     const studentMap = new Map(students.map(s => [s.id, `${s.firstName} ${s.lastName}`]));
     const activiteMap = new Map(activites.map(a => [a.id, a.name]));
-    return inscriptionsData.map(doc => {
+    const all = inscriptionsData.map(doc => {
       const data = doc.data() as Inscription;
       return { id: doc.id, ...data, studentName: studentMap.get(data.studentId) || 'N/A', activiteName: activiteMap.get(data.activiteId) || 'N/A' };
     });
-  }, [inscriptionsData, students, activites]);
-  
-  const form = useForm<InscriptionFormValues>({ resolver: zodResolver(inscriptionSchema), defaultValues: { academicYear: '2024-2025' } });
+    return filterByAcademicYear(all, selectedYear, currentYear);
+  }, [inscriptionsData, students, activites, selectedYear, currentYear]);
+
+  const form = useForm<InscriptionFormValues>({ resolver: zodResolver(inscriptionSchema), defaultValues: { academicYear: currentYear } });
 
   const handleFormSubmit = async (values: InscriptionFormValues) => {
     if (!schoolId) return;
@@ -122,7 +126,7 @@ export default function InscriptionsPage() {
           <Form {...form}><form id="inscription-form" onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
               <FormField control={form.control} name="studentId" render={({ field }) => <FormItem><FormLabel>Élève</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Choisir..."/></SelectTrigger></FormControl><SelectContent>{students.map(s => <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
               <FormField control={form.control} name="activiteId" render={({ field }) => <FormItem><FormLabel>Activité</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Choisir..."/></SelectTrigger></FormControl><SelectContent>{activites.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
-              <FormField control={form.control} name="academicYear" render={({ field }) => (<FormItem><FormLabel>Année Scolaire</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="2024-2025">2024-2025</SelectItem><SelectItem value="2025-2026">2025-2026</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="academicYear" render={({ field }) => (<FormItem><FormLabel>Année Scolaire</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{availableYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
           </form></Form>
           <DialogFooter><Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button><Button type="submit" form="inscription-form" disabled={form.formState.isSubmitting}>Inscrire</Button></DialogFooter>
         </DialogContent>

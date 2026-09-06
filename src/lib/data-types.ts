@@ -38,6 +38,11 @@ export type school = {
     academicPeriods?: academicPeriod[];
     archivedYears?: string[];
     isSetupComplete?: boolean;
+    /** Nombre maximum de repas servis par jour et par type de repas (non défini = pas de limite). */
+    cantineDailyCapacity?: number;
+    /** Heure de couvre-feu de l'internat, format "HH:mm". */
+    internatCurfewWeekday?: string;
+    internatCurfewWeekend?: string;
     subscription?: {
         plan?: "Essentiel" | "Pro" | "Premium";
         status?: "active" | "trialing" | "past_due" | "canceled" | "expired";
@@ -612,6 +617,12 @@ export type canteenReservation = {
     paidAmount?: number;
     attendanceTime?: string;
     notes?: string;
+    /** Transaction ecoles/{schoolId}/comptabilite créée pour ce paiement (évite un double enregistrement). */
+    accountingTransactionId?: string;
+    /** Abonnement cantine actif décrémenté par cette réservation, le cas échéant. */
+    linkedSubscriptionId?: string;
+    academicYear?: string;
+    id?: string;
 };
 
 export type canteenSubscription = {
@@ -621,11 +632,15 @@ export type canteenSubscription = {
     endDate: string;
     price: number;
     status: "active" | "inactive" | "expired";
+    paymentStatus?: "unpaid" | "paid";
     daysOfWeek?: string[];
     mealType?: "petit_dejeuner" | "dejeuner" | "gouter" | "diner";
     autoRenew?: boolean;
     missedMeals?: number;
     remainingMeals?: number;
+    /** Transaction ecoles/{schoolId}/comptabilite créée pour ce paiement (évite un double enregistrement). */
+    accountingTransactionId?: string;
+    academicYear?: string;
     id?: string;
 };
 
@@ -721,6 +736,9 @@ export type transportSubscription = {
     startDate: string;
     endDate: string;
     paymentStatus?: "unpaid" | "paid";
+    /** Transaction ecoles/{schoolId}/comptabilite créée pour ce paiement (évite un double enregistrement). */
+    accountingTransactionId?: string;
+    academicYear?: string;
     id?: string;
 };
 
@@ -739,6 +757,8 @@ export type room = {
     capacity: number;
     status: "available" | "occupied" | "maintenance";
     monthlyRate: number;
+    /** Nombre d'occupants actifs actuels, maintenu par transaction pour éviter tout dépassement de capacité. */
+    currentOccupancy?: number;
 };
 
 export type occupant = {
@@ -748,6 +768,7 @@ export type occupant = {
     status: "active" | "pending" | "terminated" | "suspended";
     endDate?: string;
     nextPaymentDue?: string;
+    academicYear?: string;
 };
 
 export type log = {

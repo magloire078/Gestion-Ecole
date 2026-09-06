@@ -9,14 +9,17 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
+import { doc, writeBatch, collection } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
+import { useSchoolData } from '@/hooks/use-school-data';
 import type { canteenSubscription as CanteenSubscription, student as Student } from '@/lib/data-types';
-import { format, addMonths, addYears, startOfYear, endOfYear, isValid } from 'date-fns';
+import { format, addMonths, endOfYear, eachDayOfInterval, isValid } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { DialogFooter } from '../ui/dialog';
 import { getCurrencySymbol } from '@/lib/currency-utils';
+import { prepareServicePaymentTransaction } from '@/lib/service-payment';
+import { resolveAcademicYearForWrite } from '@/lib/academic-year-utils';
 
 const subscriptionFormSchema = z.object({
   studentId: z.string().min(1, 'Veuillez sélectionner un élève.'),
@@ -25,8 +28,17 @@ const subscriptionFormSchema = z.object({
   endDate: z.string().min(1, 'La date de fin est requise.'),
   price: z.coerce.number().min(0, 'Le prix doit être positif.'),
   status: z.enum(['active', 'inactive', 'expired']),
+  paymentStatus: z.enum(['unpaid', 'paid']),
   autoRenew: z.boolean().default(false),
 });
+
+/** Nombre de jours ouvrés (lun-ven) dans l'intervalle, utilisé comme allocation initiale de repas. */
+function countWeekdays(startDate: string, endDate: string): number {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  if (!isValid(start) || !isValid(end) || end < start) return 0;
+  return eachDayOfInterval({ start, end }).filter(d => d.getDay() !== 0 && d.getDay() !== 6).length;
+}
 
 type SubscriptionFormValues = z.infer<typeof subscriptionFormSchema>;
 
@@ -39,6 +51,7 @@ interface SubscriptionFormProps {
 
 export function SubscriptionForm({ schoolId, students, subscription, onSave }: SubscriptionFormProps) {
   const firestore = useFirestore();
+  const { schoolData } = useSchoolData();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -48,12 +61,14 @@ export function SubscriptionForm({ schoolId, students, subscription, onSave }: S
       ...subscription,
       price: subscription.price || 0,
       autoRenew: subscription.autoRenew || false,
+      paymentStatus: subscription.paymentStatus || 'unpaid',
     } : {
       type: 'mensuel',
       startDate: format(new Date(), 'yyyy-MM-dd'),
       endDate: format(addMonths(new Date(), 1), 'yyyy-MM-dd'),
       price: 25000,
       status: 'active',
+      paymentStatus: 'unpaid',
       autoRenew: false,
     },
   });
@@ -81,25 +96,52 @@ export function SubscriptionForm({ schoolId, students, subscription, onSave }: S
   const handleSubmit = async (values: SubscriptionFormValues) => {
     setIsSubmitting(true);
 
-    const dataToSave: Omit<CanteenSubscription, 'id'> = {
+    const dataToSave: Record<string, unknown> = {
       studentId: values.studentId,
       type: values.type,
       startDate: values.startDate,
       endDate: values.endDate,
       price: values.price,
       status: values.status,
+      paymentStatus: values.paymentStatus,
       autoRenew: values.autoRenew,
       mealType: 'dejeuner',
     };
 
+    // Allocation initiale de repas restants, à la création seulement (une
+    // édition ne doit pas réinitialiser une consommation déjà décomptée).
+    if (!subscription) {
+      dataToSave.remainingMeals = countWeekdays(values.startDate, values.endDate);
+      dataToSave.academicYear = resolveAcademicYearForWrite({
+        schoolCurrentYear: (schoolData as any)?.currentAcademicYear,
+        docDate: values.startDate,
+      });
+    }
+
     try {
-      if (subscription && subscription.id) {
-        const subRef = doc(firestore, `ecoles/${schoolId}/cantine_abonnements/${subscription.id}`);
-        await setDoc(subRef, dataToSave, { merge: true });
-      } else {
-        const subsCollectionRef = collection(firestore, `ecoles/${schoolId}/cantine_abonnements`);
-        await addDoc(subsCollectionRef, dataToSave);
+      const batch = writeBatch(firestore);
+      const subRef = subscription && subscription.id
+        ? doc(firestore, `ecoles/${schoolId}/cantine_abonnements/${subscription.id}`)
+        : doc(collection(firestore, `ecoles/${schoolId}/cantine_abonnements`));
+
+      // N'enregistre le paiement en comptabilité qu'une seule fois : dès
+      // qu'un abonnement passe (ou est créé) à "Payé" et qu'aucune
+      // transaction n'a encore été rattachée.
+      if (values.paymentStatus === 'paid' && !subscription?.accountingTransactionId) {
+        const { ref: txRef, data: txData } = prepareServicePaymentTransaction(firestore, schoolId, {
+          category: 'Cantine',
+          description: `Abonnement cantine (${values.type})`,
+          amount: values.price,
+          date: values.startDate,
+          studentId: values.studentId,
+          schoolCurrentYear: (schoolData as any)?.currentAcademicYear,
+        });
+        batch.set(txRef, txData);
+        dataToSave.accountingTransactionId = txRef.id;
       }
+
+      batch.set(subRef, dataToSave, { merge: true });
+      await batch.commit();
       toast({ title: 'Abonnement enregistré', description: 'L\'abonnement a été mis à jour.' });
       onSave();
     } catch (e) {
@@ -125,9 +167,14 @@ export function SubscriptionForm({ schoolId, students, subscription, onSave }: S
             <FormField control={form.control} name="endDate" render={({ field }) => (<FormItem><FormLabel>Date de fin</FormLabel><FormControl><Input type="date" {...field} readOnly /></FormControl><FormMessage /></FormItem>)} />
           </div>
           <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Prix ({getCurrencySymbol()})</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-          <FormField control={form.control} name="status" render={({ field }) => (
-            <FormItem><FormLabel>Statut</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="active">Actif</SelectItem><SelectItem value="inactive">Inactif</SelectItem><SelectItem value="expired">Expiré</SelectItem></SelectContent></Select><FormMessage /></FormItem>
-          )} />
+          <div className="grid grid-cols-2 gap-4">
+            <FormField control={form.control} name="status" render={({ field }) => (
+              <FormItem><FormLabel>Statut</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="active">Actif</SelectItem><SelectItem value="inactive">Inactif</SelectItem><SelectItem value="expired">Expiré</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+            )} />
+            <FormField control={form.control} name="paymentStatus" render={({ field }) => (
+              <FormItem><FormLabel>Paiement</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="paid">Payé</SelectItem><SelectItem value="unpaid">Impayé</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+            )} />
+          </div>
           <FormField
             control={form.control}
             name="autoRenew"

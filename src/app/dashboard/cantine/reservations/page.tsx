@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -23,6 +24,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { ReservationForm } from '@/components/cantine/reservation-form';
+import { useAcademicYear } from '@/providers/academic-year-provider';
+import { filterByAcademicYear } from '@/lib/academic-year-utils';
 
 interface ReservationWithStudentName extends CanteenReservation {
     studentName?: string;
@@ -32,12 +35,31 @@ interface ReservationWithStudentName extends CanteenReservation {
 export default function ReservationsPage() {
   const firestore = useFirestore();
   const { user } = useUser();
-  const { schoolId, loading: schoolLoading } = useSchoolData();
+  const { schoolId, schoolData, updateSchoolData, loading: schoolLoading } = useSchoolData();
   const canManageContent = !!user?.profile?.permissions?.manageCantine;
+  const { toast } = useToast();
+  const { selectedYear, currentYear } = useAcademicYear();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingReservation, setEditingReservation] = useState<ReservationWithStudentName | null>(null);
+  const [capacityInput, setCapacityInput] = useState('');
+  const [lastSyncedCapacity, setLastSyncedCapacity] = useState<number | undefined>(undefined);
+  if (schoolData?.cantineDailyCapacity !== lastSyncedCapacity) {
+    setLastSyncedCapacity(schoolData?.cantineDailyCapacity);
+    setCapacityInput(schoolData?.cantineDailyCapacity ? String(schoolData.cantineDailyCapacity) : '');
+  }
+
+  const handleSaveCapacity = async () => {
+    const parsed = parseInt(capacityInput, 10);
+    try {
+      await updateSchoolData({ cantineDailyCapacity: Number.isFinite(parsed) && parsed > 0 ? parsed : undefined } as any);
+      toast({ title: 'Capacité mise à jour' });
+    } catch (e) {
+      console.error('Error updating cantine capacity:', e);
+      toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de mettre à jour la capacité." });
+    }
+  };
 
   const reservationsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cantine_reservations`)) : null, [firestore, schoolId]);
   const studentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [firestore, schoolId]);
@@ -55,7 +77,7 @@ export default function ReservationsPage() {
     
     const studentsMap = new Map(students.map(s => [s.id, s]));
     
-    return reservationsData.map(doc => {
+    const all = reservationsData.map(doc => {
       const res = { id: doc.id, ...doc.data() } as CanteenReservation & { id: string };
       const student = studentsMap.get(res.studentId);
       return {
@@ -63,7 +85,8 @@ export default function ReservationsPage() {
         studentName: student ? `${student.firstName} ${student.lastName}` : 'Élève inconnu'
       };
     });
-  }, [reservationsData, students]);
+    return filterByAcademicYear(all, selectedYear, currentYear);
+  }, [reservationsData, students, selectedYear, currentYear]);
   
   const filteredReservations = useMemo(() => {
     return reservations.filter(res => 
@@ -127,6 +150,23 @@ export default function ReservationsPage() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
             </div>
+            {canManageContent && (
+                <div className="flex items-center gap-2 pt-4">
+                    <label htmlFor="cantine-capacity" className="text-sm text-muted-foreground whitespace-nowrap">
+                        Capacité par service (repas/jour) :
+                    </label>
+                    <Input
+                        id="cantine-capacity"
+                        type="number"
+                        min={0}
+                        className="w-28"
+                        placeholder="Illimitée"
+                        value={capacityInput}
+                        onChange={(e) => setCapacityInput(e.target.value)}
+                        onBlur={handleSaveCapacity}
+                    />
+                </div>
+            )}
         </CardHeader>
         <CardContent>
           <Table>

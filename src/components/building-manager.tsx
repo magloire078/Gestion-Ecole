@@ -42,6 +42,8 @@ interface BuildingManagerProps {
   BuildingFormComponent: React.FC<any>;
   RoomFormComponent: React.FC<any>;
   permission: PermissionId;
+  /** Retourne le nombre d'occupants actifs d'une salle, pour bloquer sa suppression si non vide. */
+  getRoomOccupancy?: (roomId: string) => Promise<number>;
 }
 
 export function BuildingManager({
@@ -57,6 +59,7 @@ export function BuildingManager({
   BuildingFormComponent,
   RoomFormComponent,
   permission,
+  getRoomOccupancy,
 }: BuildingManagerProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -148,8 +151,29 @@ export function BuildingManager({
     });
   };
 
-  const handleDeleteRoom = () => {
+  const handleDeleteRoom = async () => {
       if (!roomToDelete) return;
+
+      if (getRoomOccupancy) {
+        try {
+          const occupancy = await getRoomOccupancy(roomToDelete.id);
+          if (occupancy > 0) {
+            toast({
+              variant: "destructive",
+              title: "Action impossible",
+              description: `Cette salle/chambre compte encore ${occupancy} occupant(s) actif(s). Faites-les sortir ou changez-les de chambre avant de la supprimer.`,
+            });
+            setRoomToDelete(null);
+            return;
+          }
+        } catch (e) {
+          console.error("Error checking room occupancy:", e);
+          toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de vérifier l'occupation de la salle/chambre." });
+          setRoomToDelete(null);
+          return;
+        }
+      }
+
       const docRef = doc(firestore, `ecoles/${schoolId}/${roomCollectionName}/${roomToDelete.id}`);
       deleteDoc(docRef)
           .then(() => {
