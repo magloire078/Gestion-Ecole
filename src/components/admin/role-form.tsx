@@ -6,9 +6,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useUser } from '@/firebase';
 import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
 import type { admin_role as AdminRole } from '@/lib/data-types';
+import { writeAuditLog } from '@/lib/audit-log';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect, useMemo } from 'react';
 import { DialogFooter } from '../ui/dialog';
@@ -42,6 +43,7 @@ const categoryIcons: Record<string, any> = {
 
 export function RoleForm({ schoolId, role, onSave }: RoleFormProps) {
   const firestore = useFirestore();
+  const { user } = useUser();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<string>(permissionCategories[0].id);
@@ -98,12 +100,23 @@ export function RoleForm({ schoolId, role, onSave }: RoleFormProps) {
     };
     
     const collectionRef = collection(firestore, `ecoles/${schoolId}/admin_roles`);
-    const promise = role 
-    ? setDoc(doc(collectionRef, role.id), dataToSave, { merge: true })
-    : addDoc(collectionRef, dataToSave);
-        
+
     try {
-        await promise;
+        const roleId = role ? role.id : (await addDoc(collectionRef, dataToSave)).id;
+        if (role) {
+            await setDoc(doc(collectionRef, role.id), dataToSave, { merge: true });
+        }
+
+        await writeAuditLog(firestore, schoolId, {
+            action: role ? 'admin_role.modifie' : 'admin_role.cree',
+            details: `Rôle "${values.name}" ${role ? 'modifié' : 'créé'}`,
+            userId: user?.uid || 'inconnu',
+            userName: user?.displayName || undefined,
+            targetId: roleId,
+            targetType: 'admin_role',
+            payload: { before: role?.permissions || null, after: values.permissions },
+        });
+
         toast({ title: `Rôle ${role ? 'modifié' : 'créé'}`, description: `Le rôle "${values.name}" a été enregistré.` });
         onSave();
     } catch(e) {

@@ -118,6 +118,19 @@ export default function SubscriptionPage() {
 
     const handleReactivateSubscription = async () => {
         if (!subscription || isUpdating) return;
+        // Un abonnement résilié reste valide jusqu'à `endDate` (déjà payé) :
+        // "Réactiver" avant cette date ne fait que ré-armer le renouvellement,
+        // sans nouveau paiement. Une fois `endDate` dépassée, l'accès n'est
+        // plus couvert par un paiement réel — il faut repasser par le vrai
+        // parcours de paiement, pas une simple écriture cliente sur le statut.
+        if (isExpired) {
+            toast({
+                variant: 'destructive',
+                title: 'Abonnement expiré',
+                description: 'Votre période payée est terminée : choisissez un plan ci-dessous pour renouveler par un vrai paiement.',
+            });
+            return;
+        }
         setIsUpdating(true);
         try {
             await updateSubscription({
