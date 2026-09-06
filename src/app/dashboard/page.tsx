@@ -116,7 +116,7 @@ const RegularDashboard = () => {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="max-w-[70%] space-y-3"
+            className="max-w-full sm:max-w-[70%] space-y-3"
           >
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
               <span className="relative flex h-2 w-2">
@@ -192,7 +192,7 @@ const RegularDashboard = () => {
           <div className="shrink-0">
             <FinanceOverview schoolId={schoolId} academicYear={effectiveAcademicYear} />
           </div>
-          <div className="flex-1 min-h-[400px]">
+          <div className="lg:flex-1 lg:min-h-[400px]">
             <RecentActivity schoolId={schoolId} />
           </div>
         </div>
@@ -203,7 +203,7 @@ const RegularDashboard = () => {
           <div className="shrink-0">
             <ActionItems />
           </div>
-          <div className="flex-1 min-h-[400px]">
+          <div className="lg:flex-1 lg:min-h-[400px]">
             <CalendarNotes />
           </div>
         </div>
