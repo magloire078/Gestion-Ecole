@@ -77,6 +77,8 @@ interface ReportCardProps {
     classStats?: Record<string, ClassSubjectStats>;
     rank?: number;
     totalStudents?: number;
+    /** Coefficients officiels par matière (cf. ReportCardService.getSubjectCoefficients), pour pondérer la moyenne générale comme le reste de l'application. */
+    subjectCoefficients?: Record<string, number>;
 }
 
 export const ReportCard: React.FC<ReportCardProps> = ({
@@ -87,7 +89,8 @@ export const ReportCard: React.FC<ReportCardProps> = ({
     periodName = "PREMIER TRIMESTRE",
     classStats,
     rank,
-    totalStudents
+    totalStudents,
+    subjectCoefficients = {}
 }) => {
     const { toast } = useToast();
     const printRef = useRef<HTMLDivElement>(null);
@@ -161,21 +164,27 @@ export const ReportCard: React.FC<ReportCardProps> = ({
 
         reports.sort((a, b) => b.average - a.average);
 
+        // Pondération identique à ReportCardService.calculateGeneralAverage :
+        // chaque matière pèse pour son coefficient officiel dans la moyenne
+        // générale, jamais pour la somme des coefficients de ses devoirs
+        // (qui dépendrait arbitrairement du nombre de notes saisies).
         let totalWeightedPoints = 0;
         let totalAllCoeffs = 0;
 
         Object.keys(gradesBySubject).forEach(subject => {
             const { totalPoints, totalCoeffs } = gradesBySubject[subject];
             if (totalCoeffs > 0) {
-                totalWeightedPoints += totalPoints;
-                totalAllCoeffs += totalCoeffs;
+                const subjectAverage = totalPoints / totalCoeffs;
+                const officialCoef = subjectCoefficients[subject] ?? 1;
+                totalWeightedPoints += subjectAverage * officialCoef;
+                totalAllCoeffs += officialCoef;
             }
         });
 
         const finalAverage = totalAllCoeffs > 0 ? totalWeightedPoints / totalAllCoeffs : 0;
 
         return { subjectReports: reports, generalAverage: finalAverage, totalCoefficients: totalAllCoeffs };
-    }, [grades, teachers, mainTeacher, student.cycle, subjectAppreciations, classStats]);
+    }, [grades, teachers, mainTeacher, student.cycle, subjectAppreciations, classStats, subjectCoefficients]);
 
     const handleGenerateComment = async (subject?: string, teacherName?: string, average?: number) => {
         if (subject && teacherName && average !== undefined) {

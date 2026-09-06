@@ -11,6 +11,7 @@ import {
     serverTimestamp,
     increment,
     getDoc,
+    writeBatch,
     Timestamp
 } from 'firebase/firestore';
 import { db } from '@/firebase';
@@ -113,11 +114,29 @@ export const StockService = {
     },
 
     /**
-     * Supprime un article
+     * Supprime un article et journalise la suppression (comme les
+     * mouvements d'entrée/sortie), pour garder une trace de qui a retiré
+     * quoi du catalogue.
      */
-    deleteItem: async (schoolId: string, itemId: string) => {
+    deleteItem: async (schoolId: string, itemId: string, staffId: string) => {
         if (!db) throw new Error("Firestore not initialized");
         const docRef = doc(db, `ecoles/${schoolId}/stocks`, itemId);
-        await deleteDoc(docRef);
+        const itemSnap = await getDoc(docRef);
+        if (!itemSnap.exists()) throw new Error("Article non trouvé");
+        const itemData = itemSnap.data() as StockItem;
+
+        const batch = writeBatch(db);
+        batch.delete(docRef);
+        batch.set(doc(StockService.getLogsCollectionRef(schoolId)), {
+            itemId,
+            itemName: itemData.name,
+            type: 'out',
+            quantity: itemData.quantity,
+            reason: 'ajustement',
+            staffId,
+            notes: 'Article supprimé du catalogue de stock.',
+            timestamp: new Date().toISOString(),
+        });
+        await batch.commit();
     }
 };

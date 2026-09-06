@@ -142,6 +142,95 @@ export class StudentReportsService {
     }
 
     /**
+     * Générer une grille de notation vierge pour une classe (saisie manuelle)
+     */
+    static async generateBlankGradeSheetPdf(
+        students: Student[],
+        schoolName: string,
+        className: string,
+        academicYear: string,
+        logoUrl?: string
+    ) {
+        const doc = new jsPDF('l', 'mm', 'a4');
+        const logoBase64 = logoUrl ? await this.getBase64ImageFromUrl(logoUrl) : '';
+
+        this.addHeader(doc, schoolName, `Fiche de Notation Vierge - ${className}`, logoBase64, academicYear);
+
+        const tableData = students.map((s, index) => [
+            index + 1,
+            s.matricule || 'N/A',
+            `${s.lastName} ${s.firstName}`,
+            '', '', '', ''
+        ]);
+
+        autoTable(doc, {
+            startY: 65,
+            head: [['N°', 'Matricule', 'Nom & Prénom', 'Devoir 1', 'Devoir 2', 'Composition', 'Moyenne']],
+            body: tableData,
+            theme: 'grid',
+            headStyles: { fillColor: [79, 70, 229], textColor: 255, fontStyle: 'bold', halign: 'center' },
+            columnStyles: {
+                0: { halign: 'center', cellWidth: 12 },
+                1: { halign: 'center', cellWidth: 30 },
+                2: { halign: 'left' },
+                3: { halign: 'center', cellWidth: 30, minCellHeight: 12 },
+                4: { halign: 'center', cellWidth: 30, minCellHeight: 12 },
+                5: { halign: 'center', cellWidth: 30, minCellHeight: 12 },
+                6: { halign: 'center', cellWidth: 30, minCellHeight: 12 },
+            },
+            styles: { fontSize: 9, cellPadding: 4 },
+            alternateRowStyles: { fillColor: [248, 250, 252] }
+        });
+
+        this.addFooter(doc);
+        doc.save(`Fiche_Notation_${className.replace(/\s+/g, '_')}.pdf`);
+    }
+
+    /**
+     * Générer une feuille d'appel journalière pour une classe
+     */
+    static async generateDailyAttendanceSheetPdf(
+        students: Student[],
+        schoolName: string,
+        className: string,
+        dateStr: string,
+        logoUrl?: string
+    ) {
+        const doc = new jsPDF('p', 'mm', 'a4');
+        const logoBase64 = logoUrl ? await this.getBase64ImageFromUrl(logoUrl) : '';
+
+        this.addHeader(doc, schoolName, `Feuille d'Appel - ${className} - ${dateStr}`, logoBase64);
+
+        const tableData = students.map((s, index) => [
+            index + 1,
+            s.matricule || 'N/A',
+            `${s.lastName} ${s.firstName}`,
+            '', '', ''
+        ]);
+
+        autoTable(doc, {
+            startY: 65,
+            head: [['N°', 'Matricule', 'Nom & Prénom', 'Présent', 'Absent', 'Retard']],
+            body: tableData,
+            theme: 'grid',
+            headStyles: { fillColor: [79, 70, 229], textColor: 255, fontStyle: 'bold', halign: 'center' },
+            columnStyles: {
+                0: { halign: 'center', cellWidth: 12 },
+                1: { halign: 'center', cellWidth: 30 },
+                2: { halign: 'left' },
+                3: { halign: 'center', cellWidth: 25, minCellHeight: 10 },
+                4: { halign: 'center', cellWidth: 25, minCellHeight: 10 },
+                5: { halign: 'center', cellWidth: 25, minCellHeight: 10 },
+            },
+            styles: { fontSize: 9, cellPadding: 4 },
+            alternateRowStyles: { fillColor: [248, 250, 252] }
+        });
+
+        this.addFooter(doc);
+        doc.save(`Feuille_Appel_${className.replace(/\s+/g, '_')}_${dateStr}.pdf`);
+    }
+
+    /**
      * Générer le rapport de passage de classe (Transition)
      */
     static async generateTransitionReportPdf(

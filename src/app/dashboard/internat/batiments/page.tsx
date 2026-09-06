@@ -12,14 +12,17 @@ export default function BatimentsPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const firestore = useFirestore();
 
-  const getRoomOccupancy = async (roomId: string) => {
-    if (!schoolId) return 0;
+  const getRoomDeletionBlocker = async (roomId: string): Promise<string | null> => {
+    if (!schoolId) return null;
     const snap = await getDocs(query(
       collection(firestore, `ecoles/${schoolId}/internat_occupants`),
       where('roomId', '==', roomId),
       where('status', '==', 'active'),
     ));
-    return snap.size;
+    if (snap.size > 0) {
+      return `Cette chambre compte encore ${snap.size} occupant(s) actif(s). Faites-les sortir ou changez-les de chambre avant de la supprimer.`;
+    }
+    return null;
   };
 
   if (schoolLoading || !schoolId) {
@@ -46,7 +49,7 @@ export default function BatimentsPage() {
       BuildingFormComponent={BuildingForm}
       RoomFormComponent={RoomForm}
       permission="manageInternat"
-      getRoomOccupancy={getRoomOccupancy}
+      getRoomDeletionBlocker={getRoomDeletionBlocker}
     />
   );
 }

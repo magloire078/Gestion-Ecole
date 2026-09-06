@@ -12,6 +12,7 @@ import {
     type Firestore,
 } from 'firebase/firestore';
 import { firebaseFirestore } from '@/firebase/config';
+import { writeAuditLog } from '@/lib/audit-log';
 import type {
     academicYearTransition,
     class_type as ClassType,
@@ -125,6 +126,7 @@ export async function finalizeAcademicYear(
     toYear: string,
     summary: Pick<academicYearTransition, 'classesCloned' | 'studentsPromoted' | 'notes'>,
     userId: string,
+    userName?: string,
 ): Promise<void> {
     const schoolRef = doc(db, `ecoles/${schoolId}`);
     const schoolSnap = await getDoc(schoolRef);
@@ -157,6 +159,20 @@ export async function finalizeAcademicYear(
     } satisfies academicYearTransition);
 
     await batch.commit();
+
+    // Bascule d'année scolaire = l'action la plus destructrice de l'app
+    // (archive toutes les classes, vide les périodes) : elle doit être
+    // traçable dans le même journal d'audit que le reste, pas seulement
+    // dans sa collection technique dédiée.
+    await writeAuditLog(db, schoolId, {
+        action: 'annee_scolaire.bascule',
+        details: `Bascule de l'année scolaire ${fromYear} vers ${toYear} — ${summary.classesCloned} classe(s) clonée(s).`,
+        userId,
+        userName,
+        targetId: transitionRef.id,
+        targetType: 'academic_year_transition',
+        payload: { fromYear, toYear, ...summary },
+    });
 }
 
 export const AcademicYearService = {
