@@ -22,6 +22,7 @@ import {
   Grid,
   FileCheck,
   CheckCircle,
+  CalendarDays,
   Loader2
 } from 'lucide-react';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -56,6 +57,7 @@ const DOCUMENT_TYPES: DocType[] = [
   { slug: 'trombinoscope', title: 'Trombinoscope (Photos)', icon: ImageIcon, description: 'Liste des élèves de la classe avec leur photo d\'identité.', scope: 'class', implemented: false },
   { slug: 'recapitulatif', title: 'Tableau Récapitulatif Annuel', icon: Layers, description: 'Synthèse annuelle des présences et des performances.', scope: 'class', implemented: false },
   { slug: 'appels/journalier', title: 'Feuille d\'Appel Journalière', icon: Printer, description: 'Modèle journalier d\'appel pour le contrôle de présence.', scope: 'class', implemented: true },
+  { slug: 'appels/mensuel', title: 'Liste d\'Appel Mensuelle', icon: CalendarDays, description: 'Registre officiel de présence : une page par mois de l\'année scolaire, une colonne par jour.', scope: 'class', implemented: true },
 ];
 
 export default function AdministrativeDocumentsPage() {
@@ -126,6 +128,19 @@ export default function AdministrativeDocumentsPage() {
         await StudentReportsService.generateBlankGradeSheetPdf(students, schoolName, selectedClass?.name || '', academicYear, schoolData?.mainLogoUrl);
       } else if (activeDoc.slug === 'appels/journalier') {
         await StudentReportsService.generateDailyAttendanceSheetPdf(students, schoolName, selectedClass?.name || '', format(new Date(), 'dd/MM/yyyy'), schoolData?.mainLogoUrl);
+      } else if (activeDoc.slug === 'appels/mensuel') {
+        await StudentReportsService.generateMonthlyAttendanceSheetPdf(
+          students,
+          schoolName,
+          selectedClass?.name || '',
+          academicYear,
+          {
+            countryCode: schoolData?.country,
+            // Téléphone et e-mail ne sont joints que s'ils sont renseignés,
+            // pour ne pas imprimer un séparateur orphelin sous le nom de l'école.
+            schoolContact: [schoolData?.phone, schoolData?.email].filter(Boolean).join(' / '),
+          }
+        );
       }
       toast({ title: "Document généré", description: `Le document "${activeDoc.title}" a été téléchargé.` });
     } catch (e) {
