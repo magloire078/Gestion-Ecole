@@ -58,7 +58,6 @@ export const runPayrollForMonth = async (
         }, 0);
 
         const employeeCount = staffMembers.length;
-
         const period = format(new Date(), 'MMMM yyyy', { locale: fr });
 
         // Check if payroll has already been run for this period
@@ -76,33 +75,12 @@ export const runPayrollForMonth = async (
 
         const newRunRef = doc(collection(firestore, `ecoles/${schoolId}/payroll_runs`));
 
-        const payrollRunData = {
-            period,
-            executionDate: new Date().toISOString(),
-            totalMass,
-            employeeCount,
-            status: 'Terminé',
-            processedBy: adminId,
-            processedByName: adminName,
-        };
+        // Generate individual payslips and calculate exact total net pay
+        let totalNetMass = 0;
 
-        batch.set(newRunRef, payrollRunData);
-
-        // Enregistrer la transaction comptable pour le total de la paie
-        const transactionRef = doc(collection(firestore, `ecoles/${schoolId}/comptabilite`));
-        batch.set(transactionRef, {
-            schoolId,
-            date: format(new Date(), 'yyyy-MM-dd'),
-            description: `Paie mensuelle: ${period}`,
-            category: 'Salaires',
-            type: 'Dépense',
-            amount: totalMass,
-            metadata: { source: 'payroll_run', runId: newRunRef.id }
-        });
-
-        // Generate and store individual payslips
         for (const staffMember of staffMembers) {
             const payslipDetails = await getPayslipDetails(staffMember, payslipDate, schoolData);
+            totalNetMass += payslipDetails.totals.netAPayer;
 
             const payslipRef = doc(collection(firestore, `ecoles/${schoolId}/payroll_runs/${newRunRef.id}/payslips`));
 
@@ -115,6 +93,30 @@ export const runPayrollForMonth = async (
 
             batch.set(payslipRef, payslipData);
         }
+
+        const payrollRunData = {
+            period,
+            executionDate: new Date().toISOString(),
+            totalMass: totalNetMass, // Now using exact total net amount
+            employeeCount,
+            status: 'Terminé',
+            processedBy: adminId,
+            processedByName: adminName,
+        };
+
+        batch.set(newRunRef, payrollRunData);
+
+        // Enregistrer la transaction comptable pour le total de la paie (NET à payer)
+        const transactionRef = doc(collection(firestore, `ecoles/${schoolId}/comptabilite`));
+        batch.set(transactionRef, {
+            schoolId,
+            date: format(new Date(), 'yyyy-MM-dd'),
+            description: `Paie mensuelle (Net): ${period}`,
+            category: 'Salaires',
+            type: 'Dépense',
+            amount: totalNetMass,
+            metadata: { source: 'payroll_run', runId: newRunRef.id }
+        });
 
         await batch.commit();
 

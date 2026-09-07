@@ -113,18 +113,28 @@ export default function AccountingPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteTransaction = () => {
+  const handleDeleteTransaction = async () => {
     if (!schoolId || !transactionToDelete || !transactionToDelete.id) return;
-    const transactionDocRef = getTransactionDocRef(transactionToDelete.id);
-    deleteDoc(transactionDocRef)
-      .then(() => {
-        toast({ title: "Transaction supprimée", description: "La transaction a été supprimée." });
-        setIsDeleteDialogOpen(false);
-        setTransactionToDelete(null);
-      }).catch(async (serverError) => {
-        console.error("Error deleting transaction:", serverError);
-        toast({ variant: "destructive", title: "Erreur", description: "Impossible de supprimer la transaction." });
-      });
+    try {
+      const transactionDocRef = getTransactionDocRef(transactionToDelete.id);
+      
+      // Nettoyer les paiements liés si nécessaire
+      const meta = transactionToDelete.metadata;
+      if (meta && meta.source) {
+        if (meta.source === 'tuition_payment' && meta.paymentId) {
+          const paymentRef = doc(firestore, `ecoles/${schoolId}/tuition_payments/${meta.paymentId}`);
+          await deleteDoc(paymentRef);
+        }
+      }
+
+      await deleteDoc(transactionDocRef);
+      toast({ title: "Transaction supprimée", description: "La transaction et ses éventuelles entités liées ont été supprimées." });
+      setIsDeleteDialogOpen(false);
+      setTransactionToDelete(null);
+    } catch (serverError) {
+      console.error("Error deleting transaction:", serverError);
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible de supprimer la transaction." });
+    }
   };
 
   const handleSendMonthlyReport = async () => {

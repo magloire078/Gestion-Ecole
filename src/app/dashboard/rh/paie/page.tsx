@@ -104,7 +104,8 @@ export default function PaiePage() {
           netAPayer: details.totals.netAPayer,
           brutImposable: details.totals.brutImposable,
           month: payslipDate.substring(0, 7),
-          type: 'Génération individuelle'
+          type: 'Génération individuelle',
+          payslipDetails: JSON.parse(JSON.stringify(details))
         });
       } catch (logError) {
         console.error("Failed to save payslip log", logError);
