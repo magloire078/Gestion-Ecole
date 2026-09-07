@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { SubscriptionForm } from '@/components/transport/subscription-form';
 import { useToast } from '@/hooks/use-toast';
+import { useAcademicYear } from '@/providers/academic-year-provider';
+import { filterByAcademicYear } from '@/lib/academic-year-utils';
 
 interface SubscriptionWithDetails extends TransportSubscription {
     studentName?: string;
@@ -43,7 +45,8 @@ export default function TransportSubscriptionsPage() {
     const { user } = useUser();
     const { toast } = useToast();
     const canManageContent = !!user?.profile?.permissions?.manageTransport;
-    
+    const { selectedYear, currentYear } = useAcademicYear();
+
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingSubscription, setEditingSubscription] = useState<(TransportSubscription & { id: string }) | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -67,7 +70,7 @@ export default function TransportSubscriptionsPage() {
         const studentsMap = new Map(studentsData.map(doc => [doc.id, doc.data() as Student]));
         const routesMap = new Map(routesData.map(doc => [doc.id, doc.data() as Route]));
 
-        return subscriptionsData.map(doc => {
+        const all = subscriptionsData.map(doc => {
             const sub = { id: doc.id, ...doc.data() } as TransportSubscription & { id: string };
             const student = studentsMap.get(sub.studentId);
             const route = routesMap.get(sub.routeId);
@@ -77,7 +80,8 @@ export default function TransportSubscriptionsPage() {
                 routeName: route ? route.name : 'Ligne inconnue',
             };
         });
-    }, [subscriptionsData, studentsData, routesData]);
+        return filterByAcademicYear(all, selectedYear, currentYear);
+    }, [subscriptionsData, studentsData, routesData, selectedYear, currentYear]);
     
     const isLoading = schoolLoading || subscriptionsLoading || studentsLoading || routesLoading;
     
@@ -188,11 +192,12 @@ export default function TransportSubscriptionsPage() {
                 <DialogTitle>{editingSubscription ? "Modifier l'abonnement" : "Nouvel Abonnement"}</DialogTitle>
                 <DialogDescription>Renseignez les informations de l'abonnement au transport.</DialogDescription>
             </DialogHeader>
-            <SubscriptionForm 
+            <SubscriptionForm
                 schoolId={schoolId!}
                 students={students}
                 routes={routes}
                 subscription={editingSubscription}
+                activeSubscriptions={subscriptions}
                 onSave={handleFormSave}
             />
         </DialogContent>

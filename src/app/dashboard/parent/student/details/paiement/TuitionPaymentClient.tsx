@@ -1,22 +1,19 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useState, useMemo } from 'react';
+import { Suspense } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useUser, useFirestore, useDoc } from '@/firebase';
-import { Loader2, AlertCircle, CreditCard, Smartphone } from 'lucide-react';
+import { Loader2, AlertCircle, CreditCard } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { doc, type DocumentReference, type DocumentData } from 'firebase/firestore';
-import type { student as Student } from '@/lib/data-types';
 import { formatCurrency, getCurrencySymbol } from '@/lib/currency-utils';
 import { cn } from '@/lib/utils';
 import { AnimatedHighlight } from '@/components/ui/animated-highlight';
-import { CheckCircle2, QrCode } from 'lucide-react';
-import { createCheckoutLink } from '@/services/payment-service';
+import { CheckCircle2 } from 'lucide-react';
+import { useTuitionPayment } from '@/hooks/use-tuition-payment';
 
 function PaymentPageSkeleton() {
     return (
@@ -36,56 +33,18 @@ function TuitionPaymentPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const studentId = searchParams.get('id') as string;
-    const { user, schoolId, loading: userLoading } = useUser();
-    const firestore = useFirestore();
 
-    const studentRef = useMemo(() =>
-        (schoolId && studentId) ? doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`) as DocumentReference<Student, DocumentData> : null,
-        [firestore, schoolId, studentId]);
-
-    const settingsRef = useMemo(() => doc(firestore, 'system_settings/default'), [firestore]);
-
-    const { data: student, loading: studentLoading } = useDoc<Student>(studentRef);
-    const { data: settingsData, loading: settingsLoading } = useDoc(settingsRef);
-
-    const [amountToPay, setAmountToPay] = useState<number>(0);
-    const [isLoadingProvider, setIsLoadingProvider] = useState<null | 'genius'>(null);
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (student?.amountDue) {
-            setAmountToPay(student.amountDue);
-        }
-    }, [student]);
-
-    const handlePayment = async (provider: 'genius') => {
-        setIsLoadingProvider(provider);
-        setError(null);
-
-        if (!student || !amountToPay || !user || !schoolId || !studentId) {
-            setError("Impossible de lancer le paiement. Données manquantes.");
-            setIsLoadingProvider(null);
-            return;
-        }
-
-        const { url, error: serviceError } = await createCheckoutLink(provider, {
-            type: 'tuition',
-            amount: amountToPay.toString(),
-            description: `Paiement scolarité pour ${student.firstName} ${student.lastName}`,
-            user: user.authUser!,
-            schoolId,
-            studentId,
-        });
-
-        if (url) {
-            window.location.href = url;
-        } else {
-            setError(serviceError);
-            setIsLoadingProvider(null);
-        }
-    };
-
-    const isLoading = userLoading || studentLoading || settingsLoading;
+    const {
+        student,
+        isLoading,
+        amountToPay,
+        setAmountToPay,
+        amountDue,
+        isValidAmount,
+        isLoadingProvider,
+        error,
+        handlePayment,
+    } = useTuitionPayment(studentId);
 
     if (isLoading) {
         return <PaymentPageSkeleton />;
@@ -122,18 +81,24 @@ function TuitionPaymentPageContent() {
                         <div className="absolute inset-0 bg-blue-600/5 blur-xl rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                         <div className="relative p-6 bg-slate-50 border border-slate-100 rounded-xl text-center space-y-2">
                             <Label htmlFor="amount-to-pay" className="text-xs uppercase font-black tracking-widest text-muted-foreground">Montant à régler ({getCurrencySymbol()})</Label>
-                            <Input 
-                                id="amount-to-pay" 
-                                type="number" 
-                                value={amountToPay} 
-                                onChange={(e) => setAmountToPay(Number(e.target.value))} 
-                                max={student.amountDue} 
-                                className="text-4xl font-black h-16 border-none bg-transparent text-center focus-visible:ring-0" 
+                            <Input
+                                id="amount-to-pay"
+                                type="number"
+                                min={1}
+                                max={amountDue}
+                                value={amountToPay}
+                                onChange={(e) => setAmountToPay(Number(e.target.value))}
+                                className="text-4xl font-black h-16 border-none bg-transparent text-center focus-visible:ring-0"
                             />
                             <div className="flex items-center justify-center gap-2">
                                 <div className="h-1 w-1 rounded-full bg-slate-300" />
-                                <p className="text-sm font-medium text-muted-foreground italic">Solde total dû: {formatCurrency(student.amountDue)}</p>
+                                <p className="text-sm font-medium text-muted-foreground italic">Solde total dû: {formatCurrency(amountDue)}</p>
                             </div>
+                            {!isValidAmount && amountToPay !== 0 && (
+                                <p className="text-xs text-destructive">
+                                    {amountToPay <= 0 ? "Le montant doit être supérieur à zéro." : "Le montant ne peut pas dépasser le solde dû."}
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -156,7 +121,7 @@ function TuitionPaymentPageContent() {
                                 <button
                                     key={provider.id}
                                     onClick={() => handlePayment(provider.id)}
-                                    disabled={!!isLoadingProvider}
+                                    disabled={!!isLoadingProvider || !isValidAmount}
                                     className={cn(
                                         "flex items-center gap-4 p-5 rounded-xl border text-left transition-all duration-300 transform active:scale-95",
                                         provider.color,

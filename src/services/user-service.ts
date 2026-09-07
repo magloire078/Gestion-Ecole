@@ -115,7 +115,13 @@ export async function fetchUserAppData(firestore: Firestore, firebaseUser: Fireb
                 } else if (userProfile.adminRole) {
                     const roleSnap = await getDoc(doc(firestore, `ecoles/${activeSchoolId}/admin_roles/${userProfile.adminRole}`));
                     if (roleSnap.exists()) {
-                        userProfile.permissions = roleSnap.data().permissions;
+                        // Le rôle sert de base ; les habilitations individuelles déjà
+                        // présentes sur la fiche personnel (accordées ou révoquées via
+                        // RH > Administration) restent prioritaires — sans quoi une
+                        // restriction posée sur un utilisateur donné était effacée
+                        // dès que son rôle admin était rechargé.
+                        const rolePermissions = roleSnap.data().permissions || {};
+                        userProfile.permissions = { ...rolePermissions, ...(userProfile.permissions || {}) };
                     }
                 }
             }

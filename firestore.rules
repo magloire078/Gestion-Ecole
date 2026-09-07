@@ -449,6 +449,10 @@ service cloud.firestore {
       match /audit_logs/{logId} {
         allow create: if isSchoolMember(schoolId);
         allow read: if hasPermission(schoolId, 'manageSettings') || isDirector(schoolId);
+        // Autorise uniquement le marquage "annulé" d'une attribution/promotion de
+        // classe par un utilisateur qui a le droit d'écrire sur les collections
+        // concernées (inscriptions_classe, eleves) — cf. revertClassAssignment().
+        allow update: if hasPermission(schoolId, 'manageClasses') || hasPermission(schoolId, 'manageUsers');
         allow delete: if isSuperAdmin();
       }
       match /inscriptions_activites/{inscriptionId} { allow read, write: if hasPermission(schoolId, 'manageActivities'); }

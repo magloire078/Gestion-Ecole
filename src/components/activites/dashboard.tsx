@@ -10,9 +10,12 @@ import type { activite, inscriptionActivite, competition } from '@/lib/data-type
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { StatCard } from '@/components/ui/stat-card';
+import { useAcademicYear } from '@/providers/academic-year-provider';
+import { filterByAcademicYear } from '@/lib/academic-year-utils';
 
 export function ActivitesDashboard({ schoolId }: { schoolId: string }) {
     const firestore = useFirestore();
+    const { selectedYear, currentYear } = useAcademicYear();
 
     const activitesQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/activites`)), [firestore, schoolId]);
     const inscriptionsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/inscriptions_activites`)), [firestore, schoolId]);
@@ -22,9 +25,14 @@ export function ActivitesDashboard({ schoolId }: { schoolId: string }) {
     const { data: inscriptionsData, loading: inscriptionsLoading } = useCollection(inscriptionsQuery);
     const { data: competitionsData, loading: competitionsLoading } = useCollection(competitionsQuery);
 
+    const inscriptionsForYear = useMemo(() => {
+        const all = inscriptionsData?.map(d => d.data() as inscriptionActivite) || [];
+        return filterByAcademicYear(all, selectedYear, currentYear);
+    }, [inscriptionsData, selectedYear, currentYear]);
+
     const stats = {
         activities: activitesData?.length || 0,
-        inscriptions: inscriptionsData?.length || 0,
+        inscriptions: inscriptionsForYear.length,
         competitions: competitionsData?.length || 0,
     };
 

@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useFirestore } from '@/firebase';
 import { useAcademicYear } from '@/providers/academic-year-provider';
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, doc, getCountFromServer, getDoc, query, where } from 'firebase/firestore';
 import type { class_type, student } from '@/lib/data-types';
 import { getPlanLimits } from '@/lib/subscription-plans';
 import { resolveAcademicYearForWrite } from '@/lib/academic-year-utils';
@@ -222,15 +222,21 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
 
         if (descriptor.id === 'students') {
             try {
-                const [schoolSnap, statsSnap] = await Promise.all([
+                // Compte en temps réel (comme StudentService.createStudent) plutôt
+                // que stats/finance.studentCount, un agrégat qui peut dériver et
+                // laisser passer un import qui dépasse en réalité le plafond du plan.
+                const [schoolSnap, countSnap] = await Promise.all([
                     getDoc(doc(firestore, `ecoles/${schoolId}`)),
-                    getDoc(doc(firestore, `ecoles/${schoolId}/stats/finance`)),
+                    getCountFromServer(query(
+                        collection(firestore, `ecoles/${schoolId}/eleves`),
+                        where('status', '==', 'Actif'),
+                    )),
                 ]);
                 if (schoolSnap.exists()) {
                     const planName = schoolSnap.data()?.subscription?.plan ?? 'Essentiel';
                     const limits = getPlanLimits(planName);
                     if (limits && Number.isFinite(limits.maxStudents)) {
-                        const currentCount = statsSnap.exists() ? (statsSnap.data()?.studentCount ?? 0) : 0;
+                        const currentCount = countSnap.data().count;
                         if (currentCount + nonEmptyRows.length > limits.maxStudents) {
                             toast({
                                 variant: 'destructive',

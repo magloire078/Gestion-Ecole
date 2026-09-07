@@ -24,6 +24,7 @@ import { fr } from 'date-fns/locale';
 
 import type { building, occupant, log, student as Student, room as Room } from '@/lib/data-types';
 import { useToast } from '@/hooks/use-toast';
+import { useSchoolData } from '@/hooks/use-school-data';
 import { LogForm } from './log-form';
 
 interface LogWithDetails extends log {
@@ -35,7 +36,35 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
+  const { schoolData, updateSchoolData } = useSchoolData();
   const canManageContent = !!user?.profile?.permissions?.manageInternat;
+
+  const isWeekend = new Date().getDay() >= 5;
+  const curfewTime = isWeekend ? schoolData?.internatCurfewWeekend : schoolData?.internatCurfewWeekday;
+
+  const [curfewInputs, setCurfewInputs] = useState({ weekday: '', weekend: '' });
+  const [lastSyncedCurfew, setLastSyncedCurfew] = useState<string | undefined>(undefined);
+  const curfewKey = `${schoolData?.internatCurfewWeekday || ''}|${schoolData?.internatCurfewWeekend || ''}`;
+  if (curfewKey !== lastSyncedCurfew) {
+    setLastSyncedCurfew(curfewKey);
+    setCurfewInputs({
+      weekday: schoolData?.internatCurfewWeekday || '',
+      weekend: schoolData?.internatCurfewWeekend || '',
+    });
+  }
+
+  const handleSaveCurfew = async () => {
+    try {
+      await updateSchoolData({
+        internatCurfewWeekday: curfewInputs.weekday || undefined,
+        internatCurfewWeekend: curfewInputs.weekend || undefined,
+      } as any);
+      toast({ title: 'Heure de couvre-feu mise à jour' });
+    } catch (e) {
+      console.error('Error updating curfew:', e);
+      toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de mettre à jour l'heure de couvre-feu." });
+    }
+  };
 
   const [refreshLogs, setRefreshLogs] = useState(0);
 
@@ -135,7 +164,39 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
 
         <Card>
           <CardHeader className="pb-2"><div className="flex items-center justify-between"><CardTitle className="text-sm font-medium">Couvre-feu</CardTitle><Bell className="h-4 w-4 text-muted-foreground" /></div></CardHeader>
-          <CardContent><div className="text-2xl font-bold">22:00</div><div className="text-xs text-muted-foreground mt-1">{new Date().getDay() >= 5 ? 'Week-end' : 'Semaine'}</div></CardContent>
+          <CardContent>
+            {canManageContent ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="curfew-weekday" className="text-xs text-muted-foreground w-16">Semaine</Label>
+                  <Input
+                    id="curfew-weekday"
+                    type="time"
+                    className="h-8"
+                    value={curfewInputs.weekday}
+                    onChange={(e) => setCurfewInputs(prev => ({ ...prev, weekday: e.target.value }))}
+                    onBlur={handleSaveCurfew}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="curfew-weekend" className="text-xs text-muted-foreground w-16">Week-end</Label>
+                  <Input
+                    id="curfew-weekend"
+                    type="time"
+                    className="h-8"
+                    value={curfewInputs.weekend}
+                    onChange={(e) => setCurfewInputs(prev => ({ ...prev, weekend: e.target.value }))}
+                    onBlur={handleSaveCurfew}
+                  />
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{curfewTime || 'Non défini'}</div>
+                <div className="text-xs text-muted-foreground mt-1">{isWeekend ? 'Week-end' : 'Semaine'}</div>
+              </>
+            )}
+          </CardContent>
         </Card>
       </div>
 

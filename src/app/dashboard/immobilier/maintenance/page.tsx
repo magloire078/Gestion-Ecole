@@ -152,14 +152,14 @@ export default function MaintenanceKanbanPage() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [tacheToDelete, setTacheToDelete] = useState<(TacheMaintenance & { id: string }) | null>(null);
 
-    const tachesQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/maintenance`), orderBy('priority', 'desc')), [firestore, schoolId]);
+    const tachesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/maintenance`), orderBy('priority', 'desc')) : null, [firestore, schoolId]);
     const { data: tachesData, loading: tachesLoading } = useCollection(tachesQuery);
 
-    const staffQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/personnel`)), [firestore, schoolId]);
+    const staffQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [firestore, schoolId]);
     const { data: staffData, loading: staffLoading } = useCollection(staffQuery);
 
-    const sallesQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/salles`)), [firestore, schoolId]);
-    const busesQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/transport_bus`)), [firestore, schoolId]);
+    const sallesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/salles`)) : null, [firestore, schoolId]);
+    const busesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/transport_bus`)) : null, [firestore, schoolId]);
     const { data: sallesData, loading: sallesLoading } = useCollection(sallesQuery);
     const { data: busesData, loading: busesLoading } = useCollection(busesQuery);
 

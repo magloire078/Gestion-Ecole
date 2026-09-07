@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PlusCircle, Upload, Download, Printer, Search, Users, School, GraduationCap, LayoutGrid, List, Calendar } from "lucide-react";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -47,7 +47,7 @@ import {
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import Link from "next/link";
 import { useCollection, useFirestore, useUser } from "@/firebase";
-import { collection, doc, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { collection, doc, query } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from 'next/navigation';
 import { useSchoolData } from "@/hooks/use-school-data";
@@ -79,43 +79,9 @@ export default function StudentsPage() {
 
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string | undefined>(undefined);
 
-  // Déterminer l'année scolaire par défaut (dernière inscription d'élève ou année en cours)
-  useEffect(() => {
-    if (!schoolId) return;
-
-    const latestStudentQuery = query(
-      collection(firestore, `ecoles/${schoolId}/eleves`),
-      orderBy('createdAt', 'desc'),
-      limit(1)
-    );
-
-    getDocs(latestStudentQuery)
-      .then((snap) => {
-        if (!snap.empty) {
-          const data = snap.docs[0].data();
-          const enrollments = data.enrollments || [];
-          const latestEnrollment = enrollments[enrollments.length - 1];
-          let latestYear = latestEnrollment?.academicYear || data.academicYear;
-
-          if (!latestYear && data.inscriptionYear) {
-            latestYear = `${data.inscriptionYear}-${data.inscriptionYear + 1}`;
-          }
-
-          if (!latestYear && data.createdAt) {
-            const createdDate = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
-            latestYear = computeAcademicYearFromDate(createdDate);
-          }
-
-          if (latestYear) {
-            setSelectedAcademicYear(latestYear);
-          }
-        }
-      })
-      .catch((err) => {
-        console.error("Error fetching latest student for default year:", err);
-      });
-  }, [schoolId, firestore]);
-
+  // Année scolaire par défaut = l'année courante réelle de l'école, pas une
+  // devinette basée sur le dernier élève créé (qui pouvait être une saisie de
+  // test ou d'une autre année et masquer les élèves de l'année réelle).
   const effectiveAcademicYear = selectedAcademicYear || schoolData?.currentAcademicYear || computeAcademicYearFromDate();
 
   const availableYears = useMemo(() => {
@@ -265,8 +231,21 @@ export default function StudentsPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedCycle, setSelectedCycle] = useState('all');
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    try {
+      const selectedClassName = selectedClass !== 'all' ? classes.find(c => c.id === selectedClass)?.name : undefined;
+      await StudentReportsService.generateStudentListPdf(
+        filteredByClass,
+        schoolData?.name || 'Notre École',
+        effectiveAcademicYear,
+        schoolData?.mainLogoUrl,
+        selectedClassName,
+        'print'
+      );
+    } catch (e) {
+      console.error(e);
+      toast({ variant: 'destructive', title: 'Erreur', description: "Erreur lors de la génération de l'impression." });
+    }
   };
 
   const handleExportPDF = async () => {

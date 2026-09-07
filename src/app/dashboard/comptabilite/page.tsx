@@ -56,7 +56,8 @@ import { useToast } from "@/hooks/use-toast";
 import { format, subMonths } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useCollection, useFirestore, useUser } from "@/firebase";
-import { collection, doc, deleteDoc, query, orderBy, where } from "firebase/firestore";
+import { collection, doc, deleteDoc, getDoc, getDocs, increment, query, serverTimestamp, where, writeBatch } from "firebase/firestore";
+import { writeAuditLog } from "@/lib/audit-log";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { accountingTransaction as AccountingTransaction } from '@/lib/data-types';
@@ -113,18 +114,66 @@ export default function AccountingPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteTransaction = () => {
+  const handleDeleteTransaction = async () => {
     if (!schoolId || !transactionToDelete || !transactionToDelete.id) return;
-    const transactionDocRef = getTransactionDocRef(transactionToDelete.id);
-    deleteDoc(transactionDocRef)
-      .then(() => {
-        toast({ title: "Transaction supprimée", description: "La transaction a été supprimée." });
-        setIsDeleteDialogOpen(false);
-        setTransactionToDelete(null);
-      }).catch(async (serverError) => {
-        console.error("Error deleting transaction:", serverError);
-        toast({ variant: "destructive", title: "Erreur", description: "Impossible de supprimer la transaction." });
+    try {
+      const transactionDocRef = getTransactionDocRef(transactionToDelete.id);
+      const batch = writeBatch(firestore);
+      let recreditedStudent: { id: string; amount: number } | null = null;
+
+      // Un "Revenu" lié à un élève provient toujours d'un versement dans
+      // eleves/{id}/paiements (accountingTransactionId). Le supprimer sans
+      // annuler ce paiement laissait l'élève marqué comme ayant payé alors
+      // que la recette disparaissait de la caisse.
+      if (transactionToDelete.type === 'Revenu' && transactionToDelete.studentId) {
+        const studentId = transactionToDelete.studentId;
+        const paymentsSnap = await getDocs(query(
+          collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/paiements`),
+          where('accountingTransactionId', '==', transactionToDelete.id),
+        ));
+        if (!paymentsSnap.empty) {
+          const studentRef = doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`);
+          const studentSnap = await getDoc(studentRef);
+          const currentDue = studentSnap.data()?.amountDue || 0;
+          const newDue = currentDue + transactionToDelete.amount;
+
+          paymentsSnap.forEach(p => batch.delete(p.ref));
+          batch.update(studentRef, {
+            amountDue: newDue,
+            tuitionStatus: 'Partiel',
+            updatedAt: new Date().toISOString(),
+          });
+          recreditedStudent = { id: studentId, amount: transactionToDelete.amount };
+        }
+      }
+
+      batch.delete(transactionDocRef);
+      if (transactionToDelete.type === 'Revenu') {
+        batch.set(doc(firestore, `ecoles/${schoolId}/stats/finance`), {
+          totalAmountDue: increment(transactionToDelete.amount),
+          lastUpdated: serverTimestamp(),
+        }, { merge: true });
+      }
+
+      await batch.commit();
+
+      await writeAuditLog(firestore, schoolId, {
+        action: 'comptabilite.transaction_supprimee',
+        details: `Transaction "${transactionToDelete.description}" (${transactionToDelete.amount} F) supprimée${recreditedStudent ? ' — paiement lié annulé, élève recrédité' : ''}`,
+        userId: user?.uid || 'inconnu',
+        userName: user?.displayName || undefined,
+        targetId: transactionToDelete.id,
+        targetType: 'comptabilite',
+        payload: { transaction: transactionToDelete, recreditedStudent },
       });
+
+      toast({ title: "Transaction supprimée", description: "La transaction a été supprimée." });
+      setIsDeleteDialogOpen(false);
+      setTransactionToDelete(null);
+    } catch (serverError) {
+      console.error("Error deleting transaction:", serverError);
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible de supprimer la transaction." });
+    }
   };
 
   const handleSendMonthlyReport = async () => {
@@ -388,7 +437,18 @@ export default function AccountingPage() {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-xl font-black text-slate-900 tracking-tight">Êtes-vous sûr(e) ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. La transaction <strong>{transactionToDelete?.description}</strong> sera définitivement supprimée.
+              Cette action est irréversible. La transaction <strong>{transactionToDelete?.description}</strong> du{' '}
+              {transactionToDelete?.date && format(new Date(transactionToDelete.date), 'dd/MM/yyyy')} sera définitivement supprimée.
+              {transactionToDelete && transactionToDelete.academicYear && transactionToDelete.academicYear !== selectedYear && (
+                <span className="block mt-2 font-semibold text-amber-600">
+                  Attention : cette transaction appartient à l&apos;année scolaire {transactionToDelete.academicYear}, différente de l&apos;année actuellement affichée ({selectedYear}).
+                </span>
+              )}
+              {transactionToDelete && !transactionToDelete.academicYear && (
+                <span className="block mt-2 font-semibold text-amber-600">
+                  Attention : cette transaction n&apos;est rattachée à aucune année scolaire précise ; vérifiez sa date avant de confirmer.
+                </span>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

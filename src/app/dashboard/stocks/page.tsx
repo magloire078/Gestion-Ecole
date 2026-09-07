@@ -48,6 +48,16 @@ import {
     DialogDescription
 } from '@/components/ui/dialog';
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
     collection,
     query,
     orderBy,
@@ -70,10 +80,13 @@ export default function StockPage() {
     const { user } = useUser();
     const { toast } = useToast();
     const { staff, loading: staffLoading } = useStaff(schoolId);
+    const canManageContent = !!user?.profile?.permissions?.manageInventory || user?.profile?.role === 'directeur' || user?.profile?.isSuperAdmin;
     const [searchTerm, setSearchTerm] = useState('');
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
     const [isDistributeDialogOpen, setIsDistributeDialogOpen] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<StockItem | null>(null);
     const [selectedItem, setSelectedItem] = useState<StockItem | null>(null);
     const [selectedRecipientId, setSelectedRecipientId] = useState<string>('');
 
@@ -165,6 +178,19 @@ export default function StockPage() {
         }
     };
 
+    const handleDeleteItem = async () => {
+        if (!schoolId || !itemToDelete?.id) return;
+        try {
+            await StockService.deleteItem(schoolId, itemToDelete.id, user?.uid || 'unknown');
+            toast({ title: "Article supprimé", description: `${itemToDelete.name} a été retiré du stock.` });
+        } catch (error: any) {
+            toast({ variant: "destructive", title: "Erreur", description: error.message || "Impossible de supprimer l'article." });
+        } finally {
+            setIsDeleteDialogOpen(false);
+            setItemToDelete(null);
+        }
+    };
+
     if (schoolLoading) return <div className="p-4 md:p-6"><Skeleton className="h-12 w-48 mb-6" /><Skeleton className="h-96 w-full" /></div>;
 
     if (error || stocksError) {
@@ -196,6 +222,7 @@ export default function StockPage() {
                     <h1 className="text-3xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/60">Gestion des Stocks</h1>
                     <p className="text-muted-foreground">Suivez vos inventaires et recevez des alertes en temps réel.</p>
                 </div>
+                {canManageContent && (
                 <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                     <DialogTrigger asChild>
                         <Button variant="premium" className="gap-2">
@@ -260,6 +287,7 @@ export default function StockPage() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
+                )}
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
@@ -375,6 +403,7 @@ export default function StockPage() {
                                         )}
                                     </TableCell>
                                     <TableCell className="text-right">
+                                        {canManageContent ? (
                                         <div className="flex justify-end gap-2">
                                             <Button
                                                 variant="ghost"
@@ -426,9 +455,8 @@ export default function StockPage() {
                                                     <DropdownMenuItem
                                                         className="gap-2 text-destructive focus:text-destructive cursor-pointer"
                                                         onClick={() => {
-                                                            if (confirm('Supprimer cet article ?')) {
-                                                                StockService.deleteItem(schoolId!, item.id!);
-                                                            }
+                                                            setItemToDelete(item);
+                                                            setIsDeleteDialogOpen(true);
                                                         }}
                                                     >
                                                         <Trash className="h-4 w-4" /> Supprimer
@@ -436,6 +464,9 @@ export default function StockPage() {
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </div>
+                                        ) : (
+                                            <span className="text-xs text-muted-foreground">Lecture seule</span>
+                                        )}
                                     </TableCell>
                                 </motion.tr>
                             ))}
@@ -563,6 +594,23 @@ export default function StockPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent className="glass-card border-white/10">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Cette action est irréversible. L&apos;article <strong>{itemToDelete?.name}</strong> sera définitivement retiré du stock.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive hover:bg-destructive/90">
+                            Supprimer
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

@@ -22,6 +22,7 @@ import {
   Grid,
   FileCheck,
   CheckCircle,
+  CalendarDays,
   Loader2
 } from 'lucide-react';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -30,6 +31,8 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { student as Student, class_type as Class } from '@/lib/data-types';
 import { cn } from '@/lib/utils';
+import { StudentReportsService } from '@/services/student-reports-service';
+import { format } from 'date-fns';
 
 // Définition des types de documents
 interface DocType {
@@ -38,20 +41,23 @@ interface DocType {
   icon: React.ElementType;
   description: string;
   scope: 'student' | 'class' | 'school';
+  /** false = fonctionnalité pas encore implémentée ; le bouton reste désactivé plutôt que de simuler un succès. */
+  implemented: boolean;
 }
 
 const DOCUMENT_TYPES: DocType[] = [
-  { slug: 'attestation', title: 'Attestation de Fréquentation', icon: FileText, description: 'Certificat officiel prouvant la scolarité en cours de l\'élève.', scope: 'student' },
-  { slug: 'cartes', title: 'Cartes Scolaires (Badges)', icon: CreditCard, description: 'Cartes d\'identité scolaire avec photo et code QR.', scope: 'class' },
-  { slug: 'fiche', title: 'Fiche Scolaire Individuelle', icon: User, description: 'Dossier complet contenant les détails et le suivi de l\'élève.', scope: 'student' },
-  { slug: 'honneur', title: 'Tableau d\'Honneur', icon: Award, description: 'Distinction décernée aux élèves ayant obtenu d\'excellentes moyennes.', scope: 'class' },
-  { slug: 'majors', title: 'Majors de Classe', icon: Star, description: 'Liste classée des premiers de chaque niveau et classe.', scope: 'class' },
-  { slug: 'notation-print', title: 'Fiches de Notation Vides', icon: Grid, description: 'Grilles vierges pour la saisie manuelle des notes par les enseignants.', scope: 'class' },
-  { slug: 'table', title: 'Fiches de Table (Examens)', icon: FileCheck, description: 'Étiquettes d\'identification des tables pour les compositions.', scope: 'class' },
-  { slug: 'listes-classe', title: 'Listes de Classe Standards', icon: Users, description: 'Listes nominatives simples pour l\'administration.', scope: 'class' },
-  { slug: 'trombinoscope', title: 'Trombinoscope (Photos)', icon: ImageIcon, description: 'Liste des élèves de la classe avec leur photo d\'identité.', scope: 'class' },
-  { slug: 'recapitulatif', title: 'Tableau Récapitulatif Annuel', icon: Layers, description: 'Synthèse annuelle des présences et des performances.', scope: 'class' },
-  { slug: 'appels/journalier', title: 'Feuille d\'Appel Journalière', icon: Printer, description: 'Modèle journalier d\'appel pour le contrôle de présence.', scope: 'class' },
+  { slug: 'attestation', title: 'Attestation de Fréquentation', icon: FileText, description: 'Certificat officiel prouvant la scolarité en cours de l\'élève.', scope: 'student', implemented: false },
+  { slug: 'cartes', title: 'Cartes Scolaires (Badges)', icon: CreditCard, description: 'Cartes d\'identité scolaire avec photo et code QR.', scope: 'class', implemented: false },
+  { slug: 'fiche', title: 'Fiche Scolaire Individuelle', icon: User, description: 'Dossier complet contenant les détails et le suivi de l\'élève.', scope: 'student', implemented: false },
+  { slug: 'honneur', title: 'Tableau d\'Honneur', icon: Award, description: 'Distinction décernée aux élèves ayant obtenu d\'excellentes moyennes.', scope: 'class', implemented: false },
+  { slug: 'majors', title: 'Majors de Classe', icon: Star, description: 'Liste classée des premiers de chaque niveau et classe.', scope: 'class', implemented: false },
+  { slug: 'notation-print', title: 'Fiches de Notation Vides', icon: Grid, description: 'Grilles vierges pour la saisie manuelle des notes par les enseignants.', scope: 'class', implemented: true },
+  { slug: 'table', title: 'Fiches de Table (Examens)', icon: FileCheck, description: 'Étiquettes d\'identification des tables pour les compositions.', scope: 'class', implemented: false },
+  { slug: 'listes-classe', title: 'Listes de Classe Standards', icon: Users, description: 'Listes nominatives simples pour l\'administration.', scope: 'class', implemented: true },
+  { slug: 'trombinoscope', title: 'Trombinoscope (Photos)', icon: ImageIcon, description: 'Liste des élèves de la classe avec leur photo d\'identité.', scope: 'class', implemented: false },
+  { slug: 'recapitulatif', title: 'Tableau Récapitulatif Annuel', icon: Layers, description: 'Synthèse annuelle des présences et des performances.', scope: 'class', implemented: false },
+  { slug: 'appels/journalier', title: 'Feuille d\'Appel Journalière', icon: Printer, description: 'Modèle journalier d\'appel pour le contrôle de présence.', scope: 'class', implemented: true },
+  { slug: 'appels/mensuel', title: 'Liste d\'Appel Mensuelle', icon: CalendarDays, description: 'Registre officiel de présence : une page par mois de l\'année scolaire, une colonne par jour.', scope: 'class', implemented: true },
 ];
 
 export default function AdministrativeDocumentsPage() {
@@ -97,8 +103,10 @@ export default function AdministrativeDocumentsPage() {
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
   const students = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student & { id: string })) || [], [studentsData]);
 
-  // Déclencher l'impression / génération PDF
-  const handleGeneratePdf = () => {
+  // Déclencher la génération PDF réelle
+  const handleGeneratePdf = async () => {
+    if (!activeDoc.implemented) return;
+
     if (activeDoc.scope === 'class' && !selectedClassId) {
       toast({ variant: 'destructive', title: 'Erreur', description: 'Veuillez sélectionner une classe.' });
       return;
@@ -108,14 +116,39 @@ export default function AdministrativeDocumentsPage() {
       return;
     }
 
+    const selectedClass = classes.find(c => c.id === selectedClassId);
+    const schoolName = schoolData?.name || 'Notre École';
+    const academicYear = schoolData?.currentAcademicYear || '';
+
     setIsGenerating(true);
-    setTimeout(() => {
+    try {
+      if (activeDoc.slug === 'listes-classe') {
+        await StudentReportsService.generateStudentListPdf(students, schoolName, academicYear, schoolData?.mainLogoUrl, selectedClass?.name);
+      } else if (activeDoc.slug === 'notation-print') {
+        await StudentReportsService.generateBlankGradeSheetPdf(students, schoolName, selectedClass?.name || '', academicYear, schoolData?.mainLogoUrl);
+      } else if (activeDoc.slug === 'appels/journalier') {
+        await StudentReportsService.generateDailyAttendanceSheetPdf(students, schoolName, selectedClass?.name || '', format(new Date(), 'dd/MM/yyyy'), schoolData?.mainLogoUrl);
+      } else if (activeDoc.slug === 'appels/mensuel') {
+        await StudentReportsService.generateMonthlyAttendanceSheetPdf(
+          students,
+          schoolName,
+          selectedClass?.name || '',
+          academicYear,
+          {
+            countryCode: schoolData?.country,
+            // Téléphone et e-mail ne sont joints que s'ils sont renseignés,
+            // pour ne pas imprimer un séparateur orphelin sous le nom de l'école.
+            schoolContact: [schoolData?.phone, schoolData?.email].filter(Boolean).join(' / '),
+          }
+        );
+      }
+      toast({ title: "Document généré", description: `Le document "${activeDoc.title}" a été téléchargé.` });
+    } catch (e) {
+      console.error('Error generating document:', e);
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de générer le document.' });
+    } finally {
       setIsGenerating(false);
-      toast({
-        title: "Impression en cours !",
-        description: `Le document "${activeDoc.title}" est en cours de téléchargement au format PDF.`
-      });
-    }, 1500);
+    }
   };
 
   const isLoading = schoolLoading || classesLoading;
@@ -231,9 +264,11 @@ export default function AdministrativeDocumentsPage() {
               <Printer className="h-10 w-10 text-slate-300 mb-2" />
               <p className="text-xs font-bold text-slate-600">Aperçu du format d&apos;impression</p>
               <p className="text-[10px] text-slate-400 mt-1 max-w-sm leading-normal">
-                {selectedClassId ? (
-                  activeDoc.scope === 'student' 
-                    ? selectedStudentId 
+                {!activeDoc.implemented ? (
+                  `Ce type de document n'est pas encore disponible à la génération automatique.`
+                ) : selectedClassId ? (
+                  activeDoc.scope === 'student'
+                    ? selectedStudentId
                       ? `Le PDF sera généré pour l'élève avec le logo de l'école et la signature numérique du directeur.`
                       : `Veuillez sélectionner un élève pour afficher l'aperçu.`
                     : `Le PDF sera généré pour l'ensemble des élèves de la classe (${students.length} élèves).`
@@ -247,10 +282,12 @@ export default function AdministrativeDocumentsPage() {
             <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
               <Button
                 onClick={handleGeneratePdf}
-                disabled={isGenerating || (activeDoc.scope === 'class' && !selectedClassId) || (activeDoc.scope === 'student' && !selectedStudentId)}
+                disabled={!activeDoc.implemented || isGenerating || (activeDoc.scope === 'class' && !selectedClassId) || (activeDoc.scope === 'student' && !selectedStudentId)}
                 className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white gap-2 transition-all hover:scale-105 active:scale-95 px-5 py-2.5 h-auto text-xs font-bold"
               >
-                {isGenerating ? (
+                {!activeDoc.implemented ? (
+                  'Bientôt disponible'
+                ) : isGenerating ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" /> Génération en cours...
                   </>

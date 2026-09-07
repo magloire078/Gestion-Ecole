@@ -2,6 +2,7 @@
 
 import { Firestore, collection, getDocs, query, where } from 'firebase/firestore';
 import { GradeEntry } from './grades-service';
+import type { subject as Subject } from '@/lib/data-types';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { getCountryByCode, CountryCode } from '@/lib/countries-data';
@@ -76,10 +77,36 @@ export class ReportCardService {
     }
 
     /**
-     * Calcule les moyennes d'un élève pour une période donnée.
+     * Coefficients officiels des matières de l'école (pour pondérer la moyenne
+     * générale), indexés par nom de matière. Distinct du coefficient d'une
+     * note individuelle (qui pondère un devoir au sein d'une même matière).
      */
-    async calculateStudentAverages(schoolId: string, studentId: string, startDate?: string, endDate?: string): Promise<SubjectAverage[]> {
+    async getSubjectCoefficients(schoolId: string): Promise<Record<string, number>> {
+        const snap = await getDocs(collection(this.firestore, `ecoles/${schoolId}/matieres`));
+        const map: Record<string, number> = {};
+        snap.forEach(doc => {
+            const data = doc.data() as Subject;
+            map[data.name] = data.coefficient ?? 1;
+        });
+        return map;
+    }
+
+    /**
+     * Calcule les moyennes d'un élève pour une période donnée.
+     * `subjectCoefficients` (cf. `getSubjectCoefficients`) peut être fourni par
+     * l'appelant pour éviter de relire les matières à chaque élève ; à défaut,
+     * il est chargé ici.
+     */
+    async calculateStudentAverages(
+        schoolId: string,
+        studentId: string,
+        startDate?: string,
+        endDate?: string,
+        subjectCoefficients?: Record<string, number>,
+    ): Promise<SubjectAverage[]> {
         try {
+            const coefficients = subjectCoefficients ?? await this.getSubjectCoefficients(schoolId);
+
             const gradesRef = collection(this.firestore, `ecoles/${schoolId}/eleves/${studentId}/notes`);
             const querySnapshot = await getDocs(gradesRef);
 
@@ -106,14 +133,16 @@ export class ReportCardService {
                 groupedBySubject[grade.subject].push(grade);
             });
 
-            // Calculer la moyenne par matière
+            // Calculer la moyenne par matière : chaque devoir est pondéré par
+            // son propre coefficient (Composition > Devoir > Interrogation),
+            // puis la matière est pondérée par son coefficient officiel.
             const subjectAverages: SubjectAverage[] = Object.keys(groupedBySubject).map(subject => {
                 const subjectGrades = groupedBySubject[subject];
-                const totalPoints = subjectGrades.reduce((acc, g) => acc + (g.grade), 0);
-                const avg = subjectGrades.length > 0 ? totalPoints / subjectGrades.length : 0;
+                const totalWeighted = subjectGrades.reduce((acc, g) => acc + g.grade * (g.coefficient || 1), 0);
+                const totalGradeCoef = subjectGrades.reduce((acc, g) => acc + (g.coefficient || 1), 0);
+                const avg = totalGradeCoef > 0 ? totalWeighted / totalGradeCoef : 0;
 
-                // Utiliser le coefficient du dernier devoir saisi ou 1 par défaut
-                const coef = subjectGrades[0]?.coefficient || 1;
+                const coef = coefficients[subject] ?? 1;
 
                 return {
                     subject,
@@ -135,10 +164,14 @@ export class ReportCardService {
      */
     async getClassStatistics(schoolId: string, classId: string, startDate?: string, endDate?: string): Promise<{
         classStats: Record<string, ClassSubjectStats>;
-        studentRanks: Record<string, { rank: number, average: number }>;
+        studentRanks: Record<string, { rank: number, average: number, totalCoef: number }>;
+        studentSubjectAverages: Record<string, SubjectAverage[]>;
         totalStudents: number;
     }> {
         try {
+            // 0. Charger les coefficients de matière une seule fois pour toute la classe.
+            const subjectCoefficients = await this.getSubjectCoefficients(schoolId);
+
             // 1. Récupérer tous les élèves de la classe
             const studentsRef = collection(this.firestore, `ecoles/${schoolId}/eleves`);
             const q = query(studentsRef, where('classId', '==', classId), where('status', '==', 'Actif'));
@@ -146,18 +179,18 @@ export class ReportCardService {
 
             // 2. Pour chaque élève, calculer ses moyennes en parallèle
             const studentAveragesPromises = studentsSnapshot.docs.map(async (studentDoc) => {
-                const averages = await this.calculateStudentAverages(schoolId, studentDoc.id, startDate, endDate);
-                const { average: generalAvg } = this.calculateGeneralAverage(averages);
-                return { id: studentDoc.id, averages, generalAvg };
+                const averages = await this.calculateStudentAverages(schoolId, studentDoc.id, startDate, endDate, subjectCoefficients);
+                const { average: generalAvg, totalCoef } = this.calculateGeneralAverage(averages);
+                return { id: studentDoc.id, averages, generalAvg, totalCoef };
             });
 
             const studentDataList = await Promise.all(studentAveragesPromises);
 
             // 3. Calculer les rangs
             const sortedByAvg = [...studentDataList].sort((a, b) => b.generalAvg - a.generalAvg);
-            const studentRanks: Record<string, { rank: number, average: number }> = {};
+            const studentRanks: Record<string, { rank: number, average: number, totalCoef: number }> = {};
             sortedByAvg.forEach((s, index) => {
-                studentRanks[s.id] = { rank: index + 1, average: s.generalAvg };
+                studentRanks[s.id] = { rank: index + 1, average: s.generalAvg, totalCoef: s.totalCoef };
             });
 
             // 4. Calculer les stats par matière (Moyenne classe, Min, Max)
@@ -184,9 +217,15 @@ export class ReportCardService {
                 };
             });
 
+            const studentSubjectAverages: Record<string, SubjectAverage[]> = {};
+            studentDataList.forEach(student => {
+                studentSubjectAverages[student.id] = student.averages;
+            });
+
             return {
                 classStats,
                 studentRanks,
+                studentSubjectAverages,
                 totalStudents: studentDataList.length
             };
         } catch (error) {

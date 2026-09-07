@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSubscription } from "@/hooks/use-subscription";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
     AlertDialog,
@@ -29,11 +29,11 @@ import { Label } from "@/components/ui/label";
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { motion } from 'framer-motion';
-import { doc } from "firebase/firestore";
+import { collection, getCountFromServer, query, where } from "firebase/firestore";
 
 import { SUBSCRIPTION_PLANS, MODULES_CONFIG, PlanName, ModuleName, getPlanLimits } from "@/lib/subscription-plans";
 import { formatCurrency } from "@/lib/currency-utils";
-import { useFirestore, useDoc } from "@/firebase";
+import { useFirestore } from "@/firebase";
 
 export default function SubscriptionPage() {
     const router = useRouter();
@@ -45,13 +45,21 @@ export default function SubscriptionPage() {
     const [error, setError] = useState<string | null>(null);
     const [isUpdating, setIsUpdating] = useState(false);
 
-    // Effectif courant pour bloquer les downgrades dépassant la limite.
-    const statsRef = useMemo(
-        () => (schoolId ? doc(firestore, `ecoles/${schoolId}/stats/finance`) : null),
-        [firestore, schoolId],
-    );
-    const { data: statsData } = useDoc(statsRef);
-    const currentStudentCount = (statsData?.studentCount as number | undefined) ?? 0;
+    // Effectif courant compté en temps réel — `stats/finance.studentCount` est
+    // un agrégat qui peut dériver (imports en masse, etc.), il ne doit pas
+    // servir de base au blocage de downgrade ni au calcul du prix facturé.
+    const [currentStudentCount, setCurrentStudentCount] = useState(0);
+    useEffect(() => {
+        if (!schoolId) return;
+        let cancelled = false;
+        getCountFromServer(query(
+            collection(firestore, `ecoles/${schoolId}/eleves`),
+            where('status', '==', 'Actif'),
+        )).then(snap => {
+            if (!cancelled) setCurrentStudentCount(snap.data().count);
+        }).catch(err => console.error('[Abonnement] Impossible de compter les élèves actifs:', err));
+        return () => { cancelled = true; };
+    }, [schoolId, firestore]);
 
     const downgradeBlockReason = (planName: PlanName): string | null => {
         const limits = getPlanLimits(planName);
@@ -118,6 +126,19 @@ export default function SubscriptionPage() {
 
     const handleReactivateSubscription = async () => {
         if (!subscription || isUpdating) return;
+        // Un abonnement résilié reste valide jusqu'à `endDate` (déjà payé) :
+        // "Réactiver" avant cette date ne fait que ré-armer le renouvellement,
+        // sans nouveau paiement. Une fois `endDate` dépassée, l'accès n'est
+        // plus couvert par un paiement réel — il faut repasser par le vrai
+        // parcours de paiement, pas une simple écriture cliente sur le statut.
+        if (isExpired) {
+            toast({
+                variant: 'destructive',
+                title: 'Abonnement expiré',
+                description: 'Votre période payée est terminée : choisissez un plan ci-dessous pour renouveler par un vrai paiement.',
+            });
+            return;
+        }
         setIsUpdating(true);
         try {
             await updateSubscription({

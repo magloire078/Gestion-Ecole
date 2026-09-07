@@ -4,7 +4,8 @@ import { Firestore, collection, query, where, getDocs, writeBatch, doc, serverTi
 import type { staff as Staff, school as School, payrollRun as PayrollRun } from '@/lib/data-types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { getPayslipDetails } from '@/lib/bulletin-de-paie';
+import { getPayslipDetails, getEffectiveBaseSalary } from '@/lib/bulletin-de-paie';
+import { resolveAcademicYearForWrite } from '@/lib/academic-year-utils';
 
 interface RunPayrollResult {
     success: boolean;
@@ -50,12 +51,7 @@ export const runPayrollForMonth = async (
             return { success: false, error: "Aucun employé éligible à la paie ce mois-ci (salaires ou heures non saisis)." };
         }
 
-        const totalMass = staffMembers.reduce((sum, staff) => {
-            const salary = staff.contractType === 'Vacataire'
-                ? (staff.hourlyRate || 0) * (staff.baseHours || 0)
-                : (staff.baseSalary || 0);
-            return sum + salary;
-        }, 0);
+        const totalMass = staffMembers.reduce((sum, staff) => sum + getEffectiveBaseSalary(staff), 0);
 
         const employeeCount = staffMembers.length;
 
@@ -72,9 +68,11 @@ export const runPayrollForMonth = async (
         }
 
         const payslipDate = new Date().toISOString();
+        const todayStr = payslipDate.split('T')[0];
         const batch = writeBatch(firestore);
 
         const newRunRef = doc(collection(firestore, `ecoles/${schoolId}/payroll_runs`));
+        const accountingRef = doc(collection(firestore, `ecoles/${schoolId}/comptabilite`));
 
         const payrollRunData = {
             period,
@@ -84,9 +82,28 @@ export const runPayrollForMonth = async (
             status: 'Terminé',
             processedBy: adminId,
             processedByName: adminName,
+            accountingTransactionId: accountingRef.id,
         };
 
         batch.set(newRunRef, payrollRunData);
+
+        // La paie mensuelle est une sortie de caisse réelle : sans cette
+        // écriture, le tableau de bord Comptabilité ne reflète jamais cette
+        // dépense malgré des bulletins bien générés.
+        batch.set(accountingRef, {
+            schoolId,
+            date: todayStr,
+            description: `Paie du personnel — ${period} (${employeeCount} employé${employeeCount > 1 ? 's' : ''})`,
+            category: 'Salaires',
+            type: 'Dépense',
+            amount: totalMass,
+            payrollRunId: newRunRef.id,
+            academicYear: resolveAcademicYearForWrite({
+                schoolCurrentYear: (schoolData as any)?.currentAcademicYear,
+                docDate: todayStr,
+            }),
+            createdAt: new Date().toISOString(),
+        });
 
         // Generate and store individual payslips
         for (const staffMember of staffMembers) {

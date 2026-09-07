@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, PlusCircle, Trash2, Edit } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, deleteDoc, doc, where } from 'firebase/firestore';
+import { collection, query, deleteDoc, doc, where, getDocs } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -62,6 +62,21 @@ export default function BusManagementPage() {
   const handleDeleteBus = async () => {
     if (!schoolId || !busToDelete) return;
     try {
+      const assignedRoutesSnap = await getDocs(query(
+        collection(firestore, `ecoles/${schoolId}/transport_lignes`),
+        where('busId', '==', busToDelete.id),
+      ));
+      if (!assignedRoutesSnap.empty) {
+        toast({
+          variant: 'destructive',
+          title: 'Action impossible',
+          description: `Ce bus dessert encore ${assignedRoutesSnap.size} ligne(s). Réassignez-les à un autre bus avant de le supprimer.`,
+        });
+        setIsDeleteDialogOpen(false);
+        setBusToDelete(null);
+        return;
+      }
+
       await deleteDoc(doc(firestore, `ecoles/${schoolId}/transport_bus`, busToDelete.id));
       toast({ title: "Bus supprimé", description: `Le bus ${busToDelete.registrationNumber} a été supprimé.` });
     } catch (error) {

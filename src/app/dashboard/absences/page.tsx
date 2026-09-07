@@ -143,7 +143,13 @@ export default function AbsencesPage() {
     if (!schoolId || !absenceToDelete || !absenceToDelete.studentId) return;
 
     try {
-      await AbsencesService.deleteAbsence(schoolId, absenceToDelete.studentId, absenceToDelete.id);
+      await AbsencesService.deleteAbsence(
+        schoolId,
+        absenceToDelete.studentId,
+        absenceToDelete.id,
+        { userId: user?.uid || 'inconnu', userName: user?.displayName || undefined },
+        { studentName: absenceToDelete.studentName, date: absenceToDelete.date },
+      );
       toast({ title: 'Absence supprimée', description: "L'enregistrement de l'absence a été supprimé." });
     } catch (e) {
       console.error("Failed to delete absence: ", e);
