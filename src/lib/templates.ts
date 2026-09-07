@@ -28,6 +28,40 @@ const COMMON_FRANCOPHONE_SUBJECTS = [
 
 export const SCHOOL_TEMPLATES: Record<string, SchoolTemplate> = {
   // ─────────────────────────────────────────────────────
+  // SYSTÈME FRANCO-ARABE / CONFESSIONNEL ISLAMIQUE (MEDERSA)
+  // ─────────────────────────────────────────────────────
+  FRANCO_ARABE_ISLAMIC: {
+    cycles: [
+      { name: "Maternelle / Rawda (الروضة)", code: "RAW", order: 1 },
+      { name: "Primaire / Ibtidai (الابتدائي)", code: "IBT", order: 2 },
+      { name: "Collège / Idadi (الإعدادي)", code: "IDA", order: 3 },
+      { name: "Lycée / Thanawi (الثانوي)", code: "THA", order: 4 },
+    ],
+    niveaux: {
+      "Maternelle / Rawda (الروضة)": ["Petite Section", "Moyenne Section", "Grande Section"],
+      "Primaire / Ibtidai (الابتدائي)": ["1ère Année (CP1)", "2ème Année (CP2)", "3ème Année (CE1)", "4ème Année (CE2)", "5ème Année (CM1)", "6ème Année (CM2)"],
+      "Collège / Idadi (الإعدادي)": ["1ère Année (6ème)", "2ème Année (5ème)", "3ème Année (4ème)", "4ème Année (3ème)"],
+      "Lycée / Thanawi (الثانوي)": ["1ère Année (Seconde)", "2ème Année (Première)", "3ème Année (Terminale)"],
+    },
+    subjects: [
+      // Enseignement Général
+      { name: "Français", color: "#3B82F6" },
+      { name: "Mathématiques", color: "#10B981" },
+      { name: "Histoire-Géographie", color: "#F59E0B" },
+      { name: "Sciences (SVT)", color: "#22C55E" },
+      { name: "Physique-Chimie", color: "#8B5CF6" },
+      { name: "Anglais", color: "#EF4444" },
+      { name: "EPS", color: "#6366F1" },
+      // Enseignement Islamique & Arabe
+      { name: "Langue Arabe (اللغة العربية)", color: "#0D9488" },
+      { name: "Coran & Récitation (القرآن الكريم)", color: "#059669" },
+      { name: "Éducation Islamique (التربية الإسلامية)", color: "#16A34A" },
+      { name: "Hadith & Fiqh (الحديث والفقه)", color: "#0284C7" },
+      { name: "Morale & Civisme (الأخلاق)", color: "#4F46E5" },
+    ],
+  },
+
+  // ─────────────────────────────────────────────────────
   // CÔTE D'IVOIRE
   // ─────────────────────────────────────────────────────
   IVORIAN_SYSTEM: {
@@ -242,6 +276,17 @@ export function getTemplateForCountry(countryCode: CountryCode): SchoolTemplate 
   const key = templateMap[countryCode] || 'FRANCOPHONE_WEST_AFRICA';
   return SCHOOL_TEMPLATES[key];
 }
+
+export const AVAILABLE_PEDAGOGICAL_TEMPLATES = [
+  { id: 'IVORIAN_SYSTEM', name: 'Système Éducatif Ivoirien (Laïque)' },
+  { id: 'FRANCO_ARABE_ISLAMIC', name: 'Système Franco-Arabe / Confessionnel Islamique' },
+  { id: 'FRANCOPHONE_WEST_AFRICA', name: 'Système Afrique de l\'Ouest (Sénégal, Mali, Burkina, Guinée...)' },
+  { id: 'CAMEROON_FRANCOPHONE', name: 'Système Camerounais (Francophone)' },
+  { id: 'FRANCOPHONE_CENTRAL_AFRICA', name: 'Système Afrique Centrale (Gabon, Congo, Tchad, RDC)' },
+  { id: 'MADAGASCAR_SYSTEM', name: 'Système Malgache' },
+  { id: 'HAITI_SYSTEM', name: 'Système Haïtien' },
+  { id: 'FRANCE_SYSTEM', name: 'Système Français' },
+];
 
 /** Get the display name for a template */
 export function getTemplateDisplayName(countryCode: CountryCode): string {

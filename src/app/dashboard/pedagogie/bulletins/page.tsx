@@ -20,7 +20,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { useSchoolData } from "@/hooks/use-school-data";
-import { FileDown, Calculator, Loader2, GraduationCap } from "lucide-react";
+import { FileDown, Calculator, Loader2, GraduationCap, Files } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ReportCardService, ReportCardData } from "@/services/report-card-service";
 import type { student as Student, class_type as Class } from "@/lib/data-types";
@@ -35,6 +35,8 @@ export default function BulletinsPage() {
     const [selectedClass, setSelectedClass] = useState<string>('all');
     const [selectedPeriodName, setSelectedPeriodName] = useState<string>('');
     const [isCalculating, setIsCalculating] = useState(false);
+    const [isGeneratingBatch, setIsGeneratingBatch] = useState(false);
+    const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
     const [averages, setAverages] = useState<Record<string, { average: number; totalCoef: number }>>({});
     const [classStats, setClassStats] = useState<any>(null);
     const [studentRanks, setStudentRanks] = useState<Record<string, { rank: number, average: number }>>({});
@@ -174,6 +176,106 @@ export default function BulletinsPage() {
         }
     };
 
+    const handleGenerateBatchPDF = async () => {
+        if (!schoolId || !schoolName || selectedClass === 'all' || !selectedPeriod || filteredStudents.length === 0) return;
+
+        setIsGeneratingBatch(true);
+        setBatchProgress({ current: 0, total: filteredStudents.length });
+        const reportService = new ReportCardService(firestore);
+        const className = classes.find((c: Class) => c.id === selectedClass)?.name || "Classe";
+
+        try {
+            // 1. Calculer les statistiques de classe si pas encore fait
+            let currentClassStats = classStats;
+            let currentRanks = studentRanks;
+            let currentTotalStudents = totalStudentsInClass;
+
+            if (!currentClassStats) {
+                const statsData = await reportService.getClassStatistics(
+                    schoolId,
+                    selectedClass,
+                    selectedPeriod.startDate,
+                    selectedPeriod.endDate
+                );
+                currentClassStats = statsData.classStats;
+                currentRanks = statsData.studentRanks;
+                currentTotalStudents = statsData.totalStudents;
+                setClassStats(currentClassStats);
+                setStudentRanks(currentRanks);
+                setTotalStudentsInClass(currentTotalStudents);
+            }
+
+            // 2. Compiler les données de tous les élèves
+            const reportsList: ReportCardData[] = [];
+
+            for (let i = 0; i < filteredStudents.length; i++) {
+                const student = filteredStudents[i];
+                if (!student.id) continue;
+
+                setBatchProgress({ current: i + 1, total: filteredStudents.length });
+
+                const subjectAvgs = await reportService.calculateStudentAverages(
+                    schoolId,
+                    student.id,
+                    selectedPeriod.startDate,
+                    selectedPeriod.endDate
+                );
+                const stats = reportService.calculateGeneralAverage(subjectAvgs);
+
+                const absences = await reportService.countStudentAbsences(
+                    schoolId,
+                    student.id,
+                    selectedPeriod.startDate,
+                    selectedPeriod.endDate
+                );
+
+                reportsList.push({
+                    studentId: student.id,
+                    studentName: `${student.firstName} ${student.lastName}`,
+                    className: className,
+                    schoolYear: schoolData?.currentAcademicYear || "",
+                    term: selectedPeriodName,
+                    subjectAverages: subjectAvgs,
+                    generalAverage: stats.average,
+                    totalCoefficients: stats.totalCoef,
+                    rank: currentRanks[student.id]?.rank,
+                    totalStudents: currentTotalStudents,
+                    classStats: currentClassStats,
+                    absencesCount: absences.total,
+                    justifiedAbsencesCount: absences.justified,
+                    comments: teacherComments
+                });
+            }
+
+            // 3. Générer le document unique multi-bulletins
+            reportService.generateClassBatchReportCardsPDF(
+                reportsList,
+                schoolName,
+                className,
+                selectedPeriodName,
+                schoolData?.mainLogoUrl || null,
+                digitalSignatureUrl,
+                schoolData?.country,
+                schoolData?.region
+            );
+
+            toast({
+                title: "Génération par lot terminée !",
+                description: `Le fichier contenant les ${reportsList.length} bulletins de la classe ${className} a été téléchargé.`
+            });
+        } catch (error) {
+            console.error("Batch PDF generation failed:", error);
+            toast({
+                variant: 'destructive',
+                title: "Erreur de génération",
+                description: "Échec de la création du fichier groupé des bulletins."
+            });
+        } finally {
+            setIsGeneratingBatch(false);
+            setBatchProgress(null);
+        }
+    };
+
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-start">
@@ -247,11 +349,31 @@ export default function BulletinsPage() {
 
             {selectedClass !== 'all' && (
                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                    <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div>
                             <CardTitle>Liste des Élèves</CardTitle>
                             <CardDescription>{filteredStudents.length} élèves trouvés dans cette classe.</CardDescription>
                         </div>
+                        {filteredStudents.length > 0 && (
+                            <Button
+                                variant="default"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md flex items-center gap-2"
+                                onClick={handleGenerateBatchPDF}
+                                disabled={isGeneratingBatch || isCalculating || !selectedPeriodName}
+                            >
+                                {isGeneratingBatch ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        <span>Génération ({batchProgress?.current || 0}/{batchProgress?.total || filteredStudents.length})...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Files className="h-4 w-4" />
+                                        <span>Télécharger tous les bulletins (PDF unique)</span>
+                                    </>
+                                )}
+                            </Button>
+                        )}
                     </CardHeader>
                     <CardContent className="p-0">
                         <Table>

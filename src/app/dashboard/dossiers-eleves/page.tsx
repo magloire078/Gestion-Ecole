@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, Upload, Download, Printer, Search, Users, School, GraduationCap, LayoutGrid, List, Calendar, ArrowUpDown } from "lucide-react";
+import { PlusCircle, Upload, Download, Printer, Search, Users, School, GraduationCap, LayoutGrid, List, Calendar, ArrowUpDown, FileSpreadsheet } from "lucide-react";
 import { useState, useMemo, useEffect, startTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -60,6 +60,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StudentsTable } from '@/components/dossiers/students-table';
 import { StudentsGrid } from '@/components/dossiers/students-grid';
+import { StudentsBulkEdit } from '@/components/dossiers/students-bulk-edit';
 import { StudentsStatsCards } from '@/components/dossiers/stats-cards';
 import { StudentService } from "@/services/student-services";
 import { useStudents } from "@/hooks/use-students";
@@ -129,7 +130,7 @@ export default function StudentsPage() {
   const [selectedClass, setSelectedClass] = useState('all');
   const [selectedCycle, setSelectedCycle] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('active');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'bulk'>('list');
   const [sortBy, setSortBy] = useState('name_asc');
 
   const { activeStudents, archivedStudents, filteredActiveStudents, filteredByClass } = useMemo(() => {
@@ -437,6 +438,7 @@ export default function StudentsPage() {
           <Button
             variant={viewMode === 'list' ? 'secondary' : 'ghost'}
             size="icon"
+            title="Vue Liste"
             onClick={() => startTransition(() => setViewMode('list'))}
             className={cn("rounded-xl transition-all", viewMode === 'list' && "bg-white dark:bg-slate-700 shadow-sm shadow-slate-200/50")}
           >
@@ -445,10 +447,20 @@ export default function StudentsPage() {
           <Button
             variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
             size="icon"
+            title="Vue Cartes"
             onClick={() => startTransition(() => setViewMode('grid'))}
             className={cn("rounded-xl transition-all", viewMode === 'grid' && "bg-white dark:bg-slate-700 shadow-sm shadow-slate-200/50")}
           >
             <LayoutGrid className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === 'bulk' ? 'secondary' : 'ghost'}
+            size="icon"
+            title="Mode Tableur / Édition en Masse"
+            onClick={() => startTransition(() => setViewMode('bulk'))}
+            className={cn("rounded-xl transition-all", viewMode === 'bulk' && "bg-white dark:bg-slate-700 shadow-sm shadow-slate-200/50 text-blue-600")}
+          >
+            <FileSpreadsheet className="h-4 w-4" />
           </Button>
         </div>
       </div>
@@ -475,7 +487,7 @@ export default function StudentsPage() {
                   onRestore={handleOpenRestoreDialog}
                   lockedStudentIds={lockedStudentIds}
                 />
-              ) : (
+              ) : viewMode === 'grid' ? (
                 <div className="p-4 md:p-6">
                   <StudentsGrid
                     students={sortedStudentsToShow}
@@ -485,6 +497,15 @@ export default function StudentsPage() {
                     onArchive={handleOpenArchiveDialog}
                     onRestore={handleOpenRestoreDialog}
                     lockedStudentIds={lockedStudentIds}
+                  />
+                </div>
+              ) : (
+                <div className="p-4 md:p-6">
+                  <StudentsBulkEdit
+                    schoolId={schoolId || ''}
+                    students={sortedStudentsToShow}
+                    classes={classes}
+                    isLoading={loading}
                   />
                 </div>
               )}
@@ -502,7 +523,7 @@ export default function StudentsPage() {
                   onRestore={handleOpenRestoreDialog}
                   lockedStudentIds={lockedStudentIds}
                 />
-              ) : (
+              ) : viewMode === 'grid' ? (
                 <div className="p-4 md:p-6">
                   <StudentsGrid
                     students={sortedStudentsToShow}
@@ -512,6 +533,15 @@ export default function StudentsPage() {
                     onArchive={handleOpenArchiveDialog}
                     onRestore={handleOpenRestoreDialog}
                     lockedStudentIds={lockedStudentIds}
+                  />
+                </div>
+              ) : (
+                <div className="p-4 md:p-6">
+                  <StudentsBulkEdit
+                    schoolId={schoolId || ''}
+                    students={sortedStudentsToShow}
+                    classes={classes}
+                    isLoading={loading}
                   />
                 </div>
               )}

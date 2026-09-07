@@ -220,17 +220,17 @@ export class ReportCardService {
     }
 
     /**
-     * Génère le bulletin PDF
+     * Rendu d'une page de bulletin sur une instance jsPDF existante
      */
-    generatePDF(
-        data: ReportCardData, 
-        schoolName: string, 
-        schoolLogo?: string | null, 
+    renderSingleReportCardOnDoc(
+        doc: jsPDF,
+        data: ReportCardData,
+        schoolName: string,
+        schoolLogo?: string | null,
         directorSignature?: string | null,
         countryCode?: string,
         regionName?: string
     ) {
-        const doc = new jsPDF();
         const stats = this.calculateGeneralAverage(data.subjectAverages);
         const country = countryCode ? getCountryByCode(countryCode as CountryCode) : null;
 
@@ -250,8 +250,8 @@ export class ReportCardService {
             doc.text(country.motto, 15, currentY + 5);
             
             // Right Side: Ministry & Authority
-            doc.setFont("helvetica", "bold");
             doc.setFontSize(8);
+            doc.setFont("helvetica", "bold");
             const ministryLines = doc.splitTextToSize(country.ministryName, 70);
             doc.text(ministryLines, pageWidth - 15, currentY, { align: 'right' });
             
@@ -367,16 +367,16 @@ export class ReportCardService {
                 6: { halign: 'right', fontStyle: 'bold' }
             },
             margin: { left: 15, right: 15 },
-            didParseCell: function(data: any) {
-                if (data.section === 'body') {
+            didParseCell: function(cellData: any) {
+                if (cellData.section === 'body') {
                     // Coloration conditionnelle pour la Moyenne / 20 (colonne 2)
-                    if (data.column.index === 2) {
-                        const grade = parseFloat(data.cell.raw);
+                    if (cellData.column.index === 2) {
+                        const grade = parseFloat(cellData.cell.raw);
                         if (!isNaN(grade)) {
                             if (grade < 10) {
-                                data.cell.styles.textColor = [220, 38, 38]; // text-red-600
+                                cellData.cell.styles.textColor = [220, 38, 38]; // text-red-600
                             } else if (grade >= 16) {
-                                data.cell.styles.textColor = [5, 150, 105]; // text-emerald-600
+                                cellData.cell.styles.textColor = [5, 150, 105]; // text-emerald-600
                             }
                         }
                     }
@@ -436,14 +436,56 @@ export class ReportCardService {
             }
         }
 
-        // 6. Footer
+        // Footer
         doc.setFontSize(8);
         doc.setFont("helvetica", "italic");
         doc.setTextColor(100, 100, 100);
         doc.text("Document confidentiel généré par le système GèreEcole.", pageWidth / 2, 285, { align: 'center' });
+    }
 
-        // Save
+    /**
+     * Génère le bulletin individuel PDF
+     */
+    generatePDF(
+        data: ReportCardData, 
+        schoolName: string, 
+        schoolLogo?: string | null, 
+        directorSignature?: string | null,
+        countryCode?: string,
+        regionName?: string
+    ) {
+        const doc = new jsPDF();
+        this.renderSingleReportCardOnDoc(doc, data, schoolName, schoolLogo, directorSignature, countryCode, regionName);
         const fileName = `Bulletin_${data.studentName.replace(/\s+/g, '_')}_${data.term}.pdf`;
         doc.save(fileName);
     }
+
+    /**
+     * Génère un fichier PDF unique contenant tous les bulletins d'une classe (un bulletin par page)
+     */
+    generateClassBatchReportCardsPDF(
+        reportsList: ReportCardData[],
+        schoolName: string,
+        className: string,
+        term: string,
+        schoolLogo?: string | null,
+        directorSignature?: string | null,
+        countryCode?: string,
+        regionName?: string
+    ) {
+        if (!reportsList || reportsList.length === 0) return;
+
+        const doc = new jsPDF();
+        reportsList.forEach((reportData, index) => {
+            if (index > 0) {
+                doc.addPage();
+            }
+            this.renderSingleReportCardOnDoc(doc, reportData, schoolName, schoolLogo, directorSignature, countryCode, regionName);
+        });
+
+        const safeClassName = className.replace(/[\s\/]+/g, '_');
+        const safeTerm = term.replace(/[\s\/]+/g, '_');
+        doc.save(`Bulletins_Classe_${safeClassName}_${safeTerm}.pdf`);
+    }
 }
+

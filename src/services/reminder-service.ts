@@ -3,14 +3,38 @@ import type { student } from '@/lib/data-types';
 
 export class ReminderService {
     /**
-     * Nettoie et formate un numéro de téléphone pour WhatsApp.
+     * Nettoie et formate un numéro de téléphone pour WhatsApp/SMS.
      * Enlève les espaces, les tirets, et les plus.
+     * Ajoute le préfixe pays si manquant (ex: 225 pour la Côte d'Ivoire).
      */
-    static formatPhoneForWhatsApp(phone: string): string {
+    static formatPhoneForWhatsApp(phone: string, defaultCountryCode: string = '225'): string {
         if (!phone) return '';
-        // Supprime tout ce qui n'est pas un chiffre
         let cleaned = phone.replace(/\D/g, '');
+        
+        // Si le numéro commence par 0 et a 10 chiffres (format CI standard ex: 0759951453), on ajoute l'indicatif
+        if (cleaned.startsWith('0') && cleaned.length === 10) {
+            cleaned = `${defaultCountryCode}${cleaned.slice(1)}`;
+        } else if (cleaned.length === 10 && !cleaned.startsWith(defaultCountryCode)) {
+            cleaned = `${defaultCountryCode}${cleaned}`;
+        }
+        
         return cleaned;
+    }
+
+    /**
+     * Détermine le contact et le nom du parent à contacter
+     */
+    static getParentContact(studentData: student): { name: string; phone: string } {
+        const parentName = studentData.parent1FirstName 
+            ? `${studentData.parent1FirstName} ${studentData.parent1LastName || ''}`.trim()
+            : 'Cher parent';
+            
+        let phone = studentData.parent1Contact;
+        if (!phone && studentData.parent2Contact) {
+            phone = studentData.parent2Contact;
+        }
+
+        return { name: parentName, phone: phone || '' };
     }
 
     /**
@@ -20,13 +44,7 @@ export class ReminderService {
         studentData: student,
         schoolName: string
     ): string {
-        // Déterminer le parent à contacter en priorité
-        const parentName = studentData.parent1FirstName || 'Cher parent';
-        let phone = studentData.parent1Contact;
-
-        if (!phone && studentData.parent2Contact) {
-            phone = studentData.parent2Contact;
-        }
+        const { name: parentName, phone } = this.getParentContact(studentData);
 
         if (!phone) {
             throw new Error("Aucun numéro de téléphone disponible pour les parents de cet élève.");
@@ -48,4 +66,15 @@ La Direction - ${schoolName}`;
         const encodedMessage = encodeURIComponent(message);
         return `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
     }
+
+    /**
+     * Ouvre directement la conversation WhatsApp de relance dans un nouvel onglet
+     */
+    static triggerWhatsAppReminder(studentData: student, schoolName: string) {
+        const url = this.generateWhatsAppPaymentReminder(studentData, schoolName);
+        if (typeof window !== 'undefined') {
+            window.open(url, '_blank', 'noopener,noreferrer');
+        }
+    }
 }
+

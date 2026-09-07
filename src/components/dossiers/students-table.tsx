@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MoreHorizontal, Eye, Printer, FileText, CalendarDays, FileSignature, CreditCard, Edit, UserX, UserCheck, Camera, Lock } from "lucide-react";
+import { MoreHorizontal, Eye, Printer, FileText, CalendarDays, FileSignature, CreditCard, Edit, UserX, UserCheck, Camera, Lock, MessageSquare } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -33,6 +33,9 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { student as Student } from "@/lib/data-types";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useSchoolData } from "@/hooks/use-school-data";
+import { useToast } from "@/hooks/use-toast";
+import { ReminderService } from "@/services/reminder-service";
 
 const getStatusBadgeVariant = (status: Student['status']) => {
     switch (status) {
@@ -83,6 +86,24 @@ interface StudentsTableProps {
 
 export const StudentsTable = ({ students, isLoading, canManageUsers, actionType, onEdit, onArchive, onRestore, lockedStudentIds }: StudentsTableProps) => {
     const router = useRouter();
+    const { schoolName } = useSchoolData();
+    const { toast } = useToast();
+
+    const handleSendWhatsAppReminder = (student: Student) => {
+        try {
+            ReminderService.triggerWhatsAppReminder(student, schoolName || 'Notre Établissement');
+            toast({
+                title: "WhatsApp ouvert",
+                description: `Message de relance préparé pour les parents de ${student.firstName}.`
+            });
+        } catch (error: any) {
+            toast({
+                variant: "destructive",
+                title: "Impossible d'envoyer la relance",
+                description: error.message || "Numéro de contact manquant."
+            });
+        }
+    };
 
     return (
         <Card>
@@ -198,6 +219,14 @@ export const StudentsTable = ({ students, isLoading, canManageUsers, actionType,
                                                     <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/photos?classId=${student.classId || ''}`)}>
                                                         <Camera className="mr-2 h-4 w-4" /> Photos de la classe
                                                     </DropdownMenuItem>
+                                                    {(student.amountDue || 0) > 0 && (
+                                                        <DropdownMenuItem
+                                                            className="text-emerald-600 font-semibold focus:text-emerald-700"
+                                                            onClick={() => handleSendWhatsAppReminder(student)}
+                                                        >
+                                                            <MessageSquare className="mr-2 h-4 w-4 text-emerald-600" /> Relance WhatsApp Impayé
+                                                        </DropdownMenuItem>
+                                                    )}
                                                     <DropdownMenuSub>
                                                         <DropdownMenuSubTrigger>
                                                             <Printer className="mr-2 h-4 w-4" /> Imprimer
