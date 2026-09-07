@@ -23,12 +23,21 @@ const mobileMenuItems = [
 export function MobileNav() {
     const pathname = usePathname();
 
+    // Un onglet couvre sa route et ses sous-routes, mais `/dashboard` préfixe
+    // toutes les autres : le faire correspondre par préfixe allumait « Home »
+    // en même temps que l'onglet réellement ouvert (deux onglets actifs sur
+    // /dashboard/dossiers-eleves, par exemple). On ne retient donc que le
+    // libellé le plus spécifique, c'est-à-dire le href correspondant le plus long.
+    const activeHref = mobileMenuItems
+        .filter(({ href }) => pathname === href || pathname.startsWith(href + '/'))
+        .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+
     return (
         <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-background/80 backdrop-blur-lg border-t pb-safe">
             <div className="flex justify-around items-center h-16">
                 {mobileMenuItems.map((item) => {
                     const Icon = item.icon;
-                    const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                    const isActive = item.href === activeHref;
 
                     return (
                         <Link
