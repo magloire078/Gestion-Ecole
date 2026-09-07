@@ -1,30 +1,42 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { Bell, Mail, MessageSquare } from 'lucide-react';
+import { Bell, Mail, MessageSquare, Loader2 } from 'lucide-react';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { doc, updateDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 
 export default function NotificationsSettingsPage() {
-    const { schoolData, schoolId } = useSchoolData();
+    const { schoolData, schoolId, loading: schoolLoading } = useSchoolData();
     const firestore = useFirestore();
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
 
     // Initial state based on schoolData or defaults
     const [settings, setSettings] = useState({
-        emailAlerts: schoolData?.notificationSettings?.emailAlerts ?? true,
-        smsAlerts: schoolData?.notificationSettings?.smsAlerts ?? false,
-        appNotifications: schoolData?.notificationSettings?.appNotifications ?? true,
-        parentDailyReport: schoolData?.notificationSettings?.parentDailyReport ?? true,
-        paymentConfirmation: schoolData?.notificationSettings?.paymentConfirmation ?? true,
+        emailAlerts: true,
+        smsAlerts: false,
+        appNotifications: true,
+        parentDailyReport: true,
+        paymentConfirmation: true,
     });
+
+    useEffect(() => {
+        if (schoolData?.notificationSettings) {
+            setSettings({
+                emailAlerts: schoolData.notificationSettings.emailAlerts ?? true,
+                smsAlerts: schoolData.notificationSettings.smsAlerts ?? false,
+                appNotifications: schoolData.notificationSettings.appNotifications ?? true,
+                parentDailyReport: schoolData.notificationSettings.parentDailyReport ?? true,
+                paymentConfirmation: schoolData.notificationSettings.paymentConfirmation ?? true,
+            });
+        }
+    }, [schoolData]);
 
     const handleToggle = (key: keyof typeof settings) => {
         setSettings(prev => ({ ...prev, [key]: !prev[key] }));

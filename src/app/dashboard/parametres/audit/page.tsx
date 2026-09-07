@@ -30,8 +30,8 @@ export default function AuditPage() {
     const firestore = useFirestore();
 
     const auditQuery = useMemo(() =>
-        schoolId && user?.uid ? query(collection(firestore, `ecoles/${schoolId}/audit_logs`), orderBy('timestamp', 'desc'), limit(50)) : null,
-        [firestore, schoolId, user?.uid]
+        schoolId ? query(collection(firestore, `ecoles/${schoolId}/audit_logs`), orderBy('timestamp', 'desc'), limit(50)) : null,
+        [firestore, schoolId]
     );
 
     const { data: logsData, loading: logsLoading } = useCollection(auditQuery);
