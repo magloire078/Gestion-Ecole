@@ -315,43 +315,43 @@ export default function StudentsPage() {
 
   return (
     <div className="p-4 md:p-6 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 print:m-0 print:p-0 print:w-full">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 print:hidden">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md p-4 sm:p-6 rounded-2xl border border-white/60 dark:border-slate-800/60 shadow-sm print:hidden">
         <div className="space-y-1">
           <div className="flex items-center gap-2 mb-1">
-             <span className="px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest border border-indigo-200 dark:border-indigo-800">
+             <span className="px-2.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest border border-indigo-200 dark:border-indigo-800">
                Pédagogie
              </span>
           </div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900 bg-gradient-to-r from-slate-900 to-slate-500 bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 bg-gradient-to-r from-slate-900 to-slate-500 bg-clip-text text-transparent">
             Dossiers Élèves
           </h1>
-          <p className="text-slate-500 max-w-2xl text-sm font-medium">
+          <p className="text-slate-500 max-w-2xl text-xs sm:text-sm font-medium">
             Gestion centrale des effectifs : inscriptions, suivi pédagogique et informations personnelles.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <Button 
             variant="outline" 
             onClick={handlePrint}
-            className="rounded-xl border-slate-200 hover:bg-slate-50 transition-all font-semibold"
+            className="flex-1 sm:flex-initial rounded-xl border-slate-200 hover:bg-slate-50 transition-all font-semibold text-xs sm:text-sm h-10 sm:h-11"
           >
-            <Printer className="mr-2 h-4 w-4" />
-            Imprimer Liste
+            <Printer className="mr-1.5 sm:mr-2 h-4 w-4 text-slate-500" />
+            <span>Imprimer</span>
           </Button>
           <Button 
             variant="outline" 
             onClick={handleExportPDF}
-            className="rounded-xl border-slate-200 hover:bg-slate-50 transition-all font-semibold"
+            className="flex-1 sm:flex-initial rounded-xl border-slate-200 hover:bg-slate-50 transition-all font-semibold text-xs sm:text-sm h-10 sm:h-11"
           >
-            <Download className="mr-2 h-4 w-4" />
-            Exporter PDF
+            <Download className="mr-1.5 sm:mr-2 h-4 w-4 text-slate-500" />
+            <span>Exporter PDF</span>
           </Button>
           {canManageUsers && (
             <Button 
               onClick={() => router.push('/dashboard/inscription')}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 transition-all duration-300 hover:-translate-y-1 rounded-xl px-6 font-bold"
+              className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-200 dark:shadow-none transition-all duration-200 rounded-xl px-5 font-bold text-xs sm:text-sm h-10 sm:h-11 shrink-0"
             >
-              <PlusCircle className="mr-2 h-5 w-5" />
+              <PlusCircle className="mr-2 h-4 sm:h-5 w-4 sm:w-5" />
               Inscrire un Élève
             </Button>
           )}
@@ -362,8 +362,8 @@ export default function StudentsPage() {
         <StudentsStatsCards stats={stats} isLoading={loading} />
       </div>
 
-      <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-white/40 dark:border-slate-800/40 p-4 rounded-xl shadow-sm flex flex-col md:flex-row gap-4 items-end print:hidden">
-        <div className="flex-1 w-full space-y-2">
+      <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-white/40 dark:border-slate-800/40 p-4 rounded-xl shadow-sm flex flex-col md:flex-row gap-3 sm:gap-4 items-stretch md:items-end print:hidden">
+        <div className="flex-1 w-full space-y-1.5">
           <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Recherche rapide</label>
           <div className="relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
@@ -371,76 +371,78 @@ export default function StudentsPage() {
               placeholder="Nom, matricule ou classe..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-11 h-12 bg-white/50 dark:bg-slate-800/50 border-white/60 dark:border-slate-700/60 rounded-xl focus:ring-indigo-500 transition-all"
+              className="pl-11 h-11 sm:h-12 bg-white/50 dark:bg-slate-800/50 border-white/60 dark:border-slate-700/60 rounded-xl focus:ring-indigo-500 transition-all text-sm"
             />
           </div>
         </div>
-        <div className="w-full md:w-[150px] space-y-2">
-          <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Année Scolaire</label>
-          <Select value={effectiveAcademicYear} onValueChange={(val) => startTransition(() => setSelectedAcademicYear(val))}>
-            <SelectTrigger className="h-12 bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800/50 rounded-xl focus:ring-indigo-500 text-indigo-700 dark:text-indigo-300 font-bold">
-              <Calendar className="mr-2 h-4 w-4 text-indigo-500" />
-              <SelectValue placeholder="Année" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl border-indigo-200 dark:border-indigo-800">
-              {availableYears.map(year => (
-                <SelectItem key={year} value={year}>{year}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="grid grid-cols-2 md:flex md:flex-row gap-2.5 sm:gap-3 w-full md:w-auto">
+          <div className="w-full md:w-[130px] space-y-1.5">
+            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Année</label>
+            <Select value={effectiveAcademicYear} onValueChange={(val) => startTransition(() => setSelectedAcademicYear(val))}>
+              <SelectTrigger className="h-11 sm:h-12 bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800/50 rounded-xl focus:ring-indigo-500 text-indigo-700 dark:text-indigo-300 font-bold text-xs sm:text-sm">
+                <Calendar className="mr-1.5 sm:mr-2 h-4 w-4 text-indigo-500" />
+                <SelectValue placeholder="Année" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-indigo-200 dark:border-indigo-800">
+                {availableYears.map(year => (
+                  <SelectItem key={year} value={year}>{year}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-full md:w-[160px] space-y-1.5">
+            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Cycle</label>
+            <Select value={selectedCycle} onValueChange={(val) => startTransition(() => setSelectedCycle(val))}>
+              <SelectTrigger className="h-11 sm:h-12 bg-white/50 dark:bg-slate-800/50 border-white/60 dark:border-slate-700/60 rounded-xl focus:ring-indigo-500 text-xs sm:text-sm">
+                <SelectValue placeholder="Tous les cycles" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-white/40">
+                <SelectItem value="all">Tous les cycles</SelectItem>
+                {cycles.map(cycle => (
+                  <SelectItem key={cycle.id!} value={cycle.id!}>{cycle.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-full md:w-[160px] space-y-1.5">
+            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Classe</label>
+            <Select value={selectedClass} onValueChange={(val) => startTransition(() => setSelectedClass(val))}>
+              <SelectTrigger className="h-11 sm:h-12 bg-white/50 dark:bg-slate-800/50 border-white/60 dark:border-slate-700/60 rounded-xl focus:ring-indigo-500 text-xs sm:text-sm">
+                <SelectValue placeholder="Toutes les classes" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-white/40">
+                <SelectItem value="all">Toutes les classes</SelectItem>
+                {classes.map(c => <SelectItem key={c.id!} value={c.id!}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-full md:w-[160px] space-y-1.5">
+            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Trier par</label>
+            <Select value={sortBy} onValueChange={(val) => startTransition(() => setSortBy(val))}>
+              <SelectTrigger className="h-11 sm:h-12 bg-white/50 dark:bg-slate-800/50 border-white/60 dark:border-slate-700/60 rounded-xl focus:ring-indigo-500 text-xs sm:text-sm">
+                <ArrowUpDown className="mr-1.5 sm:mr-2 h-4 w-4 text-slate-400" />
+                <SelectValue placeholder="Trier par..." />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-white/40">
+                <SelectItem value="name_asc">Nom (A-Z)</SelectItem>
+                <SelectItem value="name_desc">Nom (Z-A)</SelectItem>
+                <SelectItem value="class_asc">Classe (A-Z)</SelectItem>
+                <SelectItem value="class_desc">Classe (Z-A)</SelectItem>
+                <SelectItem value="age_asc">Âge (Plus jeune)</SelectItem>
+                <SelectItem value="age_desc">Âge (Plus vieux)</SelectItem>
+                <SelectItem value="gender_asc">Sexe (A-Z)</SelectItem>
+                <SelectItem value="gender_desc">Sexe (Z-A)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <div className="w-full md:w-[200px] space-y-2">
-          <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Filtrer par Cycle</label>
-          <Select value={selectedCycle} onValueChange={(val) => startTransition(() => setSelectedCycle(val))}>
-            <SelectTrigger className="h-12 bg-white/50 dark:bg-slate-800/50 border-white/60 dark:border-slate-700/60 rounded-xl focus:ring-indigo-500">
-              <SelectValue placeholder="Tous les cycles" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl border-white/40">
-              <SelectItem value="all">Tous les cycles</SelectItem>
-              {cycles.map(cycle => (
-                <SelectItem key={cycle.id!} value={cycle.id!}>{cycle.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="w-full md:w-[200px] space-y-2">
-          <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Filtrer par Classe</label>
-          <Select value={selectedClass} onValueChange={(val) => startTransition(() => setSelectedClass(val))}>
-            <SelectTrigger className="h-12 bg-white/50 dark:bg-slate-800/50 border-white/60 dark:border-slate-700/60 rounded-xl focus:ring-indigo-500">
-              <SelectValue placeholder="Toutes les classes" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl border-white/40">
-              <SelectItem value="all">Toutes les classes</SelectItem>
-              {classes.map(c => <SelectItem key={c.id!} value={c.id!}>{c.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="w-full md:w-[200px] space-y-2">
-          <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Trier par</label>
-          <Select value={sortBy} onValueChange={(val) => startTransition(() => setSortBy(val))}>
-            <SelectTrigger className="h-12 bg-white/50 dark:bg-slate-800/50 border-white/60 dark:border-slate-700/60 rounded-xl focus:ring-indigo-500">
-              <ArrowUpDown className="mr-2 h-4 w-4 text-slate-400" />
-              <SelectValue placeholder="Trier par..." />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl border-white/40">
-              <SelectItem value="name_asc">Nom (A-Z)</SelectItem>
-              <SelectItem value="name_desc">Nom (Z-A)</SelectItem>
-              <SelectItem value="class_asc">Classe (A-Z)</SelectItem>
-              <SelectItem value="class_desc">Classe (Z-A)</SelectItem>
-              <SelectItem value="age_asc">Âge (Plus jeune)</SelectItem>
-              <SelectItem value="age_desc">Âge (Plus vieux)</SelectItem>
-              <SelectItem value="gender_asc">Sexe (A-Z)</SelectItem>
-              <SelectItem value="gender_desc">Sexe (Z-A)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 h-12">
+        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 h-11 sm:h-12 self-center md:self-auto shrink-0">
           <Button
             variant={viewMode === 'list' ? 'secondary' : 'ghost'}
             size="icon"
             title="Vue Liste"
             onClick={() => startTransition(() => setViewMode('list'))}
-            className={cn("rounded-xl transition-all", viewMode === 'list' && "bg-white dark:bg-slate-700 shadow-sm shadow-slate-200/50")}
+            className={cn("rounded-xl transition-all h-9 w-9 sm:h-10 sm:w-10", viewMode === 'list' && "bg-white dark:bg-slate-700 shadow-sm shadow-slate-200/50")}
           >
             <List className="h-4 w-4" />
           </Button>
@@ -449,7 +451,7 @@ export default function StudentsPage() {
             size="icon"
             title="Vue Cartes"
             onClick={() => startTransition(() => setViewMode('grid'))}
-            className={cn("rounded-xl transition-all", viewMode === 'grid' && "bg-white dark:bg-slate-700 shadow-sm shadow-slate-200/50")}
+            className={cn("rounded-xl transition-all h-9 w-9 sm:h-10 sm:w-10", viewMode === 'grid' && "bg-white dark:bg-slate-700 shadow-sm shadow-slate-200/50")}
           >
             <LayoutGrid className="h-4 w-4" />
           </Button>
@@ -458,7 +460,7 @@ export default function StudentsPage() {
             size="icon"
             title="Mode Tableur / Édition en Masse"
             onClick={() => startTransition(() => setViewMode('bulk'))}
-            className={cn("rounded-xl transition-all", viewMode === 'bulk' && "bg-white dark:bg-slate-700 shadow-sm shadow-slate-200/50 text-blue-600")}
+            className={cn("rounded-xl transition-all h-9 w-9 sm:h-10 sm:w-10", viewMode === 'bulk' && "bg-white dark:bg-slate-700 shadow-sm shadow-slate-200/50 text-blue-600")}
           >
             <FileSpreadsheet className="h-4 w-4" />
           </Button>

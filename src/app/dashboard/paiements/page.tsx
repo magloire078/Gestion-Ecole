@@ -254,116 +254,207 @@ export default function PaymentsJournalPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 md:p-6 space-y-4 sm:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 print:m-0 print:p-0 print:w-full">
       
       {/* En-tête */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Journal des Paiements & Reçus</h1>
-          <p className="text-sm text-slate-500 font-medium">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md p-4 sm:p-6 rounded-2xl border border-white/60 dark:border-slate-800/60 shadow-sm print:hidden">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest border border-emerald-200 dark:border-emerald-800">
+              Finance & Trésorerie
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 bg-gradient-to-r from-slate-900 to-slate-500 bg-clip-text text-transparent">
+            Journal des Paiements & Reçus
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-2xl">
             Historique complet des versements d&apos;écolage perçus pour l&apos;année {currentYear}.
           </p>
         </div>
 
         <Button 
           onClick={() => setIsPaymentDialogOpen(true)}
-          className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white gap-2 transition-all hover:scale-105 active:scale-95"
+          className="w-full sm:w-auto rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white gap-2 shadow-md shadow-indigo-200 dark:shadow-none transition-all duration-200 hover:scale-105 active:scale-95 font-bold h-11 px-5"
         >
           <PlusCircle className="h-4 w-4" /> Enregistrer un Versement
         </Button>
       </div>
 
       {/* Cartes d'indicateurs de trésorerie courante */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="rounded-2xl border-none shadow-md bg-white/40 backdrop-blur-xl border border-white/60">
-          <CardContent className="p-6 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-black uppercase tracking-widest text-slate-400">Encaissé Aujourd&apos;hui</p>
-              <h3 className="text-2xl font-black text-emerald-600 tracking-tight mt-1 font-mono">{formatCurrency(stats.todayCollected)}</h3>
-              <p className="text-xs text-slate-500 mt-0.5">Clôture journalière</p>
-            </div>
-            <div className="h-12 w-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
-              <TrendingUp className="h-6 w-6" />
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4 print:hidden">
+        <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/60 dark:border-slate-800/60 rounded-2xl p-3.5 sm:p-5 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between">
+          <div className="space-y-1 min-w-0">
+            <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-400 truncate">Encaissé Aujourd&apos;hui</p>
+            <h3 className="text-lg sm:text-2xl font-black text-emerald-600 tracking-tight font-mono tabular-nums truncate">
+              {formatCurrency(stats.todayCollected)}
+            </h3>
+            <p className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">Clôture journalière</p>
+          </div>
+          <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 ml-2">
+            <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />
+          </div>
+        </div>
 
-        <Card className="rounded-2xl border-none shadow-md bg-white/40 backdrop-blur-xl border border-white/60">
-          <CardContent className="p-6 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-black uppercase tracking-widest text-slate-400">Encaissé ce Mois</p>
-              <h3 className="text-2xl font-black text-indigo-600 tracking-tight mt-1 font-mono">{formatCurrency(stats.monthCollected)}</h3>
-              <p className="text-xs text-slate-500 mt-0.5">Rapprochement mensuel</p>
-            </div>
-            <div className="h-12 w-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
-              <Receipt className="h-6 w-6" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/60 dark:border-slate-800/60 rounded-2xl p-3.5 sm:p-5 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between">
+          <div className="space-y-1 min-w-0">
+            <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-400 truncate">Encaissé ce Mois</p>
+            <h3 className="text-lg sm:text-2xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight font-mono tabular-nums truncate">
+              {formatCurrency(stats.monthCollected)}
+            </h3>
+            <p className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">Rapprochement mensuel</p>
+          </div>
+          <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0 ml-2">
+            <Receipt className="h-5 w-5 sm:h-6 sm:w-6" />
+          </div>
+        </div>
 
-        <Card className="rounded-2xl border-none shadow-md bg-white/40 backdrop-blur-xl border border-white/60">
-          <CardContent className="p-6 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-black uppercase tracking-widest text-slate-400">Cumul Recouvré (Annuel)</p>
-              <h3 className="text-2xl font-black text-slate-900 tracking-tight mt-1 font-mono">{formatCurrency(stats.totalAnnual)}</h3>
-              <p className="text-xs text-slate-500 mt-0.5">Total perçu en caisse</p>
-            </div>
-            <div className="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700">
-              <DollarSign className="h-6 w-6" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/60 dark:border-slate-800/60 rounded-2xl p-3.5 sm:p-5 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between">
+          <div className="space-y-1 min-w-0">
+            <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-400 truncate">Cumul Recouvré (Annuel)</p>
+            <h3 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight font-mono tabular-nums truncate">
+              {formatCurrency(stats.totalAnnual)}
+            </h3>
+            <p className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">Total perçu en caisse</p>
+          </div>
+          <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 ml-2">
+            <DollarSign className="h-5 w-5 sm:h-6 sm:w-6" />
+          </div>
+        </div>
       </div>
 
       {/* Barre d'outils (Filtres de période + Recherche) */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div className="flex flex-wrap gap-1 bg-slate-100 p-1 rounded-xl self-start">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-white/40 dark:border-slate-800/40 shadow-sm print:hidden">
+        <div className="flex items-center gap-1.5 bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl overflow-x-auto w-full sm:w-auto">
           <Button 
             variant={periodFilter === 'all' ? 'default' : 'ghost'} 
+            size="sm"
             onClick={() => setPeriodFilter('all')} 
-            className="rounded-lg text-xs font-bold px-3 py-1.5 h-auto"
+            className="rounded-lg text-xs font-bold px-3 py-1.5 h-8 shrink-0"
           >
             Tous les versements
           </Button>
           <Button 
             variant={periodFilter === 'today' ? 'default' : 'ghost'} 
+            size="sm"
             onClick={() => setPeriodFilter('today')} 
-            className="rounded-lg text-xs font-bold px-3 py-1.5 h-auto"
+            className="rounded-lg text-xs font-bold px-3 py-1.5 h-8 shrink-0"
           >
             Aujourd&apos;hui
           </Button>
           <Button 
             variant={periodFilter === 'week' ? 'default' : 'ghost'} 
+            size="sm"
             onClick={() => setPeriodFilter('week')} 
-            className="rounded-lg text-xs font-bold px-3 py-1.5 h-auto"
+            className="rounded-lg text-xs font-bold px-3 py-1.5 h-8 shrink-0"
           >
             Cette semaine
           </Button>
           <Button 
             variant={periodFilter === 'month' ? 'default' : 'ghost'} 
+            size="sm"
             onClick={() => setPeriodFilter('month')} 
-            className="rounded-lg text-xs font-bold px-3 py-1.5 h-auto"
+            className="rounded-lg text-xs font-bold px-3 py-1.5 h-8 shrink-0"
           >
             Ce mois
           </Button>
         </div>
 
-        <div className="relative w-full lg:max-w-xs">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+        <div className="relative w-full sm:max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input 
-            placeholder="Rechercher élève, reçu..." 
+            placeholder="Rechercher élève, classe, reçu..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 rounded-xl border-slate-200/80 bg-white"
+            className="pl-9 h-10 rounded-xl border-white/60 dark:border-slate-700/60 bg-white/70 dark:bg-slate-800/70 text-xs sm:text-sm"
           />
         </div>
       </div>
 
-      {/* Journal des Reçus */}
-      <Card className="rounded-2xl border-none shadow-md overflow-hidden bg-white/70 backdrop-blur-xl">
+      {/* Vue Mobile (Cartes de versements) */}
+      <div className="block md:hidden space-y-3 print:hidden">
+        {filteredTransactions.length === 0 ? (
+          <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/60 dark:border-slate-800/60 rounded-2xl p-8 text-center text-slate-400 text-sm">
+            Aucun versement enregistré sur cette période.
+          </div>
+        ) : (
+          filteredTransactions.map((t) => {
+            const student = students.find(s => s.id === t.studentId);
+            const method = (t as any).method || 'Espèce';
+            return (
+              <div 
+                key={t.id}
+                className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/60 dark:border-slate-800/60 rounded-2xl p-4 shadow-sm space-y-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h4 className="font-black text-slate-900 dark:text-white text-sm">
+                      {student ? `${student.lastName} ${student.firstName}` : 'Élève Externe'}
+                    </h4>
+                    <p className="text-xs text-slate-500 font-medium">
+                      Classe : <span className="font-semibold text-slate-700 dark:text-slate-300">{student?.class || 'N/A'}</span>
+                    </p>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-bold uppercase tracking-wider shrink-0">
+                    {method}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-slate-500 border-t border-slate-100 dark:border-slate-800/60 pt-2">
+                  <div>
+                    <span className="font-mono text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md mr-1.5">
+                      #{t.id?.substring(0, 6).toUpperCase() || 'N/A'}
+                    </span>
+                    <span>{t.date ? format(new Date(t.date), 'dd MMM yyyy', { locale: fr }) : 'N/A'}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-base">
+                      {formatCurrency(t.amount)}
+                    </span>
+                  </div>
+                </div>
+
+                {t.description && (
+                  <p className="text-xs text-slate-500 italic bg-slate-50/50 dark:bg-slate-800/40 p-2 rounded-xl">
+                    {t.description}
+                  </p>
+                )}
+
+                <div className="flex items-center justify-end gap-2 pt-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="rounded-xl h-8 px-3 text-xs font-semibold gap-1.5 border-slate-200 hover:bg-slate-50"
+                    onClick={() => {
+                       if (student) {
+                           BillingService.generateReceiptPDF(schoolData as any, student, t as any, schoolData?.mainLogoUrl);
+                       } else {
+                           toast({ title: "Action impossible", description: "L'élève n'est pas sélectionnable." });
+                       }
+                    }}
+                  >
+                    <Printer className="h-3.5 w-3.5 text-slate-500" /> Reçu PDF
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => handleDeleteTransaction(t)}
+                    className="rounded-xl h-8 px-2 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                    title="Annuler le versement"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Vue Desktop (Tableau des Reçus) */}
+      <Card className="hidden md:block rounded-2xl border-none shadow-md overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/60 dark:border-slate-800/60">
         <CardContent className="p-0">
           <Table>
-            <TableHeader className="bg-slate-50/70 border-b">
+            <TableHeader className="bg-slate-50/70 dark:bg-slate-800/50 border-b">
               <TableRow>
                 <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Reçu N°</TableHead>
                 <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Date</TableHead>
@@ -393,17 +484,17 @@ export default function PaymentsJournalPage() {
                       <TableCell className="text-xs text-slate-500 font-medium capitalize">
                         {t.date ? format(new Date(t.date), 'dd MMM yyyy', { locale: fr }) : 'N/A'}
                       </TableCell>
-                      <TableCell className="font-bold text-slate-900">
+                      <TableCell className="font-bold text-slate-900 dark:text-white">
                         {student ? `${student.lastName} ${student.firstName}` : 'Élève Externe'}
                       </TableCell>
-                      <TableCell className="font-medium text-slate-600">
+                      <TableCell className="font-medium text-slate-600 dark:text-slate-300">
                         {student?.class || 'N/A'}
                       </TableCell>
-                      <TableCell className="text-xs text-slate-600">{t.description}</TableCell>
+                      <TableCell className="text-xs text-slate-600 dark:text-slate-300">{t.description}</TableCell>
                       <TableCell className="text-xs font-semibold text-slate-500">
                         {(t as any).method || 'Espèce'}
                       </TableCell>
-                      <TableCell className="font-mono font-bold text-slate-900 text-sm">
+                      <TableCell className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm">
                         {formatCurrency(t.amount)}
                       </TableCell>
                       <TableCell className="text-center">

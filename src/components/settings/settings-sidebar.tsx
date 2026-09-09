@@ -9,7 +9,7 @@ export function SettingsSidebar() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex flex-wrap gap-2 lg:flex-col lg:space-y-1">
+    <nav className="flex flex-row lg:flex-col gap-1.5 sm:gap-2 overflow-x-auto p-1.5 sm:p-2 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/60 dark:border-slate-800/60 rounded-2xl shadow-sm w-full">
       {parametresSubLinks.map((item) => {
         const isActive = pathname === item.href
           || (item.href !== '/dashboard/parametres' && pathname.startsWith(item.href + '/'));
@@ -19,20 +19,17 @@ export function SettingsSidebar() {
             key={item.href}
             href={item.href}
             className={cn(
-              "relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 group",
+              "relative flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold transition-all duration-200 shrink-0 group whitespace-nowrap",
               isActive
-                ? "bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none font-bold"
+                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-white"
             )}
           >
             <Icon className={cn(
-              "h-4 w-4 transition-transform group-hover:scale-110",
-              isActive ? "text-primary" : "text-muted-foreground/70"
+              "h-4 w-4 shrink-0 transition-transform group-hover:scale-110",
+              isActive ? "text-white" : "text-slate-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400"
             )} />
-            {item.label}
-            {isActive && (
-              <div className="absolute left-0 w-1 h-6 bg-primary rounded-full hidden lg:block" />
-            )}
+            <span>{item.label}</span>
           </Link>
         );
       })}

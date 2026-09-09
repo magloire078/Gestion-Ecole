@@ -32,6 +32,7 @@ function MainClassInfo({ schoolId, classId }: { schoolId: string, classId?: stri
 
     return (
         <div className="flex items-center">
+
             <BookUser className="mr-3 h-4 w-4 text-muted-foreground" />
             <span>Prof. principal de: <strong>{mainClass.name}</strong></span>
         </div>

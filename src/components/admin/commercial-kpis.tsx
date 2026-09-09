@@ -13,8 +13,10 @@ import { ChartContainer } from '@/components/ui/chart';
 import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from 'recharts';
 import {
     Banknote, CalendarClock, Loader2, Percent, RefreshCw, School, TrendingDown, TrendingUp,
+    Sparkles, ArrowUpRight, ShieldCheck, Target
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 interface KpisPayload {
     generatedAt: string;
@@ -48,13 +50,13 @@ function StatTile({ label, value, hint, icon: Icon, tone }: {
     tone?: string;
 }) {
     return (
-        <div className={cn('rounded-2xl border bg-white/50 p-4 dark:bg-white/5', tone)}>
+        <div className={cn('rounded-2xl border bg-white/60 backdrop-blur-md p-4 shadow-sm hover:shadow-md transition-all', tone)}>
             <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
-                <Icon className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xs font-black uppercase tracking-wider text-slate-500">{label}</span>
+                <Icon className="h-4 w-4 text-slate-400" />
             </div>
-            <p className="mt-2 text-2xl font-black tabular-nums">{value}</p>
-            {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
+            <p className="mt-2 text-2xl font-black text-slate-900 tabular-nums">{value}</p>
+            {hint && <p className="mt-1 text-xs text-slate-500 font-medium">{hint}</p>}
         </div>
     );
 }
@@ -107,8 +109,8 @@ export function CommercialKpis() {
     if (data === null) {
         return (
             <div className="space-y-4">
-                <Skeleton className="h-32 w-full" />
-                <Skeleton className="h-96 w-full" />
+                <Skeleton className="h-32 w-full rounded-2xl" />
+                <Skeleton className="h-96 w-full rounded-2xl" />
             </div>
         );
     }
@@ -117,15 +119,14 @@ export function CommercialKpis() {
         <div className="space-y-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight">KPIs commerciaux</h1>
-                    <p className="text-sm text-muted-foreground">
-                        Revenu récurrent, conversion et dynamique des inscriptions — calculés en direct sur les données
-                        des {data.totals.schools} écoles de la plateforme.
+                    <h1 className="text-3xl font-black tracking-tight text-slate-900">KPIs Commerciaux & Revenus</h1>
+                    <p className="text-sm text-slate-500 mt-1">
+                        Revenu récurrent (MRR), conversion et dynamique des souscriptions — calculés en direct sur les {data.totals.schools} écoles.
                     </p>
                 </div>
-                <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+                <Button variant="outline" size="sm" onClick={load} disabled={loading} className="rounded-xl border-slate-200">
                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                    <span className="ml-1.5">Actualiser</span>
+                    <span className="ml-1.5 font-bold">Actualiser</span>
                 </Button>
             </div>
 
@@ -135,12 +136,14 @@ export function CommercialKpis() {
                     value={formatFcfa(data.mrr.total)}
                     hint="Revenu mensuel récurrent (écoles actives)"
                     icon={Banknote}
+                    tone="border-emerald-200 bg-emerald-50/40"
                 />
                 <StatTile
                     label="Conversion"
                     value={data.conversionRate !== null ? `${data.conversionRate} %` : '—'}
-                    hint="Essai → payant (écoles sorties d'essai)"
+                    hint="Essai → payant (écoles converties)"
                     icon={Percent}
+                    tone="border-blue-200 bg-blue-50/40"
                 />
                 <StatTile
                     label="Écoles actives"
@@ -153,6 +156,7 @@ export function CommercialKpis() {
                     value={String(data.totals.trialing)}
                     hint="Conversions potentielles en cours"
                     icon={TrendingUp}
+                    tone="border-amber-200 bg-amber-50/40"
                 />
                 <StatTile
                     label="Échéance ≤ 30 j"
@@ -165,13 +169,14 @@ export function CommercialKpis() {
                     value={String(data.lost90)}
                     hint="Expirées ou résiliées récemment"
                     icon={TrendingDown}
+                    tone="border-rose-200 bg-rose-50/40"
                 />
             </div>
 
             <div className="grid gap-6 lg:grid-cols-3">
-                <Card className="lg:col-span-2">
+                <Card className="lg:col-span-2 rounded-2xl border-white/60 bg-white/40 backdrop-blur-xl shadow-xl">
                     <CardHeader>
-                        <CardTitle>Inscriptions par mois</CardTitle>
+                        <CardTitle className="text-lg font-black text-slate-900">Inscriptions & Croissance par mois</CardTitle>
                         <CardDescription>
                             Nouvelles écoles créées sur les 12 derniers mois.
                         </CardDescription>
@@ -179,32 +184,32 @@ export function CommercialKpis() {
                     <CardContent>
                         <div className="h-64 w-full">
                             <ChartContainer
-                                config={{ count: { label: 'Inscriptions', color: 'hsl(var(--chart-2))' } }}
+                                config={{ count: { label: 'Inscriptions', color: '#2563eb' } }}
                                 className="h-full w-full"
                             >
                                 <BarChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
-                                    <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted" />
+                                    <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-slate-200" />
                                     <XAxis
                                         dataKey="monthLabel"
                                         tickLine={false}
                                         axisLine={false}
-                                        tick={{ fontSize: 11 }}
+                                        tick={{ fontSize: 11, fill: '#64748b' }}
                                         interval={1}
                                     />
                                     <YAxis
                                         allowDecimals={false}
                                         tickLine={false}
                                         axisLine={false}
-                                        tick={{ fontSize: 11 }}
+                                        tick={{ fontSize: 11, fill: '#64748b' }}
                                     />
                                     <Tooltip
-                                        cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }}
+                                        cursor={{ fill: 'rgba(226, 232, 240, 0.4)' }}
                                         content={({ active, payload, label }) => {
                                             if (active && payload && payload.length) {
                                                 return (
-                                                    <div className="rounded-xl border bg-background p-3 shadow-xl">
-                                                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
-                                                        <p className="text-sm font-black tabular-nums">
+                                                    <div className="rounded-xl border bg-white p-3 shadow-xl">
+                                                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{label}</p>
+                                                        <p className="text-sm font-black tabular-nums text-blue-600">
                                                             {payload[0].value} inscription{Number(payload[0].value) > 1 ? 's' : ''}
                                                         </p>
                                                     </div>
@@ -215,9 +220,9 @@ export function CommercialKpis() {
                                     />
                                     <Bar
                                         dataKey="count"
-                                        fill="hsl(var(--chart-2))"
-                                        radius={[4, 4, 0, 0]}
-                                        maxBarSize={28}
+                                        fill="#2563eb"
+                                        radius={[6, 6, 0, 0]}
+                                        maxBarSize={32}
                                     />
                                 </BarChart>
                             </ChartContainer>
@@ -225,55 +230,55 @@ export function CommercialKpis() {
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="rounded-2xl border-white/60 bg-white/40 backdrop-blur-xl shadow-xl">
                     <CardHeader>
-                        <CardTitle>MRR par plan</CardTitle>
+                        <CardTitle className="text-lg font-black text-slate-900">MRR par formule</CardTitle>
                         <CardDescription>
                             Répartition du revenu mensuel estimé.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-3">
                         {plans.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-sm text-slate-500">
                                 Aucune école active pour le moment.
                             </p>
                         ) : (
                             plans.map(([plan, info]) => (
-                                <div key={plan} className="rounded-xl border p-3">
+                                <div key={plan} className="rounded-xl border border-slate-200/80 bg-white/60 p-3 shadow-sm">
                                     <div className="flex items-center justify-between">
-                                        <Badge variant="outline" className="font-semibold">{plan}</Badge>
-                                        <span className="text-sm font-black tabular-nums">{formatFcfa(info.mrr)}</span>
+                                        <Badge variant="outline" className="font-bold text-slate-700 bg-white">{plan}</Badge>
+                                        <span className="text-sm font-black tabular-nums text-slate-900">{formatFcfa(info.mrr)}</span>
                                     </div>
-                                    <p className="mt-1.5 text-xs text-muted-foreground">
+                                    <p className="mt-1 text-xs text-slate-500">
                                         {info.schools} école{info.schools > 1 ? 's' : ''} · {info.students} élève{info.students > 1 ? 's' : ''}
                                     </p>
                                 </div>
                             ))
                         )}
-                        <p className="text-[11px] text-muted-foreground">
-                            Estimation : tarif par élève du plan + modules actifs facturés. Calculé à {format(new Date(data.generatedAt), 'HH:mm', { locale: fr })}.
+                        <p className="text-[11px] text-slate-400 pt-2">
+                            Calculé à {format(new Date(data.generatedAt), 'HH:mm', { locale: fr })}.
                         </p>
                     </CardContent>
                 </Card>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border bg-slate-50/50 p-4 text-sm dark:bg-white/5">
-                    <p className="font-bold">Statuts d&apos;abonnement</p>
-                    <p className="mt-1 text-muted-foreground">
+            <div className="grid gap-4 sm:grid-cols-3">
+                <div className="rounded-2xl border border-slate-200/80 bg-white/40 backdrop-blur-md p-4 text-sm shadow-sm">
+                    <p className="font-black text-slate-900">Statuts d'abonnement</p>
+                    <p className="mt-1.5 text-slate-600">
                         {data.totals.active} actives · {data.totals.trialing} en essai · {data.totals.pastDue} en impayé · {data.totals.expired} expirées · {data.totals.canceled} résiliées
                     </p>
                 </div>
-                <div className="rounded-2xl border bg-slate-50/50 p-4 text-sm dark:bg-white/5">
-                    <p className="font-bold">Où agir en priorité</p>
-                    <p className="mt-1 text-muted-foreground">
-                        Les {data.expiring30} écoles à échéance sous 30 jours et les {data.totals.pastDue} en impayé sont vos renouvellements à sécuriser cette semaine.
+                <div className="rounded-2xl border border-slate-200/80 bg-white/40 backdrop-blur-md p-4 text-sm shadow-sm">
+                    <p className="font-black text-slate-900">Priorités de la semaine</p>
+                    <p className="mt-1.5 text-slate-600">
+                        {data.expiring30} école{data.expiring30 > 1 ? 's' : ''} à échéance sous 30 jours et {data.totals.pastDue} en impayé à relancer pour sécuriser les renouvellements.
                     </p>
                 </div>
-                <div className="rounded-2xl border bg-slate-50/50 p-4 text-sm dark:bg-white/5">
-                    <p className="font-bold">Croissance</p>
-                    <p className="mt-1 text-muted-foreground">
-                        {chartData.slice(-3).reduce((sum, m) => sum + m.count, 0)} inscriptions sur les 3 derniers mois — les {data.totals.trialing} essais en cours sont vos prochaines conversions.
+                <div className="rounded-2xl border border-slate-200/80 bg-white/40 backdrop-blur-md p-4 text-sm shadow-sm">
+                    <p className="font-black text-slate-900">Dynamique commerciale</p>
+                    <p className="mt-1.5 text-slate-600">
+                        {chartData.slice(-3).reduce((sum, m) => sum + m.count, 0)} inscriptions sur le dernier trimestre — les {data.totals.trialing} essais constituent vos prochaines conversions.
                     </p>
                 </div>
             </div>
