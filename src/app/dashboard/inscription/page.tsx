@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useTransition, useDeferredValue } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,7 +24,9 @@ import {
   Printer,
   Upload,
   X,
-  FileText
+  FileText,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -57,6 +59,23 @@ export default function InscriptionDashboard() {
 
   // Recherche & pagination
   const [searchTerm, setSearchTerm] = useState('');
+  const deferredSearchTerm = useDeferredValue(searchTerm);
+
+  // Gestion des onglets avec transition non-bloquante (INP Optimization)
+  const [activeTab, setActiveTab] = useState<string>('inscrits');
+  const [, startTabTransition] = useTransition();
+
+  const handleTabChange = (val: string) => {
+    startTabTransition(() => {
+      setActiveTab(val);
+    });
+  };
+
+  // Pagination par onglet (25 élèves par page pour fluidité instantanée)
+  const PAGE_SIZE = 25;
+  const [pageCurrent, setPageCurrent] = useState(1);
+  const [pagePrev, setPagePrev] = useState(1);
+  const [pageDeleted, setPageDeleted] = useState(1);
 
   const currentYear = schoolData?.currentAcademicYear || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
   
@@ -104,8 +123,8 @@ export default function InscriptionDashboard() {
 
   // Filtre de recherche
   const filterBySearch = (list: Student[]) => {
-    if (!searchTerm) return list;
-    const term = searchTerm.toLowerCase();
+    if (!deferredSearchTerm) return list;
+    const term = deferredSearchTerm.toLowerCase();
     return list.filter(e => 
       e.lastName.toLowerCase().includes(term) || 
       e.firstName.toLowerCase().includes(term) ||
@@ -114,9 +133,25 @@ export default function InscriptionDashboard() {
     );
   };
 
-  const filteredCurrent = useMemo(() => filterBySearch(currentStudents), [currentStudents, searchTerm]);
-  const filteredPrev = useMemo(() => filterBySearch(prevStudents), [prevStudents, searchTerm]);
-  const filteredDeleted = useMemo(() => filterBySearch(deletedStudents), [deletedStudents, searchTerm]);
+  const filteredCurrent = useMemo(() => filterBySearch(currentStudents), [currentStudents, deferredSearchTerm]);
+  const filteredPrev = useMemo(() => filterBySearch(prevStudents), [prevStudents, deferredSearchTerm]);
+  const filteredDeleted = useMemo(() => filterBySearch(deletedStudents), [deletedStudents, deferredSearchTerm]);
+
+  // Pages calculées
+  const paginatedCurrent = useMemo(() => {
+    const start = (pageCurrent - 1) * PAGE_SIZE;
+    return filteredCurrent.slice(start, start + PAGE_SIZE);
+  }, [filteredCurrent, pageCurrent]);
+
+  const paginatedPrev = useMemo(() => {
+    const start = (pagePrev - 1) * PAGE_SIZE;
+    return filteredPrev.slice(start, start + PAGE_SIZE);
+  }, [filteredPrev, pagePrev]);
+
+  const paginatedDeleted = useMemo(() => {
+    const start = (pageDeleted - 1) * PAGE_SIZE;
+    return filteredDeleted.slice(start, start + PAGE_SIZE);
+  }, [filteredDeleted, pageDeleted]);
 
   // Agrégation des indicateurs de la comptabilité pour l'année courante
   const stats = useMemo(() => {
@@ -390,7 +425,7 @@ export default function InscriptionDashboard() {
       </div>
 
       {/* Tableau de bord interactif avec onglets */}
-      <Tabs defaultValue="inscrits" className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         
         {/* Barre d'outils (Onglets + Recherche) */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
@@ -463,6 +498,7 @@ export default function InscriptionDashboard() {
                   </div>
                 </div>
               ) : (
+              <>
               <Table>
                 <TableHeader className="bg-slate-50/70 border-b">
                   <TableRow>
@@ -480,14 +516,14 @@ export default function InscriptionDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCurrent.length === 0 ? (
+                  {paginatedCurrent.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={11} className="text-center py-12 text-slate-400">
                         Aucun élève trouvé pour cette recherche.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredCurrent.map(student => (
+                    paginatedCurrent.map(student => (
                       <TableRow key={student.id} className="hover:bg-slate-50/40">
                         <TableCell>
                           <Avatar className="h-9 w-9 ring-1 ring-slate-100">
@@ -542,6 +578,38 @@ export default function InscriptionDashboard() {
                   )}
                 </TableBody>
               </Table>
+
+              {filteredCurrent.length > PAGE_SIZE && (
+                <div className="flex items-center justify-between px-4 py-3 border-t bg-slate-50/50">
+                  <p className="text-xs text-slate-500 font-medium">
+                    Affichage {(pageCurrent - 1) * PAGE_SIZE + 1} à {Math.min(pageCurrent * PAGE_SIZE, filteredCurrent.length)} sur {filteredCurrent.length} élèves
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={pageCurrent === 1}
+                      onClick={() => setPageCurrent(p => Math.max(1, p - 1))}
+                      className="rounded-lg h-8 px-2"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-xs font-bold px-2 text-slate-700">
+                      {pageCurrent} / {Math.ceil(filteredCurrent.length / PAGE_SIZE)}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={pageCurrent >= Math.ceil(filteredCurrent.length / PAGE_SIZE)}
+                      onClick={() => setPageCurrent(p => p + 1)}
+                      className="rounded-lg h-8 px-2"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+              </>
               )}
             </CardContent>
           </Card>
@@ -565,14 +633,14 @@ export default function InscriptionDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredPrev.length === 0 ? (
+                  {paginatedPrev.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={8} className="text-center py-12 text-slate-400">
                         Aucun élève trouvé de l&apos;année précédente ({prevYear}).
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredPrev.map(student => (
+                    paginatedPrev.map(student => (
                       <TableRow key={student.id} className="hover:bg-slate-50/40">
                         <TableCell>
                           <Avatar className="h-9 w-9 ring-1 ring-slate-100">
@@ -592,6 +660,37 @@ export default function InscriptionDashboard() {
                   )}
                 </TableBody>
               </Table>
+
+              {filteredPrev.length > PAGE_SIZE && (
+                <div className="flex items-center justify-between px-4 py-3 border-t bg-slate-50/50">
+                  <p className="text-xs text-slate-500 font-medium">
+                    Affichage {(pagePrev - 1) * PAGE_SIZE + 1} à {Math.min(pagePrev * PAGE_SIZE, filteredPrev.length)} sur {filteredPrev.length} élèves
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={pagePrev === 1}
+                      onClick={() => setPagePrev(p => Math.max(1, p - 1))}
+                      className="rounded-lg h-8 px-2"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-xs font-bold px-2 text-slate-700">
+                      {pagePrev} / {Math.ceil(filteredPrev.length / PAGE_SIZE)}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={pagePrev >= Math.ceil(filteredPrev.length / PAGE_SIZE)}
+                      onClick={() => setPagePrev(p => p + 1)}
+                      className="rounded-lg h-8 px-2"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -613,14 +712,14 @@ export default function InscriptionDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredDeleted.length === 0 ? (
+                  {paginatedDeleted.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-12 text-slate-400">
                         La corbeille est vide.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredDeleted.map(student => (
+                    paginatedDeleted.map(student => (
                       <TableRow key={student.id} className="hover:bg-slate-50/40">
                         <TableCell>
                           <Avatar className="h-9 w-9 grayscale opacity-60">
@@ -651,6 +750,37 @@ export default function InscriptionDashboard() {
                   )}
                 </TableBody>
               </Table>
+
+              {filteredDeleted.length > PAGE_SIZE && (
+                <div className="flex items-center justify-between px-4 py-3 border-t bg-slate-50/50">
+                  <p className="text-xs text-slate-500 font-medium">
+                    Affichage {(pageDeleted - 1) * PAGE_SIZE + 1} à {Math.min(pageDeleted * PAGE_SIZE, filteredDeleted.length)} sur {filteredDeleted.length} élèves
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={pageDeleted === 1}
+                      onClick={() => setPageDeleted(p => Math.max(1, p - 1))}
+                      className="rounded-lg h-8 px-2"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-xs font-bold px-2 text-slate-700">
+                      {pageDeleted} / {Math.ceil(filteredDeleted.length / PAGE_SIZE)}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={pageDeleted >= Math.ceil(filteredDeleted.length / PAGE_SIZE)}
+                      onClick={() => setPageDeleted(p => p + 1)}
+                      className="rounded-lg h-8 px-2"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
