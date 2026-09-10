@@ -347,21 +347,21 @@ export default function InscriptionDashboard() {
           />
 
           <Button 
-            onClick={() => setIsUnitaryOpen(true)}
+            onClick={() => startTabTransition(() => setIsUnitaryOpen(true))}
             className="w-full sm:w-auto rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white gap-2 transition-all hover:scale-105 active:scale-95"
           >
             <UserPlus className="h-4 w-4" /> Nouvelle Inscription
           </Button>
 
           <Button 
-            onClick={() => setIsBulkOpen(true)}
+            onClick={() => startTabTransition(() => setIsBulkOpen(true))}
             className="w-full sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white gap-2 transition-all hover:scale-105 active:scale-95"
           >
             <TableIcon className="h-4 w-4" /> Saisie en Lot
           </Button>
 
           <Button 
-            onClick={() => setIsReRegistrationOpen(true)}
+            onClick={() => startTabTransition(() => setIsReRegistrationOpen(true))}
             className="w-full sm:w-auto rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100/70 border border-indigo-100 gap-2 transition-all hover:scale-105 active:scale-95"
           >
             <RefreshCw className="h-4 w-4" /> Réinscrire
@@ -468,7 +468,7 @@ export default function InscriptionDashboard() {
                   
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                     <Button 
-                      onClick={() => setIsUnitaryOpen(true)}
+                      onClick={() => startTabTransition(() => setIsUnitaryOpen(true))}
                       className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white gap-2 transition-all hover:scale-105 active:scale-95 px-6"
                     >
                       <UserPlus className="h-4 w-4" /> Ajouter un élève
@@ -476,14 +476,14 @@ export default function InscriptionDashboard() {
                     <div className="flex flex-wrap justify-center gap-2">
                       <Button 
                         variant="outline"
-                        onClick={() => setIsBulkOpen(true)}
+                        onClick={() => startTabTransition(() => setIsBulkOpen(true))}
                         className="rounded-xl border-slate-200/80 hover:bg-slate-50 gap-2 transition-all hover:scale-105 active:scale-95"
                       >
                         <TableIcon className="h-4 w-4" /> Ajouter plusieurs
                       </Button>
                       <Button 
                         variant="outline"
-                        onClick={() => setIsReRegistrationOpen(true)}
+                        onClick={() => startTabTransition(() => setIsReRegistrationOpen(true))}
                         className="rounded-xl border-slate-200/80 hover:bg-slate-50 gap-2 transition-all hover:scale-105 active:scale-95"
                       >
                         <RefreshCw className="h-4 w-4" /> Réinscrire des élèves
@@ -786,39 +786,46 @@ export default function InscriptionDashboard() {
         </TabsContent>
       </Tabs>
 
-      {/* Modals intégrés */}
+      {/* Modals intégrés rendus à la demande pour éviter toute surcharge mémoire / INP */}
       {schoolId && (
         <>
-          <RegistrationModal
-            isOpen={isUnitaryOpen}
-            onClose={() => setIsUnitaryOpen(false)}
-            onSuccess={() => {}}
-            schoolId={schoolId}
-            schoolData={schoolData}
-            classes={classes}
-            niveaux={niveaux}
-            fees={fees}
-          />
-          <BulkRegistrationModal
-            isOpen={isBulkOpen}
-            onClose={() => setIsBulkOpen(false)}
-            onSuccess={() => {}}
-            schoolId={schoolId}
-            schoolData={schoolData}
-            classes={classes}
-            niveaux={niveaux}
-            fees={fees}
-          />
-          <ReRegistrationModal
-            isOpen={isReRegistrationOpen}
-            onClose={() => setIsReRegistrationOpen(false)}
-            onSuccess={() => {}}
-            schoolId={schoolId}
-            schoolData={schoolData}
-            classes={classes}
-            niveaux={niveaux}
-            fees={fees}
-          />
+          {isUnitaryOpen && (
+            <RegistrationModal
+              isOpen={isUnitaryOpen}
+              onClose={() => setIsUnitaryOpen(false)}
+              onSuccess={() => {}}
+              schoolId={schoolId}
+              schoolData={schoolData}
+              classes={classes}
+              niveaux={niveaux}
+              fees={fees}
+            />
+          )}
+          {isBulkOpen && (
+            <BulkRegistrationModal
+              isOpen={isBulkOpen}
+              onClose={() => setIsBulkOpen(false)}
+              onSuccess={() => {}}
+              schoolId={schoolId}
+              schoolData={schoolData}
+              classes={classes}
+              niveaux={niveaux}
+              fees={fees}
+            />
+          )}
+          {isReRegistrationOpen && (
+            <ReRegistrationModal
+              isOpen={isReRegistrationOpen}
+              onClose={() => setIsReRegistrationOpen(false)}
+              onSuccess={() => {}}
+              schoolId={schoolId}
+              schoolData={schoolData}
+              classes={classes}
+              niveaux={niveaux}
+              fees={fees}
+              previousStudents={prevStudents}
+            />
+          )}
         </>
       )}
 
