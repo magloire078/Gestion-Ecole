@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, Upload, Download, Printer, Search, Users, School, GraduationCap, LayoutGrid, List, Calendar, ArrowUpDown, FileSpreadsheet } from "lucide-react";
+import { PlusCircle, Upload, Download, Printer, Search, Users, School, GraduationCap, LayoutGrid, List, Calendar, ArrowUpDown, FileSpreadsheet, FileText } from "lucide-react";
 import { useState, useMemo, useEffect, startTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { RegistrationFormDialog } from "@/components/inscription/registration-form-dialog";
 import { StudentReportsService } from '@/services/student-reports-service';
 import {
   AlertDialog,
@@ -346,6 +347,18 @@ export default function StudentsPage() {
             <Download className="mr-1.5 sm:mr-2 h-4 w-4 text-slate-500" />
             <span>Exporter PDF</span>
           </Button>
+          <RegistrationFormDialog
+            classes={classes}
+            trigger={
+              <Button 
+                variant="outline" 
+                className="flex-1 sm:flex-initial rounded-xl border-blue-200 bg-blue-50/50 hover:bg-blue-100/70 text-blue-700 transition-all font-semibold text-xs sm:text-sm h-10 sm:h-11 gap-1.5"
+              >
+                <FileText className="h-4 w-4 text-blue-600" />
+                <span>Fiche Inscription</span>
+              </Button>
+            }
+          />
           {canManageUsers && (
             <Button 
               onClick={() => router.push('/dashboard/inscription')}

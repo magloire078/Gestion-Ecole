@@ -303,7 +303,7 @@ export default function ClassDetailsClient() {
                                             <Download className="mr-2 h-4 w-4" /> Liste PDF
                                         </Button>
                                         <Button variant="outline" size="sm" className="text-indigo-600 border-indigo-200 hover:bg-indigo-50" onClick={handleGenerateCards}>
-                                            <IdCard className="mr-2 h-4 w-4" /> Cartes Scolaires
+                                            <Contact className="mr-2 h-4 w-4" /> Cartes Scolaires
                                         </Button>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>

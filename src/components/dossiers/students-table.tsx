@@ -36,6 +36,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useSchoolData } from "@/hooks/use-school-data";
 import { useToast } from "@/hooks/use-toast";
 import { ReminderService } from "@/services/reminder-service";
+import { RegistrationFormPDFService } from "@/services/registration-form-pdf-service";
 
 const getStatusBadgeVariant = (status: Student['status']) => {
     switch (status) {
@@ -86,8 +87,37 @@ interface StudentsTableProps {
 
 export const StudentsTable = ({ students, isLoading, canManageUsers, actionType, onEdit, onArchive, onRestore, lockedStudentIds }: StudentsTableProps) => {
     const router = useRouter();
-    const { schoolName } = useSchoolData();
+    const { schoolName, schoolData } = useSchoolData();
     const { toast } = useToast();
+
+    const handleGenerateRegistrationForm = async (student: Student) => {
+        if (!schoolData) {
+            toast({
+                variant: 'destructive',
+                title: 'Erreur',
+                description: 'Données de l\'établissement indisponibles.',
+            });
+            return;
+        }
+        try {
+            await RegistrationFormPDFService.generateRegistrationFormPDF({
+                school: schoolData,
+                student,
+                schoolLogoUrl: schoolData.mainLogoUrl,
+            });
+            toast({
+                title: 'Fiche d\'inscription générée',
+                description: `Fiche d'inscription de ${student.firstName} ${student.lastName} téléchargée.`,
+            });
+        } catch (e) {
+            console.error('Erreur génération PDF:', e);
+            toast({
+                variant: 'destructive',
+                title: 'Erreur',
+                description: 'Erreur lors de la génération de la fiche.',
+            });
+        }
+    };
 
     const handleSendWhatsAppReminder = (student: Student) => {
         try {
@@ -233,10 +263,13 @@ export const StudentsTable = ({ students, isLoading, canManageUsers, actionType,
                                                         </DropdownMenuSubTrigger>
                                                         <DropdownMenuPortal>
                                                             <DropdownMenuSubContent>
-                                                                <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/carte?id=${student.id}`)}><CreditCard className="mr-2 h-4 w-4" />Carte Étudiant</DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/bulletin?id=${student.id}`)}><FileText className="mr-2 h-4 w-4" />Bulletin</DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/emploi-du-temps?id=${student.id}`)}><CalendarDays className="mr-2 h-4 w-4" />Emploi du temps</DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/fiche?id=${student.id}`)}><FileSignature className="mr-2 h-4 w-4" />Fiche</DropdownMenuItem>
+                                                                 <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/carte?id=${student.id}`)}><CreditCard className="mr-2 h-4 w-4" />Carte Étudiant</DropdownMenuItem>
+                                                                 <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/bulletin?id=${student.id}`)}><FileText className="mr-2 h-4 w-4" />Bulletin</DropdownMenuItem>
+                                                                 <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/emploi-du-temps?id=${student.id}`)}><CalendarDays className="mr-2 h-4 w-4" />Emploi du temps</DropdownMenuItem>
+                                                                 <DropdownMenuItem onClick={() => handleGenerateRegistrationForm(student)}>
+                                                                     <FileSignature className="mr-2 h-4 w-4 text-blue-600" />
+                                                                     Fiche d&apos;inscription PDF
+                                                                 </DropdownMenuItem>
                                                             </DropdownMenuSubContent>
                                                         </DropdownMenuPortal>
                                                     </DropdownMenuSub>

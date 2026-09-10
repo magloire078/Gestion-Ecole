@@ -23,7 +23,8 @@ import {
   Check,
   Printer,
   Upload,
-  X
+  X,
+  FileText
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -38,6 +39,8 @@ import QRCode from 'react-qr-code';
 import { RegistrationModal } from '@/components/inscription/registration-modal';
 import { BulkRegistrationModal } from '@/components/inscription/bulk-registration-modal';
 import { ReRegistrationModal } from '@/components/inscription/re-registration-modal';
+import { RegistrationFormDialog } from '@/components/inscription/registration-form-dialog';
+import { RegistrationFormPDFService } from '@/services/registration-form-pdf-service';
 import { StudentService } from '@/services/student-services';
 import type { student as Student, class_type as Class, fee as Fee, niveau as Niveau } from '@/lib/data-types';
 
@@ -299,6 +302,15 @@ export default function InscriptionDashboard() {
             </Dialog>
           )}
 
+          <RegistrationFormDialog
+            classes={classes}
+            trigger={
+              <Button variant="outline" className="w-full sm:w-auto rounded-xl border-blue-200/80 bg-blue-50/50 hover:bg-blue-100/70 text-blue-700 gap-2 transition-all hover:scale-105 active:scale-95">
+                <FileText className="h-4 w-4 text-blue-600" /> Fiche PDF (Manuelle)
+              </Button>
+            }
+          />
+
           <Button 
             onClick={() => setIsUnitaryOpen(true)}
             className="w-full sm:w-auto rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white gap-2 transition-all hover:scale-105 active:scale-95"
@@ -497,7 +509,24 @@ export default function InscriptionDashboard() {
                         <TableCell className="font-mono text-xs">{formatCurrency(student.tuitionFee)}</TableCell>
                         <TableCell className="font-mono text-xs font-bold text-rose-600">{formatCurrency(student.amountDue)}</TableCell>
                         <TableCell className="text-center">
-                          <div className="flex justify-end gap-2 pr-2">
+                          <div className="flex justify-end gap-1 pr-2">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              title="Imprimer la fiche d'inscription"
+                              onClick={() => {
+                                if (schoolData) {
+                                  RegistrationFormPDFService.generateRegistrationFormPDF({
+                                    school: schoolData,
+                                    student,
+                                    schoolLogoUrl: schoolData.mainLogoUrl,
+                                  });
+                                }
+                              }}
+                              className="text-blue-600 hover:bg-blue-50 rounded-xl h-8 w-8"
+                            >
+                              <FileText className="h-4 w-4" />
+                            </Button>
                             <Button 
                               variant="ghost" 
                               size="icon" 
