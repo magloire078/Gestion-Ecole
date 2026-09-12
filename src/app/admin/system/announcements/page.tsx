@@ -218,9 +218,9 @@ export default function AdminAnnouncementsPage() {
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="all">Toutes les écoles</SelectItem>
-                                        <SelectItem value="plan">Par plan d'abonnement</SelectItem>
-                                        <SelectItem value="status">Par statut d'abonnement</SelectItem>
-                                        <SelectItem value="school">Liste d'écoles précises</SelectItem>
+                                        <SelectItem value="plan">Par plan d&apos;abonnement</SelectItem>
+                                        <SelectItem value="status">Par statut d&apos;abonnement</SelectItem>
+                                        <SelectItem value="school">Liste d&apos;écoles précises</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

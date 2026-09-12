@@ -209,7 +209,7 @@ export default function LoginPage() {
         >
           <div className="space-y-6">
             <h1 className="text-6xl font-black text-[#0C365A] dark:text-white leading-[1.1] tracking-tighter font-outfit text-balance">
-              L'excellence <br />
+              L&apos;excellence <br />
               <span className="text-[#2D9CDB]">académique</span> <br />
               commence ici.
             </h1>
@@ -234,7 +234,7 @@ export default function LoginPage() {
               </div>
               <div>
                 <h3 className="font-bold text-[#0C365A] dark:text-white">Performance Instantanée</h3>
-                <p className="text-sm text-slate-400">Accédez à vos rapports en un clin d'œil.</p>
+                <p className="text-sm text-slate-400">Accédez à vos rapports en un clin d&apos;œil.</p>
               </div>
             </div>
           </div>
@@ -376,7 +376,7 @@ export default function LoginPage() {
             <p className="text-center text-sm font-medium text-slate-400 mt-6">
               Nouveau ici ?{' '}
               <Link href="/auth/register" className="text-[#2D9CDB] font-bold hover:underline">
-                Créer un compte d'école
+                Créer un compte d&apos;école
               </Link>
             </p>
           </motion.div>

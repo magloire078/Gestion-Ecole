@@ -53,12 +53,12 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
     const { schoolId, schoolData } = useSchoolData();
 
     const currentYear = schoolData?.currentAcademicYear || defaultCurrentYear();
-    const archivedYears = (schoolData?.archivedYears as string[] | undefined) ?? [];
 
     const availableYears = useMemo(() => {
+        const archivedYears = (schoolData?.archivedYears as string[] | undefined) ?? [];
         const set = new Set<string>([currentYear, ...archivedYears].filter(Boolean));
         return Array.from(set).sort((a, b) => b.localeCompare(a)); // plus récente d'abord
-    }, [currentYear, archivedYears]);
+    }, [currentYear, schoolData?.archivedYears]);
 
     const [selectedYear, setSelectedYear] = useState<string>(currentYear);
 

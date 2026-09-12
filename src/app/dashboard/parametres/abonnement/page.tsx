@@ -185,7 +185,7 @@ export default function SubscriptionPage() {
                 <div>
                     <h1 className="text-lg font-semibold md:text-2xl">Abonnement</h1>
                     <p className="text-muted-foreground">
-                        Consultez et gérez votre formule d'abonnement GèreEcole.
+                        Consultez et gérez votre formule d&apos;abonnement GèreEcole.
                     </p>
                 </div>
                 <div className="grid gap-6 md:grid-cols-3">
@@ -213,21 +213,21 @@ export default function SubscriptionPage() {
                 <Card className="bg-primary/5">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
-                            <CardTitle className="flex items-center gap-2"><Calendar className="h-5 w-5 text-primary" /> Statut de l'abonnement</CardTitle>
+                            <CardTitle className="flex items-center gap-2"><Calendar className="h-5 w-5 text-primary" /> Statut de l&apos;abonnement</CardTitle>
                             <CardDescription>Votre plan actuel est <strong>{subscription.plan}</strong>.</CardDescription>
                         </div>
                         <Badge variant={subscription.status === 'active' ? 'secondary' : 'destructive'} className="capitalize">{subscription.status}</Badge>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                        <p className="text-sm">Votre abonnement est valide jusqu'au <strong className="font-semibold">{format(new Date(subscription.endDate), 'd MMMM yyyy', { locale: fr })}</strong>.</p>
+                        <p className="text-sm">Votre abonnement est valide jusqu&apos;au <strong className="font-semibold">{format(new Date(subscription.endDate), 'd MMMM yyyy', { locale: fr })}</strong>.</p>
                         <p className="text-xs text-muted-foreground">Il vous reste {formatDistanceToNow(new Date(subscription.endDate), { locale: fr })}.</p>
 
                         {subscription.status === 'canceled' ? (
                             <Alert className="border-amber-200 bg-amber-50 text-amber-900">
                                 <Ban className="h-4 w-4 text-amber-600" />
-                                <AlertTitle>Résilié — accès jusqu'à la fin de période</AlertTitle>
+                                <AlertTitle>Résilié — accès jusqu&apos;à la fin de période</AlertTitle>
                                 <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                    <span>Aucun renouvellement automatique. Vous pouvez réactiver à tout moment avant l'expiration.</span>
+                                    <span>Aucun renouvellement automatique. Vous pouvez réactiver à tout moment avant l&apos;expiration.</span>
                                     <Button size="sm" variant="outline" onClick={handleReactivateSubscription} disabled={isUpdating}>
                                         {isUpdating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle className="h-3 w-3 mr-1" />}
                                         Réactiver
@@ -243,12 +243,12 @@ export default function SubscriptionPage() {
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                     <AlertDialogHeader>
-                                        <AlertDialogTitle>Résilier l'abonnement {subscription.plan} ?</AlertDialogTitle>
+                                        <AlertDialogTitle>Résilier l&apos;abonnement {subscription.plan} ?</AlertDialogTitle>
                                         <AlertDialogDescription>
-                                            Vous garderez l'accès complet jusqu'au{' '}
+                                            Vous garderez l&apos;accès complet jusqu&apos;au{' '}
                                             <strong>{format(new Date(subscription.endDate), 'd MMMM yyyy', { locale: fr })}</strong>.
                                             Aucun renouvellement automatique ne sera effectué après cette date.
-                                            Vous pourrez réactiver à tout moment avant l'expiration.
+                                            Vous pourrez réactiver à tout moment avant l&apos;expiration.
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>

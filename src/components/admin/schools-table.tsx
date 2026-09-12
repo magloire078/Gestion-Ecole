@@ -260,7 +260,7 @@ export function SchoolsTable() {
           <AlertDialogHeader>
             <AlertDialogTitle>Mettre à la corbeille ?</AlertDialogTitle>
             <AlertDialogDescription>
-              L&apos;école <strong>"{schoolToDelete?.name}"</strong> sera marquée comme supprimée et deviendra inaccessible pour ses utilisateurs. Vous pourrez la restaurer pendant 30 jours.
+              L&apos;école <strong>&quot;{schoolToDelete?.name}&quot;</strong> sera marquée comme supprimée et deviendra inaccessible pour ses utilisateurs. Vous pourrez la restaurer pendant 30 jours.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

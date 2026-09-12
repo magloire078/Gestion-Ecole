@@ -122,7 +122,7 @@ export default function HealthPage() {
         <div className="space-y-6">
             <div>
                 <h1 className="text-lg font-semibold md:text-2xl">Santé Scolaire</h1>
-                <p className="text-muted-foreground">Tableau de bord de l'infirmerie et accès aux dossiers médicaux.</p>
+                <p className="text-muted-foreground">Tableau de bord de l&apos;infirmerie et accès aux dossiers médicaux.</p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -133,7 +133,7 @@ export default function HealthPage() {
                     </CardHeader>
                     <CardContent>
                         {isLoading ? <Skeleton className="h-8 w-16" /> : <div className="text-2xl font-bold">{allStudents.length}</div>}
-                        <p className="text-xs text-muted-foreground">Total des élèves dans l'école</p>
+                        <p className="text-xs text-muted-foreground">Total des élèves dans l&apos;école</p>
                     </CardContent>
                 </Card>
                 <Card>

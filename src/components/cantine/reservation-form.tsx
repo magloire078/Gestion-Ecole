@@ -13,7 +13,7 @@ import { useFirestore } from '@/firebase';
 import type { canteenReservation as CanteenReservation, student as Student } from '@/lib/data-types';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { DialogFooter } from '../ui/dialog';
 import { getCurrencySymbol } from '@/lib/currency-utils';
 
@@ -40,14 +40,14 @@ export function ReservationForm({ schoolId, students, reservation, onSave }: Res
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const defaultValues: ReservationFormValues = {
+  const defaultValues: ReservationFormValues = useMemo(() => ({
       date: format(new Date(), 'yyyy-MM-dd'),
       mealType: 'dejeuner',
       status: 'confirmed',
       paymentStatus: 'unpaid',
       price: 1500,
       studentId: '',
-  };
+  }), []);
 
   const form = useForm<ReservationFormValues>({
     resolver: zodResolver(reservationFormSchema),

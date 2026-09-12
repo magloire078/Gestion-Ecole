@@ -34,7 +34,7 @@ export const ParentDashboard = ({ user }: ParentDashboardProps) => {
         <Card>
           <CardContent className="pt-6">
             <p className="text-center text-muted-foreground">
-              Aucun élève n'est associé à votre session. Veuillez contacter l'administration.
+              Aucun élève n&apos;est associé à votre session. Veuillez contacter l&apos;administration.
             </p>
           </CardContent>
         </Card>
@@ -58,7 +58,7 @@ export const ParentDashboard = ({ user }: ParentDashboardProps) => {
             Bienvenue, <span className="text-blue-200">{user.displayName || 'Parent'}</span>
           </h1>
           <p className="text-blue-100/80 text-lg font-medium max-w-xl drop-shadow-md">
-            Suivez l'excellence académique et le bien-être de vos enfants en temps réel.
+            Suivez l&apos;excellence académique et le bien-être de vos enfants en temps réel.
           </p>
         </div>
       </div>

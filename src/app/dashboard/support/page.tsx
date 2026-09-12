@@ -49,7 +49,7 @@ export default function SupportPage() {
                 <div className="flex justify-between items-center">
                     <div>
                         <h1 className="text-2xl font-bold">Support Technique</h1>
-                        <p className="text-muted-foreground">Suivez vos demandes d'assistance.</p>
+                        <p className="text-muted-foreground">Suivez vos demandes d&apos;assistance.</p>
                     </div>
                     <div className="flex items-center gap-2">
                         <Button asChild variant="outline">

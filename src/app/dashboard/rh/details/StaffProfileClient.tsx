@@ -110,7 +110,7 @@ function TimetableTab({ timetableEntries, classMap, loading }: {
                     </div>
                 ) : (
                     <div className="text-center text-muted-foreground py-8">
-                        Aucun cours assigné dans l'emploi du temps pour cet enseignant.
+                        Aucun cours assigné dans l&apos;emploi du temps pour cet enseignant.
                     </div>
                 )}
             </CardContent>

@@ -263,7 +263,7 @@ export default function AdminCampaignsPage() {
                                         <SelectItem value="all">Toutes les écoles</SelectItem>
                                         <SelectItem value="plan">Par plan</SelectItem>
                                         <SelectItem value="status">Par statut</SelectItem>
-                                        <SelectItem value="school">Liste d'écoles</SelectItem>
+                                        <SelectItem value="school">Liste d&apos;écoles</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

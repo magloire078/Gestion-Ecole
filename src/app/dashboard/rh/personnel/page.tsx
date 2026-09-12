@@ -213,7 +213,7 @@ export default function PersonnelPage() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Cette action est irréversible. Le membre du personnel <strong>{staffToDelete?.firstName} {staffToDelete?.lastName}</strong> sera définitivement supprimé. Son compte utilisateur ne sera pas supprimé mais il n'aura plus accès à l'école.
+                  Cette action est irréversible. Le membre du personnel <strong>{staffToDelete?.firstName} {staffToDelete?.lastName}</strong> sera définitivement supprimé. Son compte utilisateur ne sera pas supprimé mais il n&apos;aura plus accès à l&apos;école.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

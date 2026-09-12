@@ -329,7 +329,7 @@ export default function PaiePage() {
               <PayslipPreview details={payslipDetails} />
             ) : (
               <div className="flex items-center justify-center h-96">
-                <p className="text-muted-foreground">La prévisualisation du bulletin n'a pas pu être générée.</p>
+                <p className="text-muted-foreground">La prévisualisation du bulletin n&apos;a pas pu être générée.</p>
               </div>
             )}
           </div>
@@ -354,7 +354,7 @@ export default function PaiePage() {
               <BulkPayslipPreview detailsArray={bulkPayslipDetails} />
             ) : (
               <div className="flex items-center justify-center h-96">
-                <p className="text-muted-foreground">Aucun bulletin n'a pu être généré.</p>
+                <p className="text-muted-foreground">Aucun bulletin n&apos;a pu être généré.</p>
               </div>
             )}
           </div>

@@ -201,7 +201,7 @@ export default function LeaveManagementPage() {
       <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer l'action</AlertDialogTitle>
+            <AlertDialogTitle>Confirmer l&apos;action</AlertDialogTitle>
             <AlertDialogDescription>
               Êtes-vous sûr de vouloir <strong>{actionToConfirm?.newStatus === "Approuvé" ? "approuver" : "rejeter"}</strong> cette demande de congé ?
             </AlertDialogDescription>

@@ -67,7 +67,7 @@ export default function IntegrationsPage() {
                         <CardTitle>WhatsApp Business</CardTitle>
                     </div>
                     <CardDescription>
-                        Affichez un bouton "Contactez-nous sur WhatsApp" sur votre portail public et dans l'espace parents.
+                        Affichez un bouton &quot;Contactez-nous sur WhatsApp&quot; sur votre portail public et dans l&apos;espace parents.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -93,7 +93,7 @@ export default function IntegrationsPage() {
                             />
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            Entrez le numéro sans le '+' ni espaces. Exemple pour la Côte d'Ivoire : 22501020304
+                            Entrez le numéro sans le &apos;+&apos; ni espaces. Exemple pour la Côte d&apos;Ivoire : 22501020304
                         </p>
                     </div>
                 </CardContent>

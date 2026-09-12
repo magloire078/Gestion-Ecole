@@ -54,10 +54,10 @@ class LocalErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryStat
         <Card className="border-rose-200 bg-rose-50/20 backdrop-blur-xl rounded-2xl shadow-xl">
           <CardHeader>
             <CardTitle className="text-rose-600 flex items-center gap-2 font-black tracking-tight">
-              <Zap className="h-5 w-5 animate-bounce" /> Erreur d'affichage
+              <Zap className="h-5 w-5 animate-bounce" /> Erreur d&apos;affichage
             </CardTitle>
             <CardDescription className="text-xs font-black uppercase tracking-widest text-slate-400">
-              Une erreur s'est produite lors du rendu des informations de facturation.
+              Une erreur s&apos;est produite lors du rendu des informations de facturation.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-slate-600">
@@ -156,7 +156,7 @@ function BillingDashboardContent() {
           </div>
           <h2 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">Établissement non sélectionné</h2>
           <p className="text-sm text-slate-500">
-            Impossible d'accéder aux données de facturation. Veuillez sélectionner un établissement ou recharger votre session.
+            Impossible d&apos;accéder aux données de facturation. Veuillez sélectionner un établissement ou recharger votre session.
           </p>
           <div className="pt-2">
             <Button onClick={() => reloadUser?.()} variant="outline" className="rounded-xl gap-2 hover:scale-105 active:scale-95 transition-all">

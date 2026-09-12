@@ -186,7 +186,7 @@ export default function TransportSubscriptionsPage() {
         <DialogContent>
             <DialogHeader>
                 <DialogTitle>{editingSubscription ? "Modifier l'abonnement" : "Nouvel Abonnement"}</DialogTitle>
-                <DialogDescription>Renseignez les informations de l'abonnement au transport.</DialogDescription>
+                <DialogDescription>Renseignez les informations de l&apos;abonnement au transport.</DialogDescription>
             </DialogHeader>
             <SubscriptionForm 
                 schoolId={schoolId!}
@@ -203,7 +203,7 @@ export default function TransportSubscriptionsPage() {
             <AlertDialogHeader>
                 <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
                 <AlertDialogDescription>
-                    Cette action est irréversible. L'abonnement sera définitivement supprimé.
+                    Cette action est irréversible. L&apos;abonnement sera définitivement supprimé.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

@@ -64,7 +64,7 @@ export default function NotificationsSettingsPage() {
                     <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
                             <Label>Notifications In-App</Label>
-                            <p className="text-sm text-muted-foreground">Recevoir des alertes dans l'application.</p>
+                            <p className="text-sm text-muted-foreground">Recevoir des alertes dans l&apos;application.</p>
                         </div>
                         <Switch checked={settings.appNotifications} onCheckedChange={() => handleToggle('appNotifications')} />
                     </div>

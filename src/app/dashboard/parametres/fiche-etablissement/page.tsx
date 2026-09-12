@@ -65,7 +65,7 @@ export default function SchoolSheetPage() {
           <AlertCircle className="w-6 h-6" />
         </div>
         <h2 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">
-          Informations de l'établissement introuvables
+          Informations de l&apos;établissement introuvables
         </h2>
         <p className="text-sm text-slate-500">
           Impossible de charger la fiche de renseignements. Vérifiez votre connexion ou que votre établissement est correctement configuré.
@@ -95,10 +95,10 @@ export default function SchoolSheetPage() {
         <div>
           <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
             <Building2 className="w-6 h-6 text-indigo-600" />
-            Fiche de renseignements de l'établissement
+            Fiche de renseignements de l&apos;établissement
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Consultez et imprimez la fiche officielle d'informations de l'établissement.
+            Consultez et imprimez la fiche officielle d&apos;informations de l&apos;établissement.
           </p>
         </div>
       </div>

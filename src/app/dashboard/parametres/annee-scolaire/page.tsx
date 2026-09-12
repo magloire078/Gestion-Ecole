@@ -98,7 +98,7 @@ export default function AcademicYearPage() {
                     <div>
                         <CardTitle>Périodes Académiques</CardTitle>
                         <CardDescription>
-                            Définissez les trimestres ou semestres pour l'année scolaire en cours.
+                            Définissez les trimestres ou semestres pour l&apos;année scolaire en cours.
                             Année: {schoolData?.currentAcademicYear || 'N/A'}
                         </CardDescription>
                     </div>
@@ -165,7 +165,7 @@ export default function AcademicYearPage() {
                 <AlertDialogHeader>
                     <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        La période <strong>"{periodToDelete?.name}"</strong> sera supprimée.
+                        La période <strong>&quot;{periodToDelete?.name}&quot;</strong> sera supprimée.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

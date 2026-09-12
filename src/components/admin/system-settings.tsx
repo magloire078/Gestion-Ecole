@@ -245,7 +245,7 @@ export const SystemSettings = () => {
                                     </Button>
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    Numéro actif : <code>+225 0707942880</code> (Côte d'Ivoire).
+                                    Numéro actif : <code>+225 0707942880</code> (Côte d&apos;Ivoire).
                                 </p>
                             </div>
 
@@ -262,7 +262,7 @@ export const SystemSettings = () => {
                                     className="font-mono text-sm rounded-xl max-w-2xl"
                                 />
                                 <p className="text-xs text-muted-foreground">
-                                    Collez l'URL de votre webhook. Chaque événement lui enverra un payload JSON avec le message formaté et le numéro <code>+225 0707942880</code>.
+                                    Collez l&apos;URL de votre webhook. Chaque événement lui enverra un payload JSON avec le message formaté et le numéro <code>+225 0707942880</code>.
                                 </p>
                             </div>
 
@@ -283,10 +283,10 @@ export const SystemSettings = () => {
                                     <div className="p-3 border rounded-xl bg-slate-50/50 dark:bg-white/5 space-y-1">
                                         <p className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
                                             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                                            Nouvelles Inscriptions d'Écoles
+                                            Nouvelles Inscriptions d&apos;Écoles
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                            Alerte lors de la création d'un établissement avec coordonnées du directeur.
+                                            Alerte lors de la création d&apos;un établissement avec coordonnées du directeur.
                                         </p>
                                     </div>
                                 </div>
@@ -310,7 +310,7 @@ export const SystemSettings = () => {
                                         <StatusBadge status={getProviderStatus('genius')} />
                                     </div>
                                     <p className="text-xs text-muted-foreground">
-                                        Paiements mobile money en Côte d'Ivoire
+                                        Paiements mobile money en Côte d&apos;Ivoire
                                     </p>
                                 </div>
                                 <Switch
@@ -328,7 +328,7 @@ export const SystemSettings = () => {
                                         <StatusBadge status={getProviderStatus('wave')} />
                                     </div>
                                     <p className="text-xs text-muted-foreground">
-                                        Paiements mobile money en Afrique de l'Ouest
+                                        Paiements mobile money en Afrique de l&apos;Ouest
                                     </p>
                                 </div>
                                 <Switch

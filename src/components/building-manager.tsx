@@ -304,7 +304,7 @@ export function BuildingManager({
             <AlertDialogHeader>
                 <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
                 <AlertDialogDescription>
-                   Le bâtiment <strong>"{buildingToDelete?.name}"</strong> sera supprimé. Vous ne pouvez pas supprimer un bâtiment qui contient encore des salles.
+                   Le bâtiment <strong>&quot;{buildingToDelete?.name}&quot;</strong> sera supprimé. Vous ne pouvez pas supprimer un bâtiment qui contient encore des salles.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

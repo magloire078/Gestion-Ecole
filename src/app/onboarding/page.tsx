@@ -116,7 +116,7 @@ function DemoOnboarding({ onSetupDemo, isProcessing }: { onSetupDemo: () => void
                 <Users className="h-5 w-5" />
               </div>
               <p className="text-xs text-slate-500 leading-relaxed">
-                Inclusion d'élèves, de personnel et de données financières pré-remplies.
+                Inclusion d&apos;élèves, de personnel et de données financières pré-remplies.
               </p>
             </div>
           </div>
@@ -315,7 +315,7 @@ export default function OnboardingPage() {
               Démarrage du compte
             </h1>
             <p className="text-slate-400 max-w-md font-medium text-lg leading-relaxed">
-              Pour commencer, dites-nous comment vous souhaitez utiliser GèreEcole aujourd'hui.
+              Pour commencer, dites-nous comment vous souhaitez utiliser GèreEcole aujourd&apos;hui.
             </p>
           </div>
 

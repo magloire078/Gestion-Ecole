@@ -166,11 +166,11 @@ function PageContent() {
     }
 
     if (!schoolId) {
-        return <p>Erreur: Aucune école n'est associée à votre compte.</p>;
+        return <p>Erreur: Aucune école n&apos;est associée à votre compte.</p>;
     }
 
     if (!studentId) {
-        return <p>Erreur: ID de l'élève manquant.</p>;
+        return <p>Erreur: ID de l&apos;élève manquant.</p>;
     }
 
     return (

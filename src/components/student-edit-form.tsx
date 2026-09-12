@@ -229,7 +229,7 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
                 )} />
                 <FormField control={form.control} name="academicYear" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Année Scolaire d'Entrée</FormLabel>
+                    <FormLabel>Année Scolaire d&apos;Entrée</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                       <SelectContent>

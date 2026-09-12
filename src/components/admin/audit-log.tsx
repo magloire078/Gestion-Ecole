@@ -77,7 +77,7 @@ export const AuditLog = ({ limit }: { limit: number }) => {
       }
     };
     fetchData();
-  }, [firestore]);
+  }, [firestore, user?.profile?.isSuperAdmin]);
 
   const formatTarget = (target: string) => {
     if (!target) return 'N/A';

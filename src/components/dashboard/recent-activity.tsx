@@ -187,7 +187,7 @@ export function RecentActivity({ schoolId: propSchoolId }: RecentActivityProps) 
 
         return activities.sort((a, b) => b.timestamp - a.timestamp).slice(0, 5);
 
-    }, [loading, studentsData, paymentsData, absencesData, staffData, incidentsData, studentMap]);
+    }, [loading, studentsData, paymentsData, absencesData, staffData, incidentsData, studentMap, country]);
 
     if (!schoolId) {
         return null;

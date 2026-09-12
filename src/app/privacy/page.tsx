@@ -16,7 +16,7 @@ export default function PrivacyPage() {
           <p>
             Nous collectons les informations nécessaires à la fourniture du
             service, y compris les données des élèves, du personnel et de
-            l'établissement.
+            l&apos;établissement.
           </p>
 
           <h2>2. Utilisation des Données</h2>
@@ -35,7 +35,7 @@ export default function PrivacyPage() {
 
           <h2>4. Vos Droits</h2>
           <p>
-            Vous disposez d'un droit d'accès, de rectification et de suppression de vos données personnelles.
+            Vous disposez d&apos;un droit d&apos;accès, de rectification et de suppression de vos données personnelles.
           </p>
 
           <div className="mt-8 text-center">

@@ -146,7 +146,7 @@ export default function SettingsPage() {
               <CardContent className="space-y-4 flex-1">
                 {schoolData?.schoolCode && (
                   <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 space-y-2">
-                    <p className="text-xs font-medium text-primary/70">Code d'invitation</p>
+                    <p className="text-xs font-medium text-primary/70">Code d&apos;invitation</p>
                     <div className="flex items-center justify-between">
                       <code className="text-xl font-black tracking-widest text-primary">{schoolData.schoolCode}</code>
                       <Button size="icon" variant="ghost" onClick={handleCopyCode} className="h-8 w-8 hover:bg-primary/10 text-primary">
@@ -156,7 +156,7 @@ export default function SettingsPage() {
                   </div>
                 )}
                 <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground italic">Partagez ce code avec vos collaborateurs pour qu'ils rejoignent l'école.</p>
+                  <p className="text-xs text-muted-foreground italic">Partagez ce code avec vos collaborateurs pour qu&apos;ils rejoignent l&apos;école.</p>
                 </div>
               </CardContent>
             </Card>
@@ -172,7 +172,7 @@ export default function SettingsPage() {
                 <p className="text-xs text-muted-foreground">Action destructrice. Vous serez dissocié de cet établissement.</p>
                 <Button variant="destructive" className="w-full rounded-xl shadow-lg shadow-red-200" onClick={() => setIsResetDialogOpen(true)}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  Quitter l'École
+                  Quitter l&apos;École
                 </Button>
               </CardContent>
             </Card>

@@ -72,7 +72,7 @@ export default function SystemAdminDashboard() {
                         Système Console
                     </h1>
                     <p className="text-slate-500 font-medium mt-1">
-                        Surveillance globale et contrôle de l'infrastructure GèreEcole.
+                        Surveillance globale et contrôle de l&apos;infrastructure GèreEcole.
                     </p>
                 </div>
                 <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-xl border border-green-100/50">
@@ -138,7 +138,7 @@ export default function SystemAdminDashboard() {
                         <CardFooter className="p-4 md:p-6">
                             <Button asChild variant="outline" className="w-full h-12 rounded-xl border-blue-100 text-[#0C365A] font-bold hover:bg-blue-50 transition-all">
                                 <Link href="/admin/system/audit-log" className="flex items-center justify-center gap-2">
-                                    Consulter l'historique complet
+                                    Consulter l&apos;historique complet
                                     <ArrowRight className="h-4 w-4" />
                                 </Link>
                             </Button>
@@ -155,7 +155,7 @@ export default function SystemAdminDashboard() {
                                 <RefreshCw className="h-6 w-6" />
                             </div>
                             <CardTitle className="text-2xl font-black font-outfit tracking-tight">Maintenance Démo</CardTitle>
-                            <CardDescription className="text-white/60 font-medium">Réinitialisation de l'environnement de test public.</CardDescription>
+                            <CardDescription className="text-white/60 font-medium">Réinitialisation de l&apos;environnement de test public.</CardDescription>
                         </CardHeader>
                         <CardContent className="px-8 pb-8 space-y-4">
                             <Button

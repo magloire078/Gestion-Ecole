@@ -123,9 +123,9 @@ function HealthRecordContent({ eleveId, schoolId }: { eleveId: string, schoolId:
                     </Card>
 
                     <Card>
-                        <CardHeader><CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" />Contacts d'Urgence</CardTitle></CardHeader>
+                        <CardHeader><CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" />Contacts d&apos;Urgence</CardTitle></CardHeader>
                         <CardContent className="space-y-3 text-sm">
-                            <p><strong>Contact d'urgence:</strong> {dossier?.urgences?.contact1 || 'Non renseigné'}</p>
+                            <p><strong>Contact d&apos;urgence:</strong> {dossier?.urgences?.contact1 || 'Non renseigné'}</p>
                             <p><strong>Assurance:</strong> {dossier?.urgences?.assurance || 'Non renseigné'}</p>
                             <p><strong>N° de police:</strong> {dossier?.urgences?.numeroPolice || 'Non renseigné'}</p>
                         </CardContent>
@@ -181,7 +181,7 @@ function HealthRecordContent({ eleveId, schoolId }: { eleveId: string, schoolId:
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Mettre à jour le dossier médical</DialogTitle>
-                        <DialogDescription className="sr-only">Formulaire pour mettre à jour le dossier médical de l'élève</DialogDescription>
+                        <DialogDescription className="sr-only">Formulaire pour mettre à jour le dossier médical de l&apos;élève</DialogDescription>
                     </DialogHeader>
                     <DossierMedicalForm schoolId={schoolId} studentId={eleveId} dossier={dossier} onSave={handleSave} />
                 </DialogContent>
@@ -191,7 +191,7 @@ function HealthRecordContent({ eleveId, schoolId }: { eleveId: string, schoolId:
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Ajouter un vaccin</DialogTitle>
-                        <DialogDescription className="sr-only">Formulaire pour ajouter un vaccin au dossier de l'élève</DialogDescription>
+                        <DialogDescription className="sr-only">Formulaire pour ajouter un vaccin au dossier de l&apos;élève</DialogDescription>
                     </DialogHeader>
                     < VaccinationForm schoolId={schoolId} studentId={eleveId} onSave={handleSave} />
                 </DialogContent>
@@ -224,7 +224,7 @@ function PageContent() {
     }
 
     if (!eleveId) {
-        return <div>ID de l'élève manquant.</div>;
+        return <div>ID de l&apos;élève manquant.</div>;
     }
 
     return <HealthRecordContent eleveId={eleveId} schoolId={schoolId} />;

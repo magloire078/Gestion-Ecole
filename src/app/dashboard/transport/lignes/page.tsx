@@ -163,7 +163,7 @@ export default function RoutesManagementPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. La ligne <strong>"{routeToDelete?.name}"</strong> sera définitivement supprimée.
+              Cette action est irréversible. La ligne <strong>&quot;{routeToDelete?.name}&quot;</strong> sera définitivement supprimée.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

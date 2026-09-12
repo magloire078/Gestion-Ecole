@@ -210,7 +210,7 @@ export default function StockPage() {
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
                             <div className="grid gap-2">
-                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Nom de l'article</label>
+                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Nom de l&apos;article</label>
                                 <Input value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} placeholder="ex: Riz parfumé" />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
@@ -302,7 +302,7 @@ export default function StockPage() {
                 <Table>
                     <TableHeader className="bg-white/5">
                         <TableRow className="hover:bg-transparent border-white/5">
-                            <TableHead className="font-bold text-xs uppercase tracking-widest py-4">Nom de l'Article</TableHead>
+                            <TableHead className="font-bold text-xs uppercase tracking-widest py-4">Nom de l&apos;Article</TableHead>
                             <TableHead className="font-bold text-xs uppercase tracking-widest p-4">Catégorie</TableHead>
                             <TableHead className="font-bold text-xs uppercase tracking-widest py-4 text-right">Quantité</TableHead>
                             <TableHead className="font-bold text-xs uppercase tracking-widest py-4">Status</TableHead>
@@ -481,13 +481,13 @@ export default function StockPage() {
                                     <>
                                         <option value="achat">Achat / Réapprovisionnement</option>
                                         <option value="don">Don / Cadeau</option>
-                                        <option value="ajustement">Ajustement d'inventaire (+)</option>
+                                        <option value="ajustement">Ajustement d&apos;inventaire (+)</option>
                                     </>
                                 ) : (
                                     <>
                                         <option value="consommation">Consommation journalière</option>
                                         <option value="perte">Perte / Vol / Péremption</option>
-                                        <option value="ajustement">Ajustement d'inventaire (-)</option>
+                                        <option value="ajustement">Ajustement d&apos;inventaire (-)</option>
                                     </>
                                 )}
                             </select>

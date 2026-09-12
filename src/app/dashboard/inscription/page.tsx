@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -98,20 +98,20 @@ export default function InscriptionDashboard() {
   }, [eleves]);
 
   // Filtre de recherche
-  const filterBySearch = (list: Student[]) => {
+  const filterBySearch = useCallback((list: Student[]) => {
     if (!searchTerm) return list;
     const term = searchTerm.toLowerCase();
-    return list.filter(e => 
-      e.lastName.toLowerCase().includes(term) || 
+    return list.filter(e =>
+      e.lastName.toLowerCase().includes(term) ||
       e.firstName.toLowerCase().includes(term) ||
       e.matricule?.toLowerCase().includes(term) ||
       e.class?.toLowerCase().includes(term)
     );
-  };
+  }, [searchTerm]);
 
-  const filteredCurrent = useMemo(() => filterBySearch(currentStudents), [currentStudents, searchTerm]);
-  const filteredPrev = useMemo(() => filterBySearch(prevStudents), [prevStudents, searchTerm]);
-  const filteredDeleted = useMemo(() => filterBySearch(deletedStudents), [deletedStudents, searchTerm]);
+  const filteredCurrent = useMemo(() => filterBySearch(currentStudents), [currentStudents, filterBySearch]);
+  const filteredPrev = useMemo(() => filterBySearch(prevStudents), [prevStudents, filterBySearch]);
+  const filteredDeleted = useMemo(() => filterBySearch(deletedStudents), [deletedStudents, filterBySearch]);
 
   // Agrégation des indicateurs de la comptabilité pour l'année courante
   const stats = useMemo(() => {

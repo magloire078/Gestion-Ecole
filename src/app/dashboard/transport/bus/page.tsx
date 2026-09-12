@@ -154,7 +154,7 @@ export default function BusManagementPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer ce bus ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. Le bus avec l'immatriculation <strong>{busToDelete?.registrationNumber}</strong> sera définitivement supprimé.
+              Cette action est irréversible. Le bus avec l&apos;immatriculation <strong>{busToDelete?.registrationNumber}</strong> sera définitivement supprimé.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

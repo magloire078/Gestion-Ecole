@@ -216,7 +216,7 @@ export default function SystemAdminLayout({
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 dark:bg-white/5 group-hover:bg-slate-100 dark:group-hover:bg-white/10">
                         <Home className="h-5 w-5" />
                     </div>
-                    <span>Quitter l'Admin</span>
+                    <span>Quitter l&apos;Admin</span>
                 </Link>
             </div>
         </>

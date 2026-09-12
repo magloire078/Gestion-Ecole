@@ -383,7 +383,7 @@ function PaymentPageContent() {
                                 ) : (
                                     <>
                                         <CheckCircle className="mr-2 h-5 w-5" />
-                                        Confirmer l'abonnement (Gratuit)
+                                        Confirmer l&apos;abonnement (Gratuit)
                                     </>
                                 )}
                             </Button>

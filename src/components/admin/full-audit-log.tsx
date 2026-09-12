@@ -6,7 +6,7 @@ import { collection, query, orderBy, limit, getDocs, startAfter, endBefore, limi
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Skeleton } from '../ui/skeleton';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Badge } from '../ui/badge';
 import type { UserProfile } from '@/lib/data-types';
 import { Button } from '../ui/button';
@@ -48,7 +48,7 @@ export const FullAuditLog = () => {
     [firestore, user?.profile?.isSuperAdmin]
   );
 
-  const fetchLogs = async (q: any) => {
+  const fetchLogs = useCallback(async (q: any) => {
     setLoading(true);
     try {
       const documentSnapshots = await getDocs(q);
@@ -73,7 +73,7 @@ export const FullAuditLog = () => {
     } finally {
       setLoading(false);
     }
-  }
+  }, [baseQuery]);
 
   useEffect(() => {
     if (baseQuery) {
@@ -81,7 +81,7 @@ export const FullAuditLog = () => {
       fetchLogs(firstPageQuery);
       setIsFirstPage(true);
     }
-  }, [baseQuery]);
+  }, [baseQuery, fetchLogs]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -114,7 +114,7 @@ export const FullAuditLog = () => {
       }
     };
     fetchData();
-  }, [firestore]);
+  }, [firestore, user?.profile?.isSuperAdmin]);
 
   const formatTarget = (target: string) => {
     if (!target) return 'N/A';

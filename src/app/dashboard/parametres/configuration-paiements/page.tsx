@@ -69,7 +69,7 @@ export default function PaymentConfigPage() {
                 <AlertTitle>Note Importante</AlertTitle>
                 <AlertDescription>
                     Les fonds collectés seront directement versés sur votre compte marchand CinetPay ou GeniusPay.
-                    L'école est responsable de la gestion de ses identifiants.
+                    L&apos;école est responsable de la gestion de ses identifiants.
                 </AlertDescription>
             </Alert>
 

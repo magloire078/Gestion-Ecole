@@ -133,13 +133,13 @@ function ErrorPageContent() {
             <div className="flex items-start gap-3 rounded-2xl border border-slate-200/70 bg-slate-50/50 p-4">
               <LifeBuoy className="h-5 w-5 shrink-0 text-slate-500 mt-0.5" />
               <div className="text-xs text-slate-600 leading-relaxed">
-                <p className="font-bold text-slate-800 mb-1">Besoin d'aide ?</p>
+                <p className="font-bold text-slate-800 mb-1">Besoin d&apos;aide ?</p>
                 <p>
                   Si le problème persiste, contactez notre support à{' '}
                   <a href="mailto:support@gerecole.com" className="font-semibold text-primary underline-offset-2 hover:underline">
                     support@gerecole.com
                   </a>{' '}
-                  en précisant le fournisseur utilisé et l'heure de la tentative.
+                  en précisant le fournisseur utilisé et l&apos;heure de la tentative.
                 </p>
               </div>
             </div>

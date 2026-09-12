@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -27,12 +27,12 @@ export function DailyMenu({ schoolId, date: initialDate }: { schoolId: string, d
   const [loading, setLoading] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   
-  const loadMenuForDate = async (date: Date) => {
+  const loadMenuForDate = useCallback(async (date: Date) => {
     setLoading(true);
     setMenu(null);
     const dateStr = format(date, 'yyyy-MM-dd');
     const menuRef = doc(firestore, `ecoles/${schoolId}/cantine_menus/${dateStr}_dejeuner`);
-    
+
     try {
         const menuDoc = await getDoc(menuRef);
         if (menuDoc.exists()) {
@@ -45,11 +45,11 @@ export function DailyMenu({ schoolId, date: initialDate }: { schoolId: string, d
     } finally {
         setLoading(false);
     }
-  };
-  
+  }, [firestore, schoolId]);
+
   useEffect(() => {
     loadMenuForDate(selectedDate);
-  }, [selectedDate, schoolId]);
+  }, [selectedDate, loadMenuForDate]);
   
   const handleMenuSave = () => {
     setIsFormOpen(false);
@@ -179,7 +179,7 @@ export function DailyMenu({ schoolId, date: initialDate }: { schoolId: string, d
              <Card className="flex flex-col items-center justify-center h-96 text-center">
                 <CardHeader>
                     <CardTitle>Aucun Menu</CardTitle>
-                    <CardDescription>Aucun menu n'a été publié pour le {format(selectedDate, 'd MMMM yyyy', { locale: fr })}.</CardDescription>
+                    <CardDescription>Aucun menu n&apos;a été publié pour le {format(selectedDate, 'd MMMM yyyy', { locale: fr })}.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {canManageContent && (

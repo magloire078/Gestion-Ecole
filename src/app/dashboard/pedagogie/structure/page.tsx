@@ -30,7 +30,7 @@ export default function StructurePage() {
             Structure Pédagogique
           </h1>
           <p className="text-slate-500 max-w-2xl text-sm font-medium">
-            Configurez l'architecture éducative de votre établissement : cycles, niveaux, classes et matières.
+            Configurez l&apos;architecture éducative de votre établissement : cycles, niveaux, classes et matières.
           </p>
         </div>
       </div>

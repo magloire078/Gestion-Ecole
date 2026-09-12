@@ -25,7 +25,7 @@ export default function TransportDashboardPage() {
   }
 
   if (!schoolId) {
-    return <p>ID de l'école non trouvé. Impossible de charger le module de transport.</p>;
+    return <p>ID de l&apos;école non trouvé. Impossible de charger le module de transport.</p>;
   }
 
   return <LiveTransportTracking schoolId={schoolId} />;

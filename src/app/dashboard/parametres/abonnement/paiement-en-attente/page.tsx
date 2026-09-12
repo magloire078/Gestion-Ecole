@@ -42,11 +42,11 @@ function PaymentStatusPageContent() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="py-10">
-                        <p className="text-muted-foreground">Vous allez être redirigé vers la page d'abonnement.</p>
+                        <p className="text-muted-foreground">Vous allez être redirigé vers la page d&apos;abonnement.</p>
                     </CardContent>
                     <CardFooter>
                         <Button className="w-full" onClick={() => router.push('/dashboard/parametres/abonnement')}>
-                            Retourner à la page d'abonnement
+                            Retourner à la page d&apos;abonnement
                         </Button>
                     </CardFooter>
                 </Card>
@@ -74,7 +74,7 @@ function PaymentStatusPageContent() {
                 </CardContent>
                 <CardFooter>
                     <Button className="w-full" variant="outline" onClick={() => router.push('/dashboard/parametres/abonnement')}>
-                        Retour à la page d'abonnement
+                        Retour à la page d&apos;abonnement
                     </Button>
                 </CardFooter>
             </Card>

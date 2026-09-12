@@ -88,7 +88,7 @@ export function AbsenceForm({ schoolId, student, onSave }: AbsenceFormProps) {
           name="type"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Type d'absence</FormLabel>
+              <FormLabel>Type d&apos;absence</FormLabel>
               <FormControl>
                 <RadioGroup onValueChange={field.onChange} value={field.value} className="flex gap-4">
                   <FormItem className="flex items-center space-x-2"><FormControl><RadioGroupItem value="Journée entière" id="t1" /></FormControl><FormLabel htmlFor="t1" className="font-normal">Journée</FormLabel></FormItem>

@@ -48,10 +48,10 @@ export default function AuditPage() {
             <CardHeader className="px-0">
                 <CardTitle className="flex items-center gap-2">
                     <ShieldAlert className="h-6 w-6 text-primary" />
-                    Journal d'Audit et Sécurité
+                    Journal d&apos;Audit et Sécurité
                 </CardTitle>
                 <CardDescription>
-                    Piste d'audit des actions critiques effectuées dans votre établissement (connexions, modifications sensibles, etc.).
+                    Piste d&apos;audit des actions critiques effectuées dans votre établissement (connexions, modifications sensibles, etc.).
                     Les 50 dernières actions sont affichées.
                 </CardDescription>
             </CardHeader>

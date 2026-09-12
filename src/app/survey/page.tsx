@@ -136,7 +136,7 @@ export default function SurveyPage() {
             <CardHeader>
               <CardTitle>Votre avis compte</CardTitle>
               <CardDescription>
-                Ce formulaire rapide (environ 5 minutes) nous permettra d'adapter notre solution à vos réalités.
+                Ce formulaire rapide (environ 5 minutes) nous permettra d&apos;adapter notre solution à vos réalités.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -160,7 +160,7 @@ export default function SurveyPage() {
                       <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-1">
                         <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="papier-excel" /></FormControl><FormLabel className="font-normal">Papier et/ou tableurs (Excel, Google Sheets)</FormLabel></FormItem>
                         <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="logiciel-specifique" /></FormControl><FormLabel className="font-normal">Un logiciel spécifique (ex: comptabilité, notes)</FormLabel></FormItem>
-                        <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="erp-maison" /></FormControl><FormLabel className="font-normal">Une solution "maison" développée en interne</FormLabel></FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="erp-maison" /></FormControl><FormLabel className="font-normal">Une solution &quot;maison&quot; développée en interne</FormLabel></FormItem>
                         <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="autre" /></FormControl><FormLabel className="font-normal">Autre</FormLabel></FormItem>
                       </RadioGroup>
                       <FormMessage /></FormItem>)} />

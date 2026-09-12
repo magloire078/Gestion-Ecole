@@ -15,7 +15,7 @@ export default function ParentAccessRedirectPage() {
                 </CardHeader>
                 <CardContent>
                     <p className="text-sm text-muted-foreground mb-6">
-                        Une fois connecté, vous serez invité à entrer le code d'accès fourni par l'établissement scolaire.
+                        Une fois connecté, vous serez invité à entrer le code d&apos;accès fourni par l&apos;établissement scolaire.
                     </p>
                     <Button asChild className="w-full">
                         <Link href="/auth/login">Se connecter ou créer un compte</Link>

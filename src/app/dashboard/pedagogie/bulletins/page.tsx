@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -56,15 +56,15 @@ export default function BulletinsPage() {
         return students.filter(s => s.classId === selectedClass);
     }, [students, selectedClass]);
 
-    const academicPeriods = schoolData?.academicPeriods || [];
+    const academicPeriods = useMemo(() => schoolData?.academicPeriods || [], [schoolData?.academicPeriods]);
     const selectedPeriod = academicPeriods.find((p: any) => p.name === selectedPeriodName);
 
     // Initialiser la période par défaut
-    useMemo(() => {
+    useEffect(() => {
         if (academicPeriods.length > 0 && !selectedPeriodName) {
             setSelectedPeriodName(academicPeriods[0].name);
         }
-    }, [academicPeriods]);
+    }, [academicPeriods, selectedPeriodName]);
 
     const handleCalculateAverages = async () => {
         if (!schoolId || selectedClass === 'all' || !selectedPeriod) return;

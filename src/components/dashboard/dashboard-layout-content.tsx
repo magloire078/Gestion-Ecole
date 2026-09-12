@@ -343,7 +343,7 @@ export default function DashboardLayoutContent({ children }: { children: React.R
                 <AlertCircle className="h-5 w-5 shrink-0" />
                 <div className="text-sm font-medium">
                   {subscriptionStatus === 'expired' ? (
-                    <span>Votre abonnement a expiré. L'accès aux fonctionnalités est restreint.</span>
+                    <span>Votre abonnement a expiré. L&apos;accès aux fonctionnalités est restreint.</span>
                   ) : (
                     <span>Votre abonnement expire dans {daysRemaining} jours. Pensez à le renouveler pour éviter toute interruption.</span>
                   )}

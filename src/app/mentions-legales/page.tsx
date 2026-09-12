@@ -15,7 +15,7 @@ export default function MentionsLegalesPage() {
                     <Button variant="ghost" asChild>
                         <Link href="/" className="flex items-center gap-2">
                             <ArrowLeft className="h-4 w-4" />
-                            Retour à l'accueil
+                            Retour à l&apos;accueil
                         </Link>
                     </Button>
                 </div>
@@ -70,7 +70,7 @@ export default function MentionsLegalesPage() {
                                 Propriété Intellectuelle
                             </h2>
                             <p className="leading-relaxed">
-                                L'ensemble de ce site (structure, design, logos, textes, graphismes et autres fichiers) constitue une œuvre protégée par les lois en vigueur sur la propriété intellectuelle. Toute reproduction, représentation, modification, publication, adaptation de tout ou partie des éléments du site, quel que soit le moyen ou le procédé utilisé, est interdite, sauf autorisation écrite préalable de l'éditeur.
+                                L&apos;ensemble de ce site (structure, design, logos, textes, graphismes et autres fichiers) constitue une œuvre protégée par les lois en vigueur sur la propriété intellectuelle. Toute reproduction, représentation, modification, publication, adaptation de tout ou partie des éléments du site, quel que soit le moyen ou le procédé utilisé, est interdite, sauf autorisation écrite préalable de l&apos;éditeur.
                             </p>
                         </section>
 
@@ -97,7 +97,7 @@ export default function MentionsLegalesPage() {
                                 Cookies et Traceurs
                             </h2>
                             <p className="leading-relaxed">
-                                Le site utilise des cookies pour améliorer l'expérience utilisateur, réaliser des statistiques de visite (via Vercel Speed Insights) et assurer la sécurité des connexions. L'utilisateur peut configurer son navigateur pour refuser les cookies s'il le souhaite.
+                                Le site utilise des cookies pour améliorer l&apos;expérience utilisateur, réaliser des statistiques de visite (via Vercel Speed Insights) et assurer la sécurité des connexions. L&apos;utilisateur peut configurer son navigateur pour refuser les cookies s&apos;il le souhaite.
                             </p>
                         </section>
 
@@ -107,7 +107,7 @@ export default function MentionsLegalesPage() {
                                 Limitation de Responsabilité
                             </h2>
                             <p className="leading-relaxed">
-                                L'éditeur ne pourra être tenu responsable des dommages directs et indirects causés au matériel de l'utilisateur, lors de l'accès au site, résultant soit de l'utilisation d'un matériel ne répondant pas aux spécifications indiquées, soit de l'apparition d'un bug ou d'une incompatibilité.
+                                L&apos;éditeur ne pourra être tenu responsable des dommages directs et indirects causés au matériel de l&apos;utilisateur, lors de l&apos;accès au site, résultant soit de l&apos;utilisation d&apos;un matériel ne répondant pas aux spécifications indiquées, soit de l&apos;apparition d&apos;un bug ou d&apos;une incompatibilité.
                             </p>
                         </section>
                     </div>

@@ -259,8 +259,8 @@ export default function RegisterPage() {
               <div className="flex gap-1 mb-2">
                 {[1, 2, 3, 4, 5].map(s => <Star key={s} className="h-4 w-4 fill-[#2D9CDB] text-[#2D9CDB]" />)}
               </div>
-              <p className="text-sm font-bold text-[#0C365A]">"GèreEcole a réduit notre temps administratif de 40% en un seul trimestre."</p>
-              <p className="text-xs text-slate-500 mt-1">— Directrice d'établissement, Lyon</p>
+              <p className="text-sm font-bold text-[#0C365A]">&quot;GèreEcole a réduit notre temps administratif de 40% en un seul trimestre.&quot;</p>
+              <p className="text-xs text-slate-500 mt-1">— Directrice d&apos;établissement, Lyon</p>
             </div>
           </motion.div>
         </motion.div>
@@ -373,7 +373,7 @@ export default function RegisterPage() {
                   className="mt-1 h-5 w-5 rounded-lg border-slate-200 text-[#2D9CDB] focus:ring-[#2D9CDB] transition-all cursor-pointer"
                 />
                 <label htmlFor="terms" className="text-[10px] font-bold text-slate-400 leading-snug cursor-pointer select-none">
-                  J'accepte les <Link href="/terms" className="text-[#2D9CDB] font-black hover:underline">conditions</Link> et la <Link href="/privacy" className="text-[#2D9CDB] font-black hover:underline">politique de confidentialité</Link>.
+                  J&apos;accepte les <Link href="/terms" className="text-[#2D9CDB] font-black hover:underline">conditions</Link> et la <Link href="/privacy" className="text-[#2D9CDB] font-black hover:underline">politique de confidentialité</Link>.
                 </label>
               </div>
 
@@ -402,7 +402,7 @@ export default function RegisterPage() {
               disabled={isGoogleProcessing}
               className="w-full h-14 rounded-xl border-slate-100 hover:bg-slate-50 hover:border-slate-200 transition-all font-bold text-slate-600"
             >
-              <GoogleIcon className="mr-3" /> S'inscrire rapidement
+              <GoogleIcon className="mr-3" /> S&apos;inscrire rapidement
             </Button>
 
             <p className="text-center text-sm font-medium text-slate-400 mt-6">

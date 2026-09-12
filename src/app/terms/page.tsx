@@ -15,7 +15,7 @@ export default function TermsPage() {
           <h2>1. Introduction</h2>
           <p>
             Bienvenue sur GèreEcole. En utilisant nos services, vous acceptez
-            d'être lié par ces conditions.
+            d&apos;être lié par ces conditions.
           </p>
 
           <h2>2. Utilisation du Service</h2>
@@ -33,7 +33,7 @@ export default function TermsPage() {
 
           <h2>4. Limitation de Responsabilité</h2>
           <p>
-            Le service est fourni "en l'état". Nous ne garantissons pas que le service sera exempt d'erreurs ou ininterrompu.
+            Le service est fourni &quot;en l&apos;état&quot;. Nous ne garantissons pas que le service sera exempt d&apos;erreurs ou ininterrompu.
           </p>
 
           <div className="mt-8 text-center">
