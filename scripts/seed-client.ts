@@ -2,13 +2,21 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, doc, writeBatch, serverTimestamp } from 'firebase/firestore';
 
+function requireEnv(name: string): string {
+    const value = process.env[name];
+    if (!value) {
+        throw new Error(`Variable d'environnement manquante : ${name} (voir .env.local)`);
+    }
+    return value;
+}
+
 const firebaseConfig = {
-    apiKey: "AIzaSyAmhQB4yUoskfJIoBme4OStNkpGzXUxR7c",
-    authDomain: "greecole.firebaseapp.com",
-    projectId: "greecole",
-    storageBucket: "greecole.firebasestorage.app",
-    messagingSenderId: "97019754371",
-    appId: "1:97019754371:web:4822d9c017bf4be808e8b6"
+    apiKey: requireEnv('NEXT_PUBLIC_FIREBASE_API_KEY'),
+    authDomain: requireEnv('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN'),
+    projectId: requireEnv('NEXT_PUBLIC_FIREBASE_PROJECT_ID'),
+    storageBucket: requireEnv('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET'),
+    messagingSenderId: requireEnv('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID'),
+    appId: requireEnv('NEXT_PUBLIC_FIREBASE_APP_ID'),
 };
 
 const app = initializeApp(firebaseConfig);
