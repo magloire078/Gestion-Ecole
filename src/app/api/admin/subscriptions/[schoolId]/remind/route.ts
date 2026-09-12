@@ -21,14 +21,14 @@ interface SchoolDoc {
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { schoolId: string } },
+    { params }: { params: Promise<{ schoolId: string }> },
 ) {
     const auth = await requireAdmin(request);
     if ('error' in auth) {
         return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const { schoolId } = params;
+    const { schoolId } = await params;
     if (!schoolId) {
         return NextResponse.json({ error: 'schoolId required' }, { status: 400 });
     }

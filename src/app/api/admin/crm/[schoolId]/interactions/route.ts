@@ -25,14 +25,14 @@ function entriesCollection(schoolId: string) {
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { schoolId: string } },
+    { params }: { params: Promise<{ schoolId: string }> },
 ) {
     const auth = await requireAdmin(request);
     if ('error' in auth) {
         return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const { schoolId } = params;
+    const { schoolId } = await params;
     if (!schoolId) {
         return NextResponse.json({ error: 'schoolId required' }, { status: 400 });
     }
@@ -61,14 +61,14 @@ export async function GET(
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { schoolId: string } },
+    { params }: { params: Promise<{ schoolId: string }> },
 ) {
     const auth = await requireAdmin(request);
     if ('error' in auth) {
         return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const { schoolId } = params;
+    const { schoolId } = await params;
     if (!schoolId) {
         return NextResponse.json({ error: 'schoolId required' }, { status: 400 });
     }
@@ -133,14 +133,14 @@ export async function POST(
 /** Marque la prochaine action planifiée comme faite (vue « Actions du jour »). */
 export async function PATCH(
     request: NextRequest,
-    { params }: { params: { schoolId: string } },
+    { params }: { params: Promise<{ schoolId: string }> },
 ) {
     const auth = await requireAdmin(request);
     if ('error' in auth) {
         return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const { schoolId } = params;
+    const { schoolId } = await params;
     if (!schoolId) {
         return NextResponse.json({ error: 'schoolId required' }, { status: 400 });
     }

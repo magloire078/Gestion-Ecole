@@ -61,7 +61,7 @@ async function executeAction(
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { decisionId: string } },
+    { params }: { params: Promise<{ decisionId: string }> },
 ) {
     const auth = await requireAdmin(request);
     if ('error' in auth) {
@@ -81,7 +81,8 @@ export async function POST(
     }
     const note = typeof body?.note === 'string' && body.note.trim() ? body.note.trim().slice(0, 1000) : null;
 
-    const ref = getAdminDb().collection('decision_queue').doc(params.decisionId);
+    const { decisionId } = await params;
+    const ref = getAdminDb().collection('decision_queue').doc(decisionId);
     const snap = await ref.get();
     if (!snap.exists) {
         return NextResponse.json({ error: 'Decision not found' }, { status: 404 });

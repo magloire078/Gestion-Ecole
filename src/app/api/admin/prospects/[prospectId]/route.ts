@@ -9,14 +9,15 @@ const STAGES = ['contacte', 'demo', 'essai', 'converti', 'perdu'] as const;
 
 export async function PATCH(
     request: NextRequest,
-    { params }: { params: { prospectId: string } },
+    { params }: { params: Promise<{ prospectId: string }> },
 ) {
     const auth = await requireAdmin(request);
     if ('error' in auth) {
         return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const ref = getAdminDb().collection('crm_prospects').doc(params.prospectId);
+    const { prospectId } = await params;
+    const ref = getAdminDb().collection('crm_prospects').doc(prospectId);
     const snap = await ref.get();
     if (!snap.exists) {
         return NextResponse.json({ error: 'Prospect not found' }, { status: 404 });
@@ -70,14 +71,15 @@ export async function PATCH(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { prospectId: string } },
+    { params }: { params: Promise<{ prospectId: string }> },
 ) {
     const auth = await requireAdmin(request);
     if ('error' in auth) {
         return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const ref = getAdminDb().collection('crm_prospects').doc(params.prospectId);
+    const { prospectId } = await params;
+    const ref = getAdminDb().collection('crm_prospects').doc(prospectId);
     const snap = await ref.get();
     if (!snap.exists) {
         return NextResponse.json({ error: 'Prospect not found' }, { status: 404 });
