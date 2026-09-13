@@ -31,7 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PlusCircle, Search, Edit2, Trash2, DollarSign, BookOpen, Layers, Settings2, MoreHorizontal, RefreshCcw, CalendarDays, FileText, Loader2 } from "lucide-react";
 import { formatCurrency, getCurrencySymbol } from "@/lib/currency-utils";
 import { useCollection, useFirestore, useUser } from "@/firebase";
-import { collection, query, where, getDocs, writeBatch, doc } from "firebase/firestore";
+import { collection, query, where, getDocs, writeBatch, doc, increment, serverTimestamp } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Combobox } from "@/components/ui/combobox";
@@ -266,12 +266,14 @@ export default function FeesPage() {
       const batch = writeBatch(firestore);
       const newFeeAmount = parseFloat(feeToSync.amount);
       const newFeeAmountAff = parseFloat(feeToSync.amountAff || feeToSync.amount);
+      let totalFeeDiff = 0;
+      let totalDueDiff = 0;
 
       querySnapshot.forEach((studentDoc) => {
         const studentData = studentDoc.data() as Student;
         const isAff = studentData.statusAff === 'Affecté';
         const expectedFee = isAff ? newFeeAmountAff : newFeeAmount;
-        
+
         const currentTuitionFee = studentData.tuitionFee || 0;
         const currentAmountDue = studentData.amountDue || 0;
 
@@ -286,7 +288,20 @@ export default function FeesPage() {
           tuitionStatus: newStatus,
           updatedAt: new Date().toISOString()
         });
+
+        totalFeeDiff += expectedFee - currentTuitionFee;
+        totalDueDiff += newAmountDue - currentAmountDue;
       });
+
+      // Sans ceci, les agrégats financiers de l'école ne reflétaient plus les
+      // nouveaux montants dus/attendus après une mise à jour en masse.
+      if (totalFeeDiff !== 0 || totalDueDiff !== 0) {
+        batch.set(doc(firestore, `ecoles/${schoolId}/stats/finance`), {
+          totalTuitionFees: increment(totalFeeDiff),
+          totalAmountDue: increment(totalDueDiff),
+          lastUpdated: serverTimestamp(),
+        }, { merge: true });
+      }
 
       await batch.commit();
       toast({ title: "Synchronisation réussie", description: `${querySnapshot.size} élèves ont été mis à jour.` });

@@ -238,7 +238,6 @@ export const parametresSubLinks = [
   { href: '/dashboard/parametres/annee-scolaire', label: 'Année Scolaire', icon: CalendarClock, permission: 'manageSettings' as PermissionKey },
   { href: '/dashboard/parametres/abonnement', label: 'Abonnement', icon: CreditCard, permission: 'manageSettings' as PermissionKey },
   { href: '/dashboard/parametres/facturation', label: 'Facturation', icon: ReceiptText, permission: 'manageSettings' as PermissionKey },
-  { href: '/dashboard/parametres/configuration-paiements', label: 'Config. Paiements', icon: Wallet, permission: 'manageSettings' as PermissionKey },
   { href: '/dashboard/parametres/integrations', label: 'Intégrations', icon: LinkIcon, permission: 'manageSettings' as PermissionKey },
   { href: '/dashboard/parametres/notifications', label: 'Notifications', icon: Bell, permission: 'manageSettings' as PermissionKey },
   { href: '/dashboard/parametres/audit', label: 'Audit & Sécurité', icon: ShieldAlert, permission: 'manageSettings' as PermissionKey },

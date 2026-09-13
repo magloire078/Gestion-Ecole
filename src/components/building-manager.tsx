@@ -42,6 +42,9 @@ interface BuildingManagerProps {
   BuildingFormComponent: React.FC<any>;
   RoomFormComponent: React.FC<any>;
   permission: PermissionId;
+  /** Retourne le nombre d'occupants actifs d'une salle, pour bloquer sa suppression si non vide. */
+  /** Retourne un message d'erreur si la salle ne peut pas être supprimée (occupants, matériel, réservations liées...), ou null si la suppression est possible. */
+  getRoomDeletionBlocker?: (roomId: string) => Promise<string | null>;
 }
 
 export function BuildingManager({
@@ -57,6 +60,7 @@ export function BuildingManager({
   BuildingFormComponent,
   RoomFormComponent,
   permission,
+  getRoomDeletionBlocker,
 }: BuildingManagerProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -148,8 +152,29 @@ export function BuildingManager({
     });
   };
 
-  const handleDeleteRoom = () => {
+  const handleDeleteRoom = async () => {
       if (!roomToDelete) return;
+
+      if (getRoomDeletionBlocker) {
+        try {
+          const blockReason = await getRoomDeletionBlocker(roomToDelete.id);
+          if (blockReason) {
+            toast({
+              variant: "destructive",
+              title: "Action impossible",
+              description: blockReason,
+            });
+            setRoomToDelete(null);
+            return;
+          }
+        } catch (e) {
+          console.error("Error checking whether room can be deleted:", e);
+          toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de vérifier si la salle/chambre peut être supprimée." });
+          setRoomToDelete(null);
+          return;
+        }
+      }
+
       const docRef = doc(firestore, `ecoles/${schoolId}/${roomCollectionName}/${roomToDelete.id}`);
       deleteDoc(docRef)
           .then(() => {

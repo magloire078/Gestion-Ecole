@@ -2,6 +2,7 @@
 
 import { doc, addDoc, deleteDoc, collection, query, where, collectionGroup, getDocs, serverTimestamp } from "firebase/firestore";
 import { firebaseFirestore as db } from '@/firebase/config';
+import { writeAuditLog } from '@/lib/audit-log';
 
 interface AbsenceData {
     date: string;
@@ -49,10 +50,25 @@ export const AbsencesService = {
     /**
      * Delete an absence record (permanent deletion)
      */
-    deleteAbsence: async (schoolId: string, studentId: string, absenceId: string) => {
+    deleteAbsence: async (
+        schoolId: string,
+        studentId: string,
+        absenceId: string,
+        actor: { userId: string; userName?: string },
+        context?: { studentName?: string; date?: string },
+    ) => {
         try {
             const absenceRef = doc(db, `ecoles/${schoolId}/eleves/${studentId}/absences/${absenceId}`);
             await deleteDoc(absenceRef);
+            await writeAuditLog(db, schoolId, {
+                action: 'absence.supprimee',
+                details: `Absence${context?.studentName ? ` de ${context.studentName}` : ''}${context?.date ? ` du ${context.date}` : ''} supprimée.`,
+                userId: actor.userId,
+                userName: actor.userName,
+                targetId: absenceId,
+                targetType: 'absence',
+                payload: { schoolId, studentId, absenceId, ...context },
+            });
         } catch (error) {
             console.error('Error deleting absence:', error);
             throw error;

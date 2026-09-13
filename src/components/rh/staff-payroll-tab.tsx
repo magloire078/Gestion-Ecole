@@ -5,6 +5,7 @@ import { Separator } from '@/components/ui/separator';
 import { Banknote, Car, Hand, Home, Landmark, Phone, Presentation } from 'lucide-react';
 import type { staff as Staff } from '@/lib/data-types';
 import { formatCurrency } from '@/lib/currency-utils';
+import { getEffectiveBaseSalary } from '@/lib/bulletin-de-paie';
 
 interface StaffPayrollTabProps {
     staff: Staff;
@@ -21,8 +22,12 @@ const InfoRow = ({ label, value, icon: Icon }: { label: string, value?: string |
 );
 
 export function StaffPayrollTab({ staff }: StaffPayrollTabProps) {
+    const baseLabel = staff.contractType === 'Vacataire'
+        ? `Salaire de base (${staff.baseHours || 0}h × ${formatCurrency(staff.hourlyRate || 0)})`
+        : 'Salaire de base';
+
     const earnings = [
-        { label: 'Salaire de base', value: staff.baseSalary, icon: Landmark },
+        { label: baseLabel, value: getEffectiveBaseSalary(staff), icon: Landmark },
         { label: 'Indemnité de transport (imposable)', value: staff.indemniteTransportImposable, icon: Car },
         { label: 'Indemnité de logement', value: staff.indemniteLogement, icon: Home },
         { label: 'Indemnité de sujétion', value: staff.indemniteSujetion, icon: Hand },
@@ -43,7 +48,6 @@ export function StaffPayrollTab({ staff }: StaffPayrollTabProps) {
                     {earnings.map(earning => (
                         (earning.value || 0) > 0 && <InfoRow key={earning.label} label={earning.label} value={earning.value} icon={earning.icon} />
                     ))}
-                    <InfoRow key="base" label="Salaire de base" value={staff.baseSalary || 0} icon={Landmark} />
                     <Separator className="my-2" />
                     <div className="flex justify-between items-center font-bold text-base pt-2">
                         <span>Total Brut Mensuel (estimé)</span>

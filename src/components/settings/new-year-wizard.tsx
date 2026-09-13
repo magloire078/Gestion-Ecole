@@ -69,7 +69,7 @@ export function NewYearWizard({ open, onOpenChange, onCompleted }: Props) {
                 classesCloned: cloneResult.cloned,
                 studentsPromoted: 0,
                 notes,
-            }, user.uid);
+            }, user.uid, user.displayName || undefined);
             toast({
                 title: 'Année basculée',
                 description: `${cloneResult.cloned} classe(s) clonée(s) et ${cloneResult.archived} archivée(s). Vous travaillez maintenant sur ${toYear}.`,

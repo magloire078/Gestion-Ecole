@@ -21,7 +21,8 @@ import {
 } from "@/components/ui/select";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { useCollection, useFirestore } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { collection, query, where } from "firebase/firestore";
+import { useClasses } from "@/hooks/use-classes";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FileDown, Calculator, Loader2, GraduationCap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -38,18 +39,16 @@ export default function BulletinsPage() {
     const [isCalculating, setIsCalculating] = useState(false);
     const [averages, setAverages] = useState<Record<string, { average: number; totalCoef: number }>>({});
     const [classStats, setClassStats] = useState<any>(null);
-    const [studentRanks, setStudentRanks] = useState<Record<string, { rank: number, average: number }>>({});
+    const [studentRanks, setStudentRanks] = useState<Record<string, { rank: number, average: number, totalCoef: number }>>({});
     const [totalStudentsInClass, setTotalStudentsInClass] = useState(0);
     const [teacherComments, setTeacherComments] = useState<string>("");
 
-    const studentsQuery = useMemo(() => schoolId ? collection(firestore, `ecoles/${schoolId}/eleves`) : null, [firestore, schoolId]);
-    const classesQuery = useMemo(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
+    // Classes de l'année scolaire courante uniquement (pas de mélange avec les années archivées).
+    const { classes, loading: classesLoading } = useClasses(schoolId);
 
+    const studentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), where('status', '==', 'Actif')) : null, [firestore, schoolId]);
     const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
-    const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
-
     const students: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
-    const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
     const filteredStudents = useMemo(() => {
         if (selectedClass === 'all') return [];
@@ -88,11 +87,9 @@ export default function BulletinsPage() {
 
             // 2. Map averages to state for UI display
             for (const studentId in statsData.studentRanks) {
-                // To get totalCoef, we still need to calculate it or we could have updated getClassStatistics to return it
-                // For performance, let's just use the general average for now in the list
-                newAverages[studentId] = { 
+                newAverages[studentId] = {
                     average: statsData.studentRanks[studentId].average,
-                    totalCoef: 0 // Will be populated individually on PDF generation or we can optimize later
+                    totalCoef: statsData.studentRanks[studentId].totalCoef,
                 };
             }
             
@@ -108,6 +105,10 @@ export default function BulletinsPage() {
 
     const handleGeneratePDF = async (student: Student) => {
         if (!schoolId || !schoolName || !selectedPeriod) return;
+        if (!schoolData?.currentAcademicYear) {
+            toast({ variant: 'destructive', title: 'Erreur', description: "Année scolaire de l'établissement non chargée, réessayez dans un instant." });
+            return;
+        }
 
         const reportService = new ReportCardService(firestore);
         const className = classes.find((c: Class) => c.id === selectedClass)?.name || "N/A";
@@ -134,7 +135,7 @@ export default function BulletinsPage() {
                 studentId: student.id,
                 studentName: `${student.firstName} ${student.lastName}`,
                 className: className,
-                schoolYear: schoolData?.currentAcademicYear || "2023-2024",
+                schoolYear: schoolData.currentAcademicYear,
                 term: selectedPeriodName,
                 subjectAverages: subjectAvgs,
                 generalAverage: stats.average,

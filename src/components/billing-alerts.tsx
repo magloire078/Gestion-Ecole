@@ -1,14 +1,13 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, where, getCountFromServer } from 'firebase/firestore';
+import { useMemo } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useSubscription } from '@/hooks/use-subscription';
+import { useStudents } from '@/hooks/use-students';
 import { getPlanLimits } from '@/lib/subscription-plans';
 import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
@@ -18,27 +17,23 @@ interface BillingAlertsProps {
     schoolId: string;
     studentCount: number;
     cycleCount: number;
+    academicYear?: string;
 }
 
-export function BillingAlerts({ schoolId, studentCount, cycleCount }: BillingAlertsProps) {
-    const firestore = useFirestore();
+export function BillingAlerts({ schoolId, studentCount, cycleCount, academicYear }: BillingAlertsProps) {
     const { subscription, loading: subscriptionLoading } = useSubscription();
 
-    const [dueStudentsCount, setDueStudentsCount] = useState(0);
-    const [loading, setLoading] = useState(true);
+    // Même cohorte (année scolaire sélectionnée) que les cartes de stats et
+    // l'aperçu financier, pour ne plus annoncer des impayés pour des élèves
+    // que le reste du tableau de bord ne compte pas dans l'année affichée.
+    const { students, loading: studentsLoading } = useStudents(schoolId, 'all', 'active', academicYear);
 
-    const dueStudentsQuery = useMemo(() =>
-        query(collection(firestore, `ecoles/${schoolId}/eleves`), where('amountDue', '>', 0))
-        , [firestore, schoolId]);
+    const dueStudentsCount = useMemo(
+        () => students.filter(s => (s.amountDue || 0) > 0).length,
+        [students]
+    );
 
-    const { data: dueStudentsData, loading: studentsLoading } = useCollection(dueStudentsQuery);
-
-    useEffect(() => {
-        setLoading(subscriptionLoading || studentsLoading);
-        if (!studentsLoading) {
-            setDueStudentsCount(dueStudentsData?.length || 0);
-        }
-    }, [subscriptionLoading, studentsLoading, dueStudentsData]);
+    const loading = subscriptionLoading || studentsLoading;
 
     const planDetails = getPlanLimits(subscription?.plan);
 

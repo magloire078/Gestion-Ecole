@@ -4,27 +4,38 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useCollection, useFirestore, useStorage } from '@/firebase';
+import { useCollection, useFirestore, useStorage, useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { collection, doc, orderBy, query, writeBatch, increment } from 'firebase/firestore';
+import { collection, doc, orderBy, query, writeBatch, increment, getDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useState, useMemo, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Wallet, Sparkles, Tag, Receipt, Loader2, Paperclip, ExternalLink, Download } from 'lucide-react';
+import { Wallet, Sparkles, Tag, Receipt, Loader2, Paperclip, ExternalLink, Download, Undo2 } from 'lucide-react';
 import type { student as Student, payment as Payment } from '@/lib/data-types';
 import { PaymentForm, type PaymentFormValues } from './payment-form';
 import { formatCurrency } from '@/lib/currency-utils';
 import { resolveAcademicYearForWrite, filterByAcademicYear } from '@/lib/academic-year-utils';
 import { useAcademicYear } from '@/providers/academic-year-provider';
 import { BillingService } from '@/services/billing-service';
+import { writeAuditLog } from '@/lib/audit-log';
 
 
 interface PaymentHistoryEntry extends Payment {
@@ -41,11 +52,15 @@ interface PaymentsTabProps {
 export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTabProps) {
     const firestore = useFirestore();
     const { schoolData } = useSchoolData();
+    const { user } = useUser();
+    const { toast } = useToast();
     const { selectedYear, currentYear } = useAcademicYear();
 
     const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
     const [receiptToView, setReceiptToView] = useState<ReceiptData | null>(null);
     const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+    const [paymentToCancel, setPaymentToCancel] = useState<PaymentHistoryEntry | null>(null);
+    const [isCancelling, setIsCancelling] = useState(false);
 
     const paymentsQuery = useMemo(() => {
         if (!schoolId || !student?.id) return null;
@@ -83,6 +98,57 @@ export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTab
         };
         setReceiptToView(receipt);
         setIsReceiptOpen(true);
+    };
+
+    const handleCancelPayment = async () => {
+        if (!schoolId || !student?.id || !paymentToCancel) return;
+        setIsCancelling(true);
+        try {
+            const batch = writeBatch(firestore);
+            const paymentRef = doc(firestore, `ecoles/${schoolId}/eleves/${student.id}/paiements/${paymentToCancel.id}`);
+            const studentRef = doc(firestore, `ecoles/${schoolId}/eleves/${student.id}`);
+
+            const studentSnap = await getDoc(studentRef);
+            const currentDue = studentSnap.data()?.amountDue ?? 0;
+            const newDue = currentDue + paymentToCancel.amount;
+
+            batch.delete(paymentRef);
+            batch.update(studentRef, {
+                amountDue: newDue,
+                tuitionStatus: 'Partiel',
+                updatedAt: new Date().toISOString(),
+            });
+
+            if (paymentToCancel.accountingTransactionId) {
+                batch.delete(doc(firestore, `ecoles/${schoolId}/comptabilite/${paymentToCancel.accountingTransactionId}`));
+            }
+
+            batch.set(doc(firestore, `ecoles/${schoolId}/stats/finance`), {
+                totalAmountDue: increment(paymentToCancel.amount),
+                lastUpdated: serverTimestamp(),
+            }, { merge: true });
+
+            await batch.commit();
+
+            await writeAuditLog(firestore, schoolId, {
+                action: 'paiement.annule',
+                details: `Paiement de ${formatCurrency(paymentToCancel.amount)} du ${format(new Date(paymentToCancel.date), 'dd/MM/yyyy')} annulé pour ${student.firstName} ${student.lastName} — élève recrédité.`,
+                userId: user?.uid || 'inconnu',
+                userName: user?.displayName || undefined,
+                targetId: student.id,
+                targetType: 'paiement',
+                payload: { payment: paymentToCancel },
+            });
+
+            toast({ title: "Paiement annulé", description: "Le versement a été annulé et l'élève recrédité." });
+            setPaymentToCancel(null);
+            onPaymentSuccess();
+        } catch (error) {
+            console.error("Erreur lors de l'annulation du paiement:", error);
+            toast({ variant: "destructive", title: "Erreur", description: "Impossible d'annuler ce paiement." });
+        } finally {
+            setIsCancelling(false);
+        }
     };
 
     return (
@@ -147,12 +213,20 @@ export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTab
                                                 <Button variant="outline" size="sm" onClick={() => handleViewReceipt(payment)}>
                                                     <Receipt className="mr-2 h-3 w-3" /> Aperçu
                                                 </Button>
-                                                <Button 
-                                                    variant="secondary" 
-                                                    size="sm" 
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
                                                     onClick={() => BillingService.generateReceiptPDF(schoolData as any, student, payment, schoolData?.mainLogoUrl)}
                                                 >
                                                     <Download className="mr-2 h-3 w-3" /> PDF
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-destructive hover:text-destructive"
+                                                    onClick={() => setPaymentToCancel(payment)}
+                                                >
+                                                    <Undo2 className="mr-2 h-3 w-3" /> Annuler
                                                 </Button>
                                             </div>
                                         </TableCell>
@@ -177,6 +251,27 @@ export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTab
                 schoolData={schoolData}
                 onSave={() => { setIsPaymentDialogOpen(false); onPaymentSuccess(); }}
             />
+
+            <AlertDialog open={!!paymentToCancel} onOpenChange={(open) => !open && setPaymentToCancel(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Annuler ce paiement ?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Le versement de <strong>{paymentToCancel && formatCurrency(paymentToCancel.amount)}</strong> du{' '}
+                            {paymentToCancel && format(new Date(paymentToCancel.date), 'd MMMM yyyy', { locale: fr })} sera supprimé,
+                            l&apos;élève sera recrédité du même montant et la transaction comptable liée sera retirée de la caisse.
+                            Cette action est irréversible.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isCancelling}>Retour</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleCancelPayment} disabled={isCancelling} className="bg-destructive hover:bg-destructive/90">
+                            {isCancelling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Annuler le paiement
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

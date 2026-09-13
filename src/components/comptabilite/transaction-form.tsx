@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Combobox } from '@/components/ui/combobox';
 import { DialogFooter } from '@/components/ui/dialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 import { useFirestore } from '@/firebase';
 import { collection, doc, setDoc, addDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -64,6 +66,8 @@ export function TransactionForm({ schoolId, transaction: editingTransaction, onS
     });
 
     const watchedType = form.watch('type');
+    const watchedCategory = form.watch('category');
+    const isDisconnectedTuitionEntry = watchedType === 'Revenu' && watchedCategory === 'Scolarité';
 
     useEffect(() => {
         if (editingTransaction) {
@@ -188,6 +192,17 @@ export function TransactionForm({ schoolId, transaction: editingTransaction, onS
                         </FormItem>
                     )}
                 />
+                {isDisconnectedTuitionEntry && (
+                    <Alert className="col-span-4">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>Ceci n&apos;enregistrera pas un paiement d&apos;élève</AlertTitle>
+                        <AlertDescription>
+                            Une transaction créée ici n&apos;est liée à aucun élève : elle ne met pas à jour son solde
+                            ni son statut de paiement. Pour enregistrer un paiement de scolarité, utilisez plutôt
+                            l&apos;onglet Paiements du dossier de l&apos;élève.
+                        </AlertDescription>
+                    </Alert>
+                )}
                 <FormField
                     control={form.control}
                     name="description"

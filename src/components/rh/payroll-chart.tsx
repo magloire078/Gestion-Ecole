@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { group, sum } from 'd3-array';
 import type { staff as Staff } from '@/lib/data-types';
 import { formatCurrency, getCurrencySymbol } from '@/lib/currency-utils';
+import { getEffectiveBaseSalary } from '@/lib/bulletin-de-paie';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import type { ChartConfig } from '@/components/ui/chart';
 
@@ -22,7 +23,7 @@ export function PayrollChart({ staff }: PayrollChartProps) {
 
     return Array.from(grouped, ([role, values]) => ({
       role: role.charAt(0).toUpperCase() + role.slice(1).replace(/_/g, ' '),
-      masseSalariale: sum(values, d => d.baseSalary || 0),
+      masseSalariale: sum(values, d => getEffectiveBaseSalary(d)),
     })).sort((a, b) => b.masseSalariale - a.masseSalariale);
 
   }, [staff]);
