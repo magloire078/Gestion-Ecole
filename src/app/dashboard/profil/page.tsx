@@ -4,6 +4,7 @@ import { useUser, useFirestore } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserProfileForm } from '@/components/profil/user-profile-form';
+import { PeriodPreferenceCard } from '@/components/profil/period-preference-card';
 import { ImageUploader } from '@/components/image-uploader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -86,6 +87,7 @@ export default function ProfilePage() {
                         </div>
                     </CardContent>
                 </Card>
+                <PeriodPreferenceCard />
             </div>
         )
     }
@@ -98,6 +100,8 @@ export default function ProfilePage() {
             </div>
 
             <UserProfileForm />
+
+            <PeriodPreferenceCard />
 
         </div>
     );

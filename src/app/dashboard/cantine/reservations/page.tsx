@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { ReservationForm } from '@/components/cantine/reservation-form';
 import { useAcademicYear } from '@/providers/academic-year-provider';
-import { filterByAcademicYear } from '@/lib/academic-year-utils';
+import { filterByReportingPeriod } from '@/lib/academic-year-utils';
 
 interface ReservationWithStudentName extends CanteenReservation {
     studentName?: string;
@@ -38,7 +38,7 @@ export default function ReservationsPage() {
   const { schoolId, schoolData, updateSchoolData, loading: schoolLoading } = useSchoolData();
   const canManageContent = !!user?.profile?.permissions?.manageCantine;
   const { toast } = useToast();
-  const { selectedYear, currentYear } = useAcademicYear();
+  const { reportingPeriod } = useAcademicYear();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -85,8 +85,8 @@ export default function ReservationsPage() {
         studentName: student ? `${student.firstName} ${student.lastName}` : 'Élève inconnu'
       };
     });
-    return filterByAcademicYear(all, selectedYear, currentYear);
-  }, [reservationsData, students, selectedYear, currentYear]);
+    return filterByReportingPeriod(all, reportingPeriod);
+  }, [reservationsData, students, reportingPeriod]);
   
   const filteredReservations = useMemo(() => {
     return reservations.filter(res => 

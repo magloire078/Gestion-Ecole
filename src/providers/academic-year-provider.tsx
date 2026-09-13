@@ -11,6 +11,8 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useSchoolData } from '@/hooks/use-school-data';
+import { usePeriodPreference, type PeriodPreferenceType } from '@/hooks/use-period-preference';
+import { reportingPeriodLabel, type ReportingPeriod } from '@/lib/academic-year-utils';
 
 interface AcademicYearContextValue {
     /** Année actuellement consultée. */
@@ -25,6 +27,21 @@ interface AcademicYearContextValue {
     selectYear: (year: string) => void;
     /** Réinitialise sur l'année courante de l'école. */
     resetToCurrent: () => void;
+
+    /**
+     * Préférence de période pour les rapports/statistiques financiers et
+     * administratifs (jamais les notes/bulletins, toujours en année scolaire).
+     */
+    periodType: PeriodPreferenceType;
+    setPeriodType: (type: PeriodPreferenceType) => void;
+    calendarYear: number;
+    setCalendarYear: (year: number) => void;
+    /** Quelques années civiles autour de l'actuelle, pour un sélecteur. */
+    availableCalendarYears: number[];
+    /** Période effective à passer à `filterByReportingPeriod`. */
+    reportingPeriod: ReportingPeriod;
+    /** Libellé lisible de la période effective (ex. "Année civile 2025"). */
+    reportingPeriodLabel: string;
 }
 
 const AcademicYearContext = createContext<AcademicYearContextValue | null>(null);
@@ -51,6 +68,12 @@ function persist(schoolId: string | null | undefined, year: string): void {
 
 export function AcademicYearProvider({ children }: { children: ReactNode }) {
     const { schoolId, schoolData } = useSchoolData();
+    const {
+        periodType,
+        calendarYear,
+        setPeriodType,
+        setCalendarYear,
+    } = usePeriodPreference();
 
     const currentYear = schoolData?.currentAcademicYear || defaultCurrentYear();
 
@@ -79,6 +102,16 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
         persist(schoolId, currentYear);
     }, [schoolId, currentYear]);
 
+    const availableCalendarYears = useMemo(() => {
+        const nowYear = new Date().getFullYear();
+        const years = new Set<number>([calendarYear, nowYear, nowYear - 1, nowYear - 2]);
+        return Array.from(years).sort((a, b) => b - a);
+    }, [calendarYear]);
+
+    const reportingPeriod: ReportingPeriod = periodType === 'calendar'
+        ? { type: 'calendar', year: calendarYear }
+        : { type: 'academic', selectedYear, currentYear };
+
     const value: AcademicYearContextValue = {
         selectedYear,
         currentYear,
@@ -86,6 +119,13 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
         isViewingArchive: selectedYear !== currentYear,
         selectYear,
         resetToCurrent,
+        periodType,
+        setPeriodType,
+        calendarYear,
+        setCalendarYear,
+        availableCalendarYears,
+        reportingPeriod,
+        reportingPeriodLabel: reportingPeriodLabel(reportingPeriod),
     };
 
     return (
@@ -108,6 +148,13 @@ export function useAcademicYear(): AcademicYearContextValue {
             isViewingArchive: false,
             selectYear: () => {},
             resetToCurrent: () => {},
+            periodType: 'academic',
+            setPeriodType: () => {},
+            calendarYear: new Date().getFullYear(),
+            setCalendarYear: () => {},
+            availableCalendarYears: [new Date().getFullYear()],
+            reportingPeriod: { type: 'academic', selectedYear: fallback, currentYear: fallback },
+            reportingPeriodLabel: `Année scolaire ${fallback}`,
         };
     }
     return ctx;

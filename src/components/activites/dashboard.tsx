@@ -11,11 +11,11 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { StatCard } from '@/components/ui/stat-card';
 import { useAcademicYear } from '@/providers/academic-year-provider';
-import { filterByAcademicYear } from '@/lib/academic-year-utils';
+import { filterByReportingPeriod } from '@/lib/academic-year-utils';
 
 export function ActivitesDashboard({ schoolId }: { schoolId: string }) {
     const firestore = useFirestore();
-    const { selectedYear, currentYear } = useAcademicYear();
+    const { reportingPeriod } = useAcademicYear();
 
     const activitesQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/activites`)), [firestore, schoolId]);
     const inscriptionsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/inscriptions_activites`)), [firestore, schoolId]);
@@ -27,8 +27,8 @@ export function ActivitesDashboard({ schoolId }: { schoolId: string }) {
 
     const inscriptionsForYear = useMemo(() => {
         const all = inscriptionsData?.map(d => d.data() as inscriptionActivite) || [];
-        return filterByAcademicYear(all, selectedYear, currentYear);
-    }, [inscriptionsData, selectedYear, currentYear]);
+        return filterByReportingPeriod(all, reportingPeriod);
+    }, [inscriptionsData, reportingPeriod]);
 
     const stats = {
         activities: activitesData?.length || 0,

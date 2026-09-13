@@ -32,7 +32,7 @@ import { Wallet, Sparkles, Tag, Receipt, Loader2, Paperclip, ExternalLink, Downl
 import type { student as Student, payment as Payment } from '@/lib/data-types';
 import { PaymentForm, type PaymentFormValues } from './payment-form';
 import { formatCurrency } from '@/lib/currency-utils';
-import { resolveAcademicYearForWrite, filterByAcademicYear } from '@/lib/academic-year-utils';
+import { resolveAcademicYearForWrite, filterByReportingPeriod } from '@/lib/academic-year-utils';
 import { useAcademicYear } from '@/providers/academic-year-provider';
 import { BillingService } from '@/services/billing-service';
 import { writeAuditLog } from '@/lib/audit-log';
@@ -54,7 +54,7 @@ export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTab
     const { schoolData } = useSchoolData();
     const { user } = useUser();
     const { toast } = useToast();
-    const { selectedYear, currentYear } = useAcademicYear();
+    const { reportingPeriod } = useAcademicYear();
 
     const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
     const [receiptToView, setReceiptToView] = useState<ReceiptData | null>(null);
@@ -71,8 +71,8 @@ export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTab
 
     const paymentHistory: PaymentHistoryEntry[] = useMemo(() => {
         const all = paymentHistoryData?.map(d => ({ id: d.id, ...d.data() } as PaymentHistoryEntry)) || [];
-        return filterByAcademicYear(all, selectedYear, currentYear);
-    }, [paymentHistoryData, selectedYear, currentYear]);
+        return filterByReportingPeriod(all, reportingPeriod);
+    }, [paymentHistoryData, reportingPeriod]);
 
     const handleViewReceipt = (payment: PaymentHistoryEntry) => {
         if (!student) return;

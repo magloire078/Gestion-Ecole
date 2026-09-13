@@ -26,7 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useAcademicYear } from '@/providers/academic-year-provider';
-import { filterByAcademicYear } from '@/lib/academic-year-utils';
+import { filterByReportingPeriod } from '@/lib/academic-year-utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,7 +50,7 @@ export default function OccupantsPage() {
   const { user } = useUser();
   const { toast } = useToast();
   const canManageContent = !!user?.profile?.permissions?.manageInternat;
-  const { selectedYear, currentYear } = useAcademicYear();
+  const { reportingPeriod } = useAcademicYear();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingOccupant, setEditingOccupant] = useState<(occupant & { id: string }) | null>(null);
@@ -88,7 +88,7 @@ export default function OccupantsPage() {
       };
     });
 
-    const forYear = filterByAcademicYear(allOccupants, selectedYear, currentYear);
+    const forYear = filterByReportingPeriod(allOccupants, reportingPeriod);
 
     return forYear.filter(occ => {
       const matchesSearch = occ.studentName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -96,7 +96,7 @@ export default function OccupantsPage() {
       const matchesStatus = statusFilter === 'all' || occ.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
-  }, [occupantsData, studentsData, roomsData, searchQuery, statusFilter, selectedYear, currentYear]);
+  }, [occupantsData, studentsData, roomsData, searchQuery, statusFilter, reportingPeriod]);
 
   const isLoading = schoolLoading || occupantsLoading || studentsLoading || roomsLoading;
 

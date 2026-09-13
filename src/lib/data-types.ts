@@ -9,6 +9,16 @@ export type user_root = {
     isSuperAdmin?: boolean;
     /** Accès restreint réservé aux commerciaux : uniquement le pipeline prospects, pas le reste de l'espace admin. */
     commercialAccess?: boolean;
+    /**
+     * Préférence d'affichage des rapports et statistiques : par année scolaire
+     * (rentrée → grandes vacances, défaut) ou par année civile (1er janvier →
+     * 31 décembre). Ne s'applique qu'aux données financières/administratives —
+     * les notes et bulletins restent toujours rattachés à l'année scolaire,
+     * seule période ayant un sens pédagogique (trimestres, classes).
+     */
+    periodPreference?: 'academic' | 'calendar';
+    /** Année civile actuellement consultée quand periodPreference = 'calendar'. */
+    periodCalendarYear?: number;
 };
 
 export type school = {

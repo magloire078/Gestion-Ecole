@@ -24,7 +24,7 @@ import type { activite as Activite, student as Student, inscriptionActivite as I
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAcademicYear } from '@/providers/academic-year-provider';
-import { filterByAcademicYear } from '@/lib/academic-year-utils';
+import { filterByReportingPeriod } from '@/lib/academic-year-utils';
 
 const inscriptionSchema = z.object({
   studentId: z.string().min(1, { message: "Veuillez sélectionner un élève." }),
@@ -39,7 +39,7 @@ export default function InscriptionsPage() {
   const { user } = useUser();
   const { toast } = useToast();
   const canManageActivities = !!user?.profile?.permissions?.manageActivities;
-  const { selectedYear, currentYear, availableYears } = useAcademicYear();
+  const { currentYear, availableYears, reportingPeriod } = useAcademicYear();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
 
@@ -60,8 +60,8 @@ export default function InscriptionsPage() {
       const data = doc.data() as Inscription;
       return { id: doc.id, ...data, studentName: studentMap.get(data.studentId) || 'N/A', activiteName: activiteMap.get(data.activiteId) || 'N/A' };
     });
-    return filterByAcademicYear(all, selectedYear, currentYear);
-  }, [inscriptionsData, students, activites, selectedYear, currentYear]);
+    return filterByReportingPeriod(all, reportingPeriod);
+  }, [inscriptionsData, students, activites, reportingPeriod]);
 
   const form = useForm<InscriptionFormValues>({ resolver: zodResolver(inscriptionSchema), defaultValues: { academicYear: currentYear } });
 

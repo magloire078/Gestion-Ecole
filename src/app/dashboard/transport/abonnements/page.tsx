@@ -32,7 +32,7 @@ import {
 import { SubscriptionForm } from '@/components/transport/subscription-form';
 import { useToast } from '@/hooks/use-toast';
 import { useAcademicYear } from '@/providers/academic-year-provider';
-import { filterByAcademicYear } from '@/lib/academic-year-utils';
+import { filterByReportingPeriod } from '@/lib/academic-year-utils';
 
 interface SubscriptionWithDetails extends TransportSubscription {
     studentName?: string;
@@ -45,7 +45,7 @@ export default function TransportSubscriptionsPage() {
     const { user } = useUser();
     const { toast } = useToast();
     const canManageContent = !!user?.profile?.permissions?.manageTransport;
-    const { selectedYear, currentYear } = useAcademicYear();
+    const { reportingPeriod } = useAcademicYear();
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingSubscription, setEditingSubscription] = useState<(TransportSubscription & { id: string }) | null>(null);
@@ -80,8 +80,8 @@ export default function TransportSubscriptionsPage() {
                 routeName: route ? route.name : 'Ligne inconnue',
             };
         });
-        return filterByAcademicYear(all, selectedYear, currentYear);
-    }, [subscriptionsData, studentsData, routesData, selectedYear, currentYear]);
+        return filterByReportingPeriod(all, reportingPeriod);
+    }, [subscriptionsData, studentsData, routesData, reportingPeriod]);
     
     const isLoading = schoolLoading || subscriptionsLoading || studentsLoading || routesLoading;
     

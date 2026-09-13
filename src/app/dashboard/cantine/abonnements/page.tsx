@@ -34,7 +34,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useAcademicYear } from '@/providers/academic-year-provider';
-import { filterByAcademicYear } from '@/lib/academic-year-utils';
+import { filterByReportingPeriod } from '@/lib/academic-year-utils';
 
 interface SubscriptionWithStudentName extends CanteenSubscription {
   studentName?: string;
@@ -47,7 +47,7 @@ export default function AbonnementsCantinePage() {
   const { user } = useUser();
   const { toast } = useToast();
   const canManageContent = !!user?.profile?.permissions?.manageCantine;
-  const { selectedYear, currentYear } = useAcademicYear();
+  const { reportingPeriod } = useAcademicYear();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingSubscription, setEditingSubscription] = useState<(CanteenSubscription & { id: string }) | null>(null);
@@ -74,8 +74,8 @@ export default function AbonnementsCantinePage() {
         studentName: student ? `${student.firstName} ${student.lastName}` : 'Élève inconnu'
       };
     });
-    return filterByAcademicYear(all, selectedYear, currentYear);
-  }, [subscriptionsData, studentsData, selectedYear, currentYear]);
+    return filterByReportingPeriod(all, reportingPeriod);
+  }, [subscriptionsData, studentsData, reportingPeriod]);
 
   const handleOpenForm = (subscription: (CanteenSubscription & { id: string }) | null) => {
     setEditingSubscription(subscription);
