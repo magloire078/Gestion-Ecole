@@ -6,22 +6,29 @@ import { Megaphone, ArrowRight } from 'lucide-react';
 import { Button } from "./ui/button";
 import Link from "next/link";
 import { useUserSession } from "@/hooks/use-user-session";
-import { useCollection, useFirestore } from "@/firebase";
+import { useCollection, useFirestore, useUser } from "@/firebase";
 import { useMemo } from "react";
-import { collection, query, orderBy, limit } from "firebase/firestore";
+import { collection, query, orderBy, limit, where, documentId } from "firebase/firestore";
+import type { message as Message } from "@/lib/data-types";
 import { Skeleton } from "./ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
 
+const DEFAULT_ANNOUNCEMENT = { title: "Bienvenue sur GèreEcole", content: "Utilisez les menus pour naviguer et gérer votre établissement." };
+
 export function AnnouncementBanner() {
   const { schoolId, isLoading: sessionLoading } = useUserSession();
+  const { user } = useUser();
   const firestore = useFirestore();
 
+  // On ne peut plus se contenter du tout dernier message : il faut filtrer
+  // par destinataires (sinon un message "Enseignants uniquement" s'affiche
+  // aussi aux parents et au reste du personnel).
   const messagesQuery = useMemo(() =>
     schoolId
       ? query(
         collection(firestore, `ecoles/${schoolId}/messagerie`),
         orderBy('createdAt', 'desc'),
-        limit(1)
+        limit(20)
       )
       : null,
     [firestore, schoolId]
@@ -29,14 +36,39 @@ export function AnnouncementBanner() {
 
   const { data: messagesData, loading: messagesLoading } = useCollection(messagesQuery);
 
-  const announcement = useMemo(() =>
-    messagesData && messagesData.length > 0
-      ? messagesData[0].data()
-      : { title: "Bienvenue sur GèreEcole", content: "Utilisez les menus pour naviguer et gérer votre établissement." },
-    [messagesData]
-  );
+  const isParent = !!user?.isParent;
+  const isTeacher = user?.profile?.role === 'enseignant';
+  const parentStudentIds = useMemo(() => user?.parentStudentIds || [], [user?.parentStudentIds]);
 
-  const isLoading = sessionLoading || messagesLoading;
+  const studentsQuery = useMemo(() =>
+    (schoolId && isParent && parentStudentIds.length > 0)
+      ? query(
+        collection(firestore, `ecoles/${schoolId}/eleves`),
+        where(documentId(), 'in', parentStudentIds.slice(0, 30)),
+      )
+      : null,
+    [firestore, schoolId, isParent, parentStudentIds]);
+  const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
+
+  const myChildrenClassIds = useMemo(() =>
+    studentsData?.map(d => d.data()?.classId).filter(Boolean) || [],
+    [studentsData]);
+
+  const announcement = useMemo(() => {
+    if (!messagesData) return DEFAULT_ANNOUNCEMENT;
+    const match = messagesData.find(d => {
+      const m = d.data() as Message;
+      const r = m.recipients || {};
+      if (r.all) return true;
+      if (isParent) {
+        return !!r.classes?.some(c => myChildrenClassIds.includes(c));
+      }
+      return (isTeacher && !!r.teachers) || (!isTeacher && !!r.staff);
+    });
+    return match ? match.data() : DEFAULT_ANNOUNCEMENT;
+  }, [messagesData, isParent, isTeacher, myChildrenClassIds]);
+
+  const isLoading = sessionLoading || messagesLoading || studentsLoading;
 
   if (isLoading) {
     return (

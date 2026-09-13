@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, where, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
 import {
   UserPlus,
   Table as TableIcon,
@@ -31,12 +31,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import QRCode from 'react-qr-code';
 
 // Importer nos nouveaux modals
 import { RegistrationModal } from '@/components/inscription/registration-modal';
 import { BulkRegistrationModal } from '@/components/inscription/bulk-registration-modal';
 import { ReRegistrationModal } from '@/components/inscription/re-registration-modal';
+import { StudentService } from '@/services/student-services';
 import type { student as Student, class_type as Class, fee as Fee, niveau as Niveau } from '@/lib/data-types';
 
 export default function InscriptionDashboard() {
@@ -49,6 +60,7 @@ export default function InscriptionDashboard() {
   const [isBulkOpen, setIsBulkOpen] = useState(false);
   const [isReRegistrationOpen, setIsReRegistrationOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
 
   // Recherche & pagination
   const [searchTerm, setSearchTerm] = useState('');
@@ -135,12 +147,13 @@ export default function InscriptionDashboard() {
     };
   }, [currentStudents]);
 
-  // Supprimer un élève (Mise à jour du statut)
-  const handleDeleteStudent = async (studentId: string) => {
-    if (!schoolId) return;
+  // Mettre un élève à la corbeille — StudentService.moveToTrash décrémente
+  // aussi l'effectif de sa classe et les agrégats financiers de l'école,
+  // contrairement à un simple changement de statut.
+  const handleConfirmDelete = async () => {
+    if (!schoolId || !studentToDelete) return;
     try {
-      const docRef = doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`);
-      await updateDoc(docRef, { status: 'Supprimé' });
+      await StudentService.moveToTrash(schoolId, studentToDelete);
       toast({
         title: "Élève mis à la corbeille",
         description: "Vous pouvez restaurer ce dossier depuis l'onglet Corbeille.",
@@ -148,15 +161,16 @@ export default function InscriptionDashboard() {
     } catch (err) {
       console.error(err);
       toast({ variant: "destructive", title: "Erreur", description: "Impossible de supprimer le dossier." });
+    } finally {
+      setStudentToDelete(null);
     }
   };
 
-  // Restaurer un élève de la corbeille
-  const handleRestoreStudent = async (studentId: string) => {
+  // Restaurer un élève de la corbeille (ré-incrémente l'effectif de classe et les agrégats).
+  const handleRestoreStudent = async (student: Student) => {
     if (!schoolId) return;
     try {
-      const docRef = doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`);
-      await updateDoc(docRef, { status: 'Actif' });
+      await StudentService.restoreFromTrash(schoolId, student);
       toast({
         title: "Élève restauré !",
         description: "Le dossier a été replacé dans la liste active.",
@@ -456,10 +470,10 @@ export default function InscriptionDashboard() {
                         <TableCell className="font-mono text-xs font-bold text-rose-600">{formatCurrency(student.amountDue)}</TableCell>
                         <TableCell className="text-center">
                           <div className="flex justify-end gap-2 pr-2">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => student.id && handleDeleteStudent(student.id)}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setStudentToDelete(student)}
                               className="text-rose-600 hover:bg-rose-50 rounded-xl h-8 w-8"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -563,10 +577,10 @@ export default function InscriptionDashboard() {
                         <TableCell className="text-xs text-slate-400">{student.academicYear}</TableCell>
                         <TableCell className="text-center">
                           <div className="flex justify-end gap-2 pr-2">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => student.id && handleRestoreStudent(student.id)}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRestoreStudent(student)}
                               className="text-indigo-600 hover:bg-indigo-50 rounded-xl h-8 w-8"
                               title="Restaurer"
                             >
@@ -614,9 +628,29 @@ export default function InscriptionDashboard() {
             schoolId={schoolId}
             schoolData={schoolData}
             classes={classes}
+            niveaux={niveaux}
+            fees={fees}
           />
         </>
       )}
+
+      <AlertDialog open={!!studentToDelete} onOpenChange={(open) => !open && setStudentToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mettre cet élève à la corbeille ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <strong>{studentToDelete?.lastName} {studentToDelete?.firstName}</strong> sera déplacé(e) vers la corbeille.
+              Vous pourrez le/la restaurer depuis l&apos;onglet Corbeille.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-rose-600 hover:bg-rose-700">
+              Mettre à la corbeille
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </div>
   );

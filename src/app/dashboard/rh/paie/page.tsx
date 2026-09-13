@@ -6,11 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FileText, Banknote, Loader2, Files, Users, DollarSign, History } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, where, getDoc, doc, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDoc, doc, orderBy, getDocs, writeBatch } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useToast } from '@/hooks/use-toast';
 import type { staff as Staff, school as School, payrollRun as PayrollRun } from '@/lib/data-types';
-import { getPayslipDetails, type PayslipDetails } from '@/lib/bulletin-de-paie';
+import { getPayslipDetails, getEffectiveBaseSalary, type PayslipDetails } from '@/lib/bulletin-de-paie';
 import { PayslipPreview, BulkPayslipPreview } from '@/components/payroll/payslip-template';
 import { PayrollChart } from '@/components/rh/payroll-chart';
 import { StatCard } from '@/components/ui/stat-card';
@@ -66,12 +66,7 @@ export default function PaiePage() {
     if (staffWithSalary.length === 0) {
       return { totalSalaryMass: 0, averageSalary: 0 };
     }
-    const total = staffWithSalary.reduce((acc, staff) => {
-      const salary = staff.contractType === 'Vacataire'
-        ? (staff.hourlyRate || 0) * (staff.baseHours || 0)
-        : (staff.baseSalary || 0);
-      return acc + salary;
-    }, 0);
+    const total = staffWithSalary.reduce((acc, staff) => acc + getEffectiveBaseSalary(staff), 0);
     return {
       totalSalaryMass: total,
       averageSalary: total / staffWithSalary.length,
@@ -95,6 +90,29 @@ export default function PaiePage() {
       const payslipDate = new Date().toISOString();
       const details = await getPayslipDetails(fullStaffDoc.data() as Staff, payslipDate, schoolData as School);
       setPayslipDetails(details);
+
+      // Persiste ce bulletin ponctuel dans l'historique (comme la paie
+      // groupée), sinon il est introuvable dès que la fenêtre se ferme.
+      if (schoolId && user?.uid) {
+        const batch = writeBatch(firestore);
+        const runRef = doc(collection(firestore, `ecoles/${schoolId}/payroll_runs`));
+        batch.set(runRef, {
+          period: `Bulletin individuel — ${staffMember.firstName} ${staffMember.lastName} — ${new Date(payslipDate).toLocaleDateString('fr-FR')}`,
+          executionDate: payslipDate,
+          totalMass: getEffectiveBaseSalary(fullStaffDoc.data() as Staff),
+          employeeCount: 1,
+          status: 'Terminé',
+          processedBy: user.uid,
+          processedByName: user.displayName || undefined,
+        });
+        const payslipRef = doc(collection(firestore, `ecoles/${schoolId}/payroll_runs/${runRef.id}/payslips`));
+        batch.set(payslipRef, {
+          staffId: staffMember.id,
+          staffName: `${staffMember.firstName} ${staffMember.lastName}`,
+          payslipDetails: JSON.parse(JSON.stringify(details)),
+        });
+        await batch.commit();
+      }
     } catch (e) {
       console.error(e);
       toast({

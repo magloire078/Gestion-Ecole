@@ -22,7 +22,8 @@ export class AccountingReportsService {
     static generateGrandLivrePDF(
         school: School,
         transactions: AccountingTransaction[],
-        periodLabel: string
+        periodLabel: string,
+        title: string = "GRAND LIVRE COMPTABLE"
     ) {
         if (!school || !school.name) {
             console.error("School data is missing");
@@ -47,7 +48,7 @@ export class AccountingReportsService {
         doc.setFontSize(22);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(15, 23, 42); // Slate 900
-        doc.text("GRAND LIVRE COMPTABLE", 15, currentY);
+        doc.text(title, 15, currentY);
         
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
@@ -118,8 +119,209 @@ export class AccountingReportsService {
 
         // 5. Save
         const sanitizedSchoolName = (school.name || "Ecole").replace(/[^a-z0-9]/gi, '_');
-        const fileName = `Grand_Livre_${sanitizedSchoolName}_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+        const sanitizedTitle = title.replace(/[^a-z0-9]/gi, '_');
+        const fileName = `${sanitizedTitle}_${sanitizedSchoolName}_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
         doc.save(fileName);
+    }
+
+    /**
+     * Génère la balance des restes à payer par niveau scolaire en PDF
+     */
+    static generateBalanceNiveauPDF(
+        school: School,
+        rows: { levelName: string; count: number; expected: number; collected: number; remaining: number; rate: number }[],
+        periodLabel: string
+    ) {
+        if (!school || !school.name) {
+            console.error("School data is missing");
+            return;
+        }
+
+        const doc = new jsPDF();
+        const pageWidth = 210;
+        let currentY = 20;
+
+        if (school.mainLogoUrl) {
+            try {
+                doc.addImage(school.mainLogoUrl, 'PNG', 15, 15, 25, 25);
+                currentY = 45;
+            } catch (e) {
+                console.error("Could not add logo to PDF", e);
+            }
+        }
+
+        doc.setFontSize(22);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(15, 23, 42);
+        doc.text("BALANCE DES RESTES À PAYER", 15, currentY);
+
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(71, 85, 105);
+        doc.text(school.name.toUpperCase(), 15, currentY + 8);
+
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Période : ${periodLabel}`, 15, currentY + 14);
+        doc.text(`Édité le : ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, pageWidth - 15, currentY + 14, { align: 'right' });
+
+        currentY += 25;
+
+        const totalExpected = rows.reduce((s, r) => s + r.expected, 0);
+        const totalCollected = rows.reduce((s, r) => s + r.collected, 0);
+        const totalRemaining = rows.reduce((s, r) => s + r.remaining, 0);
+
+        const tableBody = rows.map(r => [
+            r.levelName,
+            String(r.count),
+            this.clean(formatCurrency(r.expected)),
+            this.clean(formatCurrency(r.collected)),
+            this.clean(formatCurrency(r.remaining)),
+            `${r.rate.toFixed(1)}%`,
+        ]);
+        tableBody.push([
+            'TOTAL',
+            String(rows.reduce((s, r) => s + r.count, 0)),
+            this.clean(formatCurrency(totalExpected)),
+            this.clean(formatCurrency(totalCollected)),
+            this.clean(formatCurrency(totalRemaining)),
+            totalExpected > 0 ? `${((totalCollected / totalExpected) * 100).toFixed(1)}%` : '0%',
+        ]);
+
+        autoTable(doc, {
+            startY: currentY,
+            head: [['NIVEAU', 'INSCRITS', 'ATTENDU', 'ENCAISSÉ', 'RESTE À RECOUVRER', 'TAUX']],
+            body: tableBody,
+            theme: 'grid',
+            headStyles: {
+                fillColor: [79, 70, 229],
+                fontSize: 9,
+                halign: 'center',
+                fontStyle: 'bold',
+                cellPadding: 5
+            },
+            bodyStyles: {
+                fontSize: 8,
+                cellPadding: 4,
+                textColor: [30, 41, 59]
+            },
+            columnStyles: {
+                2: { halign: 'right' },
+                3: { halign: 'right', textColor: [5, 150, 105] },
+                4: { halign: 'right', textColor: [225, 29, 72] },
+                5: { halign: 'right', fontStyle: 'bold' },
+            },
+            didParseCell: (data) => {
+                if (data.row.index === tableBody.length - 1) {
+                    data.cell.styles.fontStyle = 'bold';
+                    data.cell.styles.fillColor = [248, 250, 252];
+                }
+            },
+            margin: { left: 15, right: 15 }
+        });
+
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "italic");
+        doc.setTextColor(100, 100, 100);
+        doc.text("Document confidentiel généré par le système GèreEcole.", pageWidth / 2, 285, { align: 'center' });
+
+        const sanitizedSchoolName = (school.name || "Ecole").replace(/[^a-z0-9]/gi, '_');
+        doc.save(`Balance_Restes_A_Payer_${sanitizedSchoolName}_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+    }
+
+    /**
+     * Génère la liste imprimable des reçus d'une période donnée
+     */
+    static generateReceiptsListPDF(
+        school: School,
+        transactions: (AccountingTransaction & { id: string })[],
+        studentNameById: Record<string, { name: string; className: string }>,
+        periodLabel: string
+    ) {
+        if (!school || !school.name) {
+            console.error("School data is missing");
+            return;
+        }
+
+        const doc = new jsPDF();
+        const pageWidth = 210;
+        let currentY = 20;
+
+        if (school.mainLogoUrl) {
+            try {
+                doc.addImage(school.mainLogoUrl, 'PNG', 15, 15, 25, 25);
+                currentY = 45;
+            } catch (e) {
+                console.error("Could not add logo to PDF", e);
+            }
+        }
+
+        doc.setFontSize(22);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(15, 23, 42);
+        doc.text("LISTE DES REÇUS", 15, currentY);
+
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(71, 85, 105);
+        doc.text(school.name.toUpperCase(), 15, currentY + 8);
+
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Période : ${periodLabel}`, 15, currentY + 14);
+        doc.text(`Édité le : ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, pageWidth - 15, currentY + 14, { align: 'right' });
+
+        currentY += 25;
+
+        const tableBody = transactions.map(t => {
+            const info = t.studentId ? studentNameById[t.studentId] : undefined;
+            return [
+                t.id.substring(0, 8).toUpperCase(),
+                info?.name || 'Élève Externe',
+                info?.className || 'N/A',
+                t.description,
+                this.clean(formatCurrency(t.amount)),
+            ];
+        });
+        const total = transactions.reduce((s, t) => s + (t.amount || 0), 0);
+        tableBody.push(['', '', '', 'TOTAL', this.clean(formatCurrency(total))]);
+
+        autoTable(doc, {
+            startY: currentY,
+            head: [['REÇU N°', 'ÉLÈVE', 'CLASSE', 'DESCRIPTION', 'MONTANT']],
+            body: tableBody,
+            theme: 'grid',
+            headStyles: {
+                fillColor: [79, 70, 229],
+                fontSize: 9,
+                halign: 'center',
+                fontStyle: 'bold',
+                cellPadding: 5
+            },
+            bodyStyles: {
+                fontSize: 8,
+                cellPadding: 4,
+                textColor: [30, 41, 59]
+            },
+            columnStyles: {
+                4: { halign: 'right', fontStyle: 'bold' },
+            },
+            didParseCell: (data) => {
+                if (data.row.index === tableBody.length - 1) {
+                    data.cell.styles.fontStyle = 'bold';
+                    data.cell.styles.fillColor = [248, 250, 252];
+                }
+            },
+            margin: { left: 15, right: 15 }
+        });
+
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "italic");
+        doc.setTextColor(100, 100, 100);
+        doc.text("Document confidentiel généré par le système GèreEcole.", pageWidth / 2, 285, { align: 'center' });
+
+        const sanitizedSchoolName = (school.name || "Ecole").replace(/[^a-z0-9]/gi, '_');
+        doc.save(`Liste_Recus_${sanitizedSchoolName}_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
     }
 
     /**

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useFirestore, useUser } from '@/firebase';
-import { collection, writeBatch, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, getDoc, writeBatch, serverTimestamp, increment, type Firestore } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Trash, Loader2, CheckCircle2, Table as TableIcon } from 'lucide-react';
@@ -15,6 +15,76 @@ import type { class_type as Class, fee as Fee, niveau as Niveau } from '@/lib/da
 import { getTuitionInfoForClass } from '@/lib/school-utils';
 import { formatCurrency } from '@/lib/currency-utils';
 import { Label } from '@/components/ui/label';
+import { StudentService } from '@/services/student-services';
+
+const PAYMENT_METHOD_MAP: Record<StudentRow['paymentMethod'], string> = {
+  'Espèce': 'Espèces',
+  'Mobile Money': 'Paiement Mobile',
+  'Chèque': 'Chèque',
+  'Virement': 'Virement Bancaire',
+};
+
+/**
+ * Enregistre l'acompte initial d'un élève venant d'être créé : écriture
+ * comptable, historique de paiement, et décrément du solde dû — les 3
+ * écritures que le reste de l'app associe toujours à un paiement (voir
+ * payments-tab.tsx), plutôt qu'un document de paiement isolé sans effet sur
+ * la comptabilité ni le solde de l'élève.
+ */
+async function registerInitialDeposit(
+  firestore: Firestore,
+  schoolId: string,
+  studentId: string,
+  amount: number,
+  method: StudentRow['paymentMethod'],
+  academicYear: string,
+) {
+  const today = new Date().toISOString().split('T')[0];
+  const studentSnap = await getDoc(doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`));
+  const studentData = studentSnap.data();
+  const currentDue = studentData?.amountDue || 0;
+  const cappedAmount = Math.min(amount, currentDue);
+  const newDue = Math.max(0, currentDue - cappedAmount);
+  const newStatus = newDue <= 0 ? 'Soldé' : 'Partiel';
+
+  const batch = writeBatch(firestore);
+  const accountingRef = doc(collection(firestore, `ecoles/${schoolId}/comptabilite`));
+  batch.set(accountingRef, {
+    schoolId,
+    studentId,
+    date: today,
+    description: `Acompte initial d'inscription - ${studentData?.firstName || ''} ${studentData?.lastName || ''}`.trim(),
+    category: 'Scolarité',
+    type: 'Revenu',
+    amount: cappedAmount,
+    academicYear,
+    createdAt: serverTimestamp(),
+  });
+  const paymentRef = doc(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/paiements`));
+  batch.set(paymentRef, {
+    schoolId,
+    studentId,
+    date: today,
+    amount: cappedAmount,
+    description: "Acompte initial d'inscription",
+    accountingTransactionId: accountingRef.id,
+    payerFirstName: studentData?.parent1FirstName || 'Parent',
+    payerLastName: studentData?.parent1LastName || '',
+    method: PAYMENT_METHOD_MAP[method],
+    academicYear,
+    createdAt: serverTimestamp(),
+  });
+  batch.update(doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`), {
+    amountDue: newDue,
+    tuitionStatus: newStatus,
+    updatedAt: serverTimestamp(),
+  });
+  batch.set(doc(firestore, `ecoles/${schoolId}/stats/finance`), {
+    totalAmountDue: increment(-cappedAmount),
+    lastUpdated: serverTimestamp(),
+  }, { merge: true });
+  await batch.commit();
+}
 
 interface BulkRegistrationModalProps {
   isOpen: boolean;
@@ -114,7 +184,7 @@ export function BulkRegistrationModal({
   };
 
   const handleSaveAll = async () => {
-    if (!user) return;
+    if (!user || !schoolId) return;
 
     // Validation des champs requis
     const invalidRow = rows.find(r => !r.lastName || !r.firstName || !r.classId || !r.parentContact || !r.dateOfBirth);
@@ -128,17 +198,17 @@ export function BulkRegistrationModal({
     }
 
     setIsSubmitting(true);
-    const batch = writeBatch(firestore);
     const currentYear = schoolData?.currentAcademicYear || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
+    let created = 0;
+    const failures: string[] = [];
 
     try {
       for (const row of rows) {
-        const studentRef = doc(collection(firestore, `ecoles/${schoolId}/eleves`));
         const selectedClass = classes.find(c => c.id === row.classId);
         const selectedNiveau = niveaux.find(n => n.id === selectedClass?.niveauId);
-        
+
         // Calcul du total de scolarité
-        const totalFee = isSimplifiedMode 
+        const totalFee = isSimplifiedMode
           ? getTuitionInfoForClass(row.classId, classes, niveaux, fees).fee
           : parseFloat(row.inscriptionFee) + parseFloat(row.scolariteFee) + parseFloat(row.annexesFee);
 
@@ -160,51 +230,50 @@ export function BulkRegistrationModal({
           parent1LastName: row.lastName, // Fallback parent name is student's lastName
           parent1FirstName: 'Parent',
           parent1Contact: row.parentContact,
-          status: 'Actif',
+          status: 'Actif' as const,
           tuitionFee: totalFee,
           amountDue: totalFee,
-          tuitionStatus: totalFee === 0 ? 'Soldé' : 'Partiel',
+          tuitionStatus: (totalFee === 0 ? 'Soldé' : 'Partiel') as 'Soldé' | 'Partiel',
           inscriptionYear: parseInt(currentYear.split('-')[0]),
           academicYear: currentYear,
-          createdAt: serverTimestamp(),
         };
 
-        batch.set(studentRef, studentData);
+        try {
+          // StudentService.createStudent vérifie le plafond d'élèves du plan,
+          // initialise `enrollments` (sans quoi l'élève devient invisible des
+          // listes filtrées par année) et met à jour l'effectif de la classe.
+          const studentId = await StudentService.createStudent(schoolId, studentData as any, user.uid);
+          created += 1;
 
-        // Si paiement enregistré supérieur à 0
-        const paymentVal = parseFloat(row.paymentAmount);
-        if (!isSimplifiedMode && paymentVal > 0) {
-          const paymentRef = doc(collection(firestore, `ecoles/${schoolId}/eleves/${studentRef.id}/paiements`));
-          batch.set(paymentRef, {
-            studentId: studentRef.id,
-            amount: paymentVal,
-            date: new Date().toISOString().split('T')[0],
-            method: row.paymentMethod,
-            reference: `REC-${Date.now().toString().slice(-6)}`,
-            academicYear: currentYear,
-            notes: 'Acompte initial d\'inscription en lot',
-            createdAt: serverTimestamp(),
-          });
+          const paymentVal = parseFloat(row.paymentAmount);
+          if (!isSimplifiedMode && paymentVal > 0) {
+            await registerInitialDeposit(firestore, schoolId, studentId, paymentVal, row.paymentMethod, currentYear);
+          }
+        } catch (rowErr: any) {
+          failures.push(`${row.lastName} ${row.firstName} : ${rowErr?.message || 'erreur inconnue'}`);
         }
       }
 
-      await batch.commit();
-
-      toast({
-        title: "Grille enregistrée !",
-        description: `${rows.length} élèves ont été inscrits avec succès.`,
-      });
-
-      onSuccess();
-      onClose();
-      setRows([createEmptyRow()]);
-    } catch (err: any) {
-      console.error(err);
-      toast({
-        variant: "destructive",
-        title: "Erreur lors de l'enregistrement",
-        description: err?.message || "Impossible de sauvegarder la saisie en lot.",
-      });
+      if (created > 0) {
+        toast({
+          title: "Grille enregistrée",
+          description: `${created} élève(s) inscrit(s) avec succès.${failures.length ? ` ${failures.length} échec(s), voir ci-dessous.` : ''}`,
+        });
+      }
+      if (failures.length > 0) {
+        toast({
+          variant: "destructive",
+          title: `${failures.length} inscription(s) impossible(s)`,
+          description: failures.join(' · '),
+        });
+      }
+      if (created > 0) {
+        onSuccess();
+        if (failures.length === 0) {
+          onClose();
+          setRows([createEmptyRow()]);
+        }
+      }
     } finally {
       setIsSubmitting(false);
     }

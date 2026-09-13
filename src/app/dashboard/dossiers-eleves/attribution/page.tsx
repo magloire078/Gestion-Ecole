@@ -4,8 +4,9 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, where, doc, writeBatch, increment } from 'firebase/firestore';
+import { ToastAction } from '@/components/ui/toast';
+import { useCollection, useFirestore, useUser } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
 import {
   Users,
   School,
@@ -14,26 +15,42 @@ import {
   Search,
   CheckCircle,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  AlertTriangle,
 } from 'lucide-react';
 import { useSchoolData } from '@/hooks/use-school-data';
+import { useAcademicYear } from '@/providers/academic-year-provider';
+import { assignStudentsToClass, revertClassAssignment } from '@/services/class-assignment-service';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import type { student as Student, class_type as Class } from '@/lib/data-types';
 
 export default function ClassAssignmentPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const { schoolId, loading: schoolLoading } = useSchoolData();
+  const { user } = useUser();
+  const { currentYear } = useAcademicYear();
 
   // États
   const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [leftSearchQuery, setLeftSearchQuery] = useState('');
   const [selectedStudentIds, setSelectedStudentIds] = useState<Record<string, boolean>>({});
   const [isAssigning, setIsAssigning] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   // Charger les classes
   const classesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
@@ -92,37 +109,50 @@ export default function ClassAssignmentPage() {
     return Object.values(selectedStudentIds).filter(Boolean).length;
   }, [selectedStudentIds]);
 
-  // Lancer l'attribution en lot
+  const projectedCount = (targetClassInfo?.studentCount || 0) + selectedCount;
+  const isOverCapacity = !!targetClassInfo && projectedCount > (targetClassInfo.maxStudents || 30);
+
+  // Lancer l'attribution en lot (après confirmation)
   const handleAssignSelected = async () => {
-    if (!schoolId || !selectedClassId || selectedCount === 0 || !targetClassInfo) return;
+    if (!schoolId || !selectedClassId || selectedCount === 0 || !targetClassInfo || !user?.uid) return;
 
     setIsAssigning(true);
-    const batch = writeBatch(firestore);
+    setShowConfirm(false);
 
     try {
       const selectedIds = Object.keys(selectedStudentIds).filter(id => selectedStudentIds[id]);
 
-      // Mettre à jour chaque élève sélectionné
-      selectedIds.forEach(id => {
-        const studentRef = doc(firestore, `ecoles/${schoolId}/eleves/${id}`);
-        batch.update(studentRef, {
-          classId: selectedClassId,
-          class: targetClassInfo.name,
-          updatedAt: new Date().toISOString()
-        });
+      const result = await assignStudentsToClass({
+        schoolId,
+        studentIds: selectedIds,
+        toClassId: selectedClassId,
+        toClassName: targetClassInfo.name,
+        academicYear: currentYear,
+        userId: user.uid,
+        userName: user.displayName ?? undefined,
+        userRole: user.profile?.role,
       });
-
-      // Mettre à jour l'effectif de la classe cible
-      const classRef = doc(firestore, `ecoles/${schoolId}/classes/${selectedClassId}`);
-      batch.update(classRef, {
-        studentCount: increment(selectedIds.length)
-      });
-
-      await batch.commit();
 
       toast({
-        title: "Attribution réussie !",
-        description: `${selectedIds.length} élèves ont été affectés à la classe ${targetClassInfo.name}.`
+        title: 'Attribution réussie !',
+        description: `${result.assigned} élève(s) affecté(s) à la classe ${targetClassInfo.name}.${result.unchanged > 0 ? ` ${result.unchanged} étaient déjà dans cette classe.` : ''}`,
+        ...(result.auditLogId ? {
+          action: (
+            <ToastAction
+              altText="Annuler l'attribution"
+              onClick={async () => {
+                try {
+                  await revertClassAssignment(schoolId, result.auditLogId!, user.uid);
+                  toast({ title: 'Attribution annulée', description: 'Les élèves ont retrouvé leur classe précédente.' });
+                } catch (err: any) {
+                  toast({ variant: 'destructive', title: 'Impossible d\'annuler', description: err?.message ?? 'Erreur inconnue.' });
+                }
+              }}
+            >
+              Annuler
+            </ToastAction>
+          ),
+        } : {}),
       });
 
       // Reset
@@ -254,8 +284,8 @@ export default function ClassAssignmentPage() {
 
         {/* Bouton de transfert / actions au milieu */}
         <div className="lg:col-span-1 flex flex-row lg:flex-col items-center justify-center gap-4">
-          <Button 
-            onClick={handleAssignSelected}
+          <Button
+            onClick={() => setShowConfirm(true)}
             disabled={selectedCount === 0 || !selectedClassId || isAssigning}
             className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white p-3 lg:p-4 h-auto aspect-square transition-all hover:scale-110 active:scale-95 shadow-lg disabled:opacity-50"
             title="Transférer vers la classe"
@@ -272,6 +302,32 @@ export default function ClassAssignmentPage() {
             </span>
           )}
         </div>
+
+        <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmer l&apos;attribution</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-2 text-sm">
+                  <p>
+                    <strong>{selectedCount}</strong> élève{selectedCount > 1 && 's'} vont être affecté{selectedCount > 1 && 's'} à la classe{' '}
+                    <strong>{targetClassInfo?.name}</strong> pour l&apos;année {currentYear}.
+                  </p>
+                  {isOverCapacity && (
+                    <p className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-amber-700 font-medium">
+                      <AlertTriangle className="h-4 w-4 shrink-0" />
+                      Cette classe passera à {projectedCount} élèves, au-delà de sa capacité de {targetClassInfo?.maxStudents || 30}.
+                    </p>
+                  )}
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annuler</AlertDialogCancel>
+              <AlertDialogAction onClick={handleAssignSelected}>Confirmer</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Panel Droite: Composition actuelle de la classe cible */}
         <Card className="rounded-2xl border-none shadow-md lg:col-span-4 bg-white/70 backdrop-blur-xl flex flex-col overflow-hidden min-h-[500px]">

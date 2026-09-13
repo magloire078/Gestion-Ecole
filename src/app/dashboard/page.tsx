@@ -102,19 +102,21 @@ const RegularDashboard = () => {
   return (
     <div className="space-y-4">
       {/* Premium Banner with Mesh Gradient and Glassmorphism */}
-      <div className="relative w-full min-h-[170px] md:h-56 overflow-hidden rounded-2xl shadow-2xl border border-white/10 group bg-slate-950">
+      <div className="relative w-full min-h-[170px] md:min-h-[224px] overflow-hidden rounded-2xl shadow-2xl border border-white/10 group bg-slate-950">
         {/* Animated Mesh Gradient Background */}
         <div className="absolute inset-0 bg-gradient-to-tr from-[#0a0b10] via-[#0f111a] to-[#0a0b10] z-0" />
         <div className="absolute top-0 -left-16 w-96 h-96 bg-indigo-600 rounded-full mix-blend-screen filter blur-[120px] opacity-25 animate-blob" />
         <div className="absolute bottom-0 -right-16 w-96 h-96 bg-blue-600 rounded-full mix-blend-screen filter blur-[120px] opacity-25 animate-blob animation-delay-2000" />
-        
-        {/* Glass Content Overlay */}
-        <div className="absolute inset-0 z-10 flex flex-col justify-center px-6 md:px-12 py-6 backdrop-blur-[2px]">
+
+        {/* Glass Content Overlay — en flux normal (pas absolute) pour que la
+            bannière grandisse avec le contenu au lieu de le rogner quand le
+            nom de l'école ou la date font plus de 170px de haut. */}
+        <div className="relative z-10 flex flex-col justify-center min-h-[170px] md:min-h-[224px] px-6 md:px-12 py-6 backdrop-blur-[2px]">
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="max-w-[70%] space-y-3"
+            className="max-w-full sm:max-w-[70%] space-y-3"
           >
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
               <span className="relative flex h-2 w-2">
@@ -166,7 +168,13 @@ const RegularDashboard = () => {
       </div>
 
       <div className="flex justify-end">
-        <div className="w-full md:w-[200px] space-y-1">
+        {/* La marge négative est portée par cet élément interne, et non par le
+            conteneur `flex justify-end` : ce dernier est un enfant direct du
+            `space-y-4`, dont le sélecteur (`> * ~ *`) l'emporterait en
+            spécificité sur un simple `-mt-2`. Résultat : sur mobile le
+            sélecteur se rattache visuellement au bandeau au lieu de flotter
+            au-dessus des alertes. */}
+        <div className="w-full md:w-[200px] space-y-1 -mt-2 sm:mt-0">
           <Select value={effectiveAcademicYear} onValueChange={(val) => startTransition(() => setSelectedAcademicYear(val))}>
             <SelectTrigger className="h-10 bg-white/50 dark:bg-slate-800/50 border-white/60 dark:border-slate-700/60 rounded-xl focus:ring-indigo-500 shadow-sm backdrop-blur-md">
               <Calendar className="mr-2 h-4 w-4 text-indigo-500" />
@@ -181,27 +189,35 @@ const RegularDashboard = () => {
         </div>
       </div>
 
-      <BillingAlerts schoolId={schoolId} studentCount={studentCount} cycleCount={cycleCount} />
+      <BillingAlerts schoolId={schoolId} studentCount={studentCount} cycleCount={cycleCount} academicYear={effectiveAcademicYear} />
       <AnnouncementBanner />
       <StatCards schoolId={schoolId} academicYear={effectiveAcademicYear} />
 
+      {/* Sur mobile, les deux colonnes passent en `display: contents` : leurs
+          enfants remontent comme éléments directs de la grille, ce qui permet
+          de les entrelacer avec `order-*`. Un `order` seul n'y suffirait pas,
+          puisqu'il ne réordonne qu'entre frères d'un même conteneur et que les
+          raccourcis vivent dans l'autre colonne. L'ordre visé sur téléphone :
+          finances, raccourcis, à traiter, puis les blocs de consultation.
+          À partir de `lg`, la structure en deux colonnes flex est rétablie à
+          l'identique et tous les `order` retombent à 0. */}
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
-        <div className="lg:col-span-2 flex flex-col gap-4">
-          <div className="shrink-0">
+        <div className="contents lg:col-span-2 lg:flex lg:flex-col lg:gap-4">
+          <div className="order-1 lg:order-none shrink-0">
             <FinanceOverview schoolId={schoolId} academicYear={effectiveAcademicYear} />
           </div>
-          <div className="flex-1 min-h-[400px]">
+          <div className="order-4 lg:order-none lg:flex-1 lg:min-h-[400px]">
             <RecentActivity schoolId={schoolId} />
           </div>
         </div>
-        <div className="lg:col-span-1 flex flex-col gap-4">
-          <div className="shrink-0">
+        <div className="contents lg:col-span-1 lg:flex lg:flex-col lg:gap-4">
+          <div className="order-2 lg:order-none shrink-0">
             <QuickActions />
           </div>
-          <div className="shrink-0">
+          <div className="order-3 lg:order-none shrink-0">
             <ActionItems />
           </div>
-          <div className="flex-1 min-h-[400px]">
+          <div className="order-5 lg:order-none lg:flex-1 lg:min-h-[400px]">
             <CalendarNotes />
           </div>
         </div>

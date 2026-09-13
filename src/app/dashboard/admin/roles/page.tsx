@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Edit, Trash2, Search, Users, Shield, ShieldCheck, UserCheck, MoreVertical, LayoutGrid, List } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, doc, writeBatch } from 'firebase/firestore';
+import { writeAuditLog } from '@/lib/audit-log';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -74,12 +75,14 @@ export default function RolesPage() {
         );
     }, [roles, searchTerm]);
 
-    // Calculate user counts per role
+    // Nombre de membres du personnel affectés à chaque rôle admin (par
+    // `staff.adminRole`, le champ qui relie réellement un membre du personnel
+    // à un document `admin_roles` — pas `staff.role`, qui est son métier).
     const usersByRole = useMemo(() => {
         const counts: Record<string, number> = {};
         staff.forEach(s => {
-            if (s.role) {
-                counts[s.role] = (counts[s.role] || 0) + 1;
+            if (s.adminRole) {
+                counts[s.adminRole] = (counts[s.adminRole] || 0) + 1;
             }
         });
         return counts;
@@ -106,21 +109,40 @@ export default function RolesPage() {
 
     const handleDeleteRole = async () => {
         if (!schoolId || !roleToDelete) return;
-        const docRef = doc(firestore, `ecoles/${schoolId}/admin_roles`, roleToDelete.id);
-        deleteDoc(docRef)
-            .then(() => {
-                toast({ title: 'Rôle supprimé', description: `Le rôle "${roleToDelete.name}" a été supprimé.` });
-            }).catch(error => {
-                console.error("Error deleting role: ", error);
-                toast({
-                    variant: "destructive",
-                    title: "Erreur de suppression",
-                    description: "Impossible de supprimer le rôle. Vérifiez vos permissions.",
-                });
-            }).finally(() => {
-                setIsDeleteDialogOpen(false);
-                setRoleToDelete(null);
-            })
+        try {
+            // Le personnel affecté à ce rôle garde sinon une référence vers un
+            // document admin_roles inexistant, et fetchUserAppData ne réinitialise
+            // alors jamais ses permissions au prochain chargement de session.
+            const affectedStaff = staff.filter(s => s.adminRole === roleToDelete.id);
+            const batch = writeBatch(firestore);
+            affectedStaff.forEach(s => {
+                batch.update(doc(firestore, `ecoles/${schoolId}/personnel/${s.id}`), { adminRole: null });
+            });
+            batch.delete(doc(firestore, `ecoles/${schoolId}/admin_roles`, roleToDelete.id));
+            await batch.commit();
+
+            await writeAuditLog(firestore, schoolId, {
+                action: 'admin_role.supprime',
+                details: `Rôle "${roleToDelete.name}" supprimé${affectedStaff.length ? ` (${affectedStaff.length} membre(s) du personnel réinitialisé(s))` : ''}`,
+                userId: user?.uid || 'inconnu',
+                userName: user?.displayName || undefined,
+                targetId: roleToDelete.id,
+                targetType: 'admin_role',
+                payload: { role: roleToDelete, affectedStaffIds: affectedStaff.map(s => s.id) },
+            });
+
+            toast({ title: 'Rôle supprimé', description: `Le rôle "${roleToDelete.name}" a été supprimé.` });
+        } catch (error) {
+            console.error("Error deleting role: ", error);
+            toast({
+                variant: "destructive",
+                title: "Erreur de suppression",
+                description: "Impossible de supprimer le rôle. Vérifiez vos permissions.",
+            });
+        } finally {
+            setIsDeleteDialogOpen(false);
+            setRoleToDelete(null);
+        }
     };
 
     const formatPermissionName = (name: string) => {

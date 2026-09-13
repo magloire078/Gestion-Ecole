@@ -15,25 +15,16 @@ export default function AdminSupportPage() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
 
-    // Check if user is Super Admin
+    // Réservée aux super-admins de la plateforme : ils voient les tickets de
+    // toutes les écoles. La règle Firestore (`support_tickets`) filtre déjà
+    // chaque document par école/permission pour tout autre utilisateur ; on
+    // évite ici en plus de lancer la requête tant que ce n'est pas un
+    // super-admin, pour ne pas déclencher de lecture inutile.
     const isSuperAdmin = user?.profile?.isSuperAdmin;
 
-    // Fetch ALL tickets across ALL schools (or filter as needed for system admin)
-    // Here we maintain the logic of fetching tickets for the context, but a System Admin might want to see EVERYTHING.
-    // For now, let's keep it consistent with previous logic but intended for the admin view.
-    // If the requirement is "System Admin sees requests from Directors", they likely need to see tickets where they are the assignee or just all tickets.
-    // Let's assume for now they want to see all tickets from the current school context OR all tickets globally.
-    // Given the multi-tenancy, usually "System Admin" implies handling platform-wide support.
-    // However, if the "System Admin" is just a role within a school, we stick to schoolId.
-    // The user said "Admin Système", implying THE platform administrator.
-
-    // If it's truly platform-wide, we shouldn't filter by schoolId. 
-    // BUT current firestore rules might restrict reading 'support_tickets' to 'schoolId'.
-    // Let's check firestore rules later. For now, assuming Global Admin context.
-
     const ticketsBaseQuery = useMemo(() =>
-        query(collection(firestore, 'support_tickets'), orderBy('submittedAt', 'desc')),
-        [firestore]
+        isSuperAdmin ? query(collection(firestore, 'support_tickets'), orderBy('submittedAt', 'desc')) : null,
+        [firestore, isSuperAdmin]
     );
 
     const { data: ticketsData, loading: ticketsLoading } = useCollection(ticketsBaseQuery);

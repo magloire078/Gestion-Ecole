@@ -1,20 +1,23 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
-import type { transportSubscription as TransportSubscription, student as Student, route as Route } from '@/lib/data-types';
+import { doc, writeBatch, collection, type DocumentReference } from 'firebase/firestore';
+import { useDoc, useFirestore } from '@/firebase';
+import { useSchoolData } from '@/hooks/use-school-data';
+import type { transportSubscription as TransportSubscription, student as Student, route as Route, bus as Bus } from '@/lib/data-types';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { DialogFooter } from '../ui/dialog';
 import { getCurrencySymbol } from '@/lib/currency-utils';
+import { prepareServicePaymentTransaction } from '@/lib/service-payment';
+import { resolveAcademicYearForWrite } from '@/lib/academic-year-utils';
 
 const subscriptionFormSchema = z.object({
   studentId: z.string().min(1, 'Veuillez sélectionner un élève.'),
@@ -36,11 +39,14 @@ interface SubscriptionFormProps {
   students: (Student & { id: string })[];
   routes: (Route & { id: string })[];
   subscription: (TransportSubscription & { id: string }) | null;
+  /** Tous les abonnements existants (toutes lignes confondues), pour vérifier la capacité du bus. */
+  activeSubscriptions: (TransportSubscription & { id: string })[];
   onSave: () => void;
 }
 
-export function SubscriptionForm({ schoolId, students, routes, subscription, onSave }: SubscriptionFormProps) {
+export function SubscriptionForm({ schoolId, students, routes, subscription, activeSubscriptions, onSave }: SubscriptionFormProps) {
   const firestore = useFirestore();
+  const { schoolData } = useSchoolData();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -61,17 +67,68 @@ export function SubscriptionForm({ schoolId, students, routes, subscription, onS
     },
   });
 
-  const handleSubmit = async (values: SubscriptionFormValues) => {
-    setIsSubmitting(true);
-    
-    const dataToSave = { ...values };
+  const watchedRouteId = useWatch({ control: form.control, name: 'routeId' });
+  const selectedRoute = useMemo(() => routes.find(r => r.id === watchedRouteId), [routes, watchedRouteId]);
 
-    const promise = subscription && subscription.id
-        ? setDoc(doc(firestore, `ecoles/${schoolId}/transport_abonnements/${subscription.id}`), dataToSave, { merge: true })
-        : addDoc(collection(firestore, `ecoles/${schoolId}/transport_abonnements`), dataToSave);
+  const busRef = useMemo(() =>
+    selectedRoute?.busId ? doc(firestore, `ecoles/${schoolId}/transport_bus/${selectedRoute.busId}`) as DocumentReference<Bus> : null,
+    [firestore, schoolId, selectedRoute?.busId]);
+  const { data: selectedBus } = useDoc<Bus>(busRef);
+
+  const activeCountOnRoute = useMemo(() =>
+    activeSubscriptions.filter(s =>
+      s.routeId === watchedRouteId &&
+      s.status === 'active' &&
+      s.id !== subscription?.id
+    ).length,
+    [activeSubscriptions, watchedRouteId, subscription?.id]);
+
+  const isAtCapacity = !!selectedBus && activeCountOnRoute >= selectedBus.capacity;
+
+  const handleSubmit = async (values: SubscriptionFormValues) => {
+    if (values.status === 'active' && selectedBus && activeCountOnRoute >= selectedBus.capacity) {
+        toast({
+            variant: 'destructive',
+            title: 'Capacité du bus atteinte',
+            description: `Le bus de cette ligne est complet (${selectedBus.capacity} places). Désactivez ou supprimez un autre abonnement d'abord.`,
+        });
+        return;
+    }
+
+    setIsSubmitting(true);
+
+    const dataToSave: Record<string, unknown> = { ...values };
+    if (!subscription) {
+        dataToSave.academicYear = resolveAcademicYearForWrite({
+            schoolCurrentYear: (schoolData as any)?.currentAcademicYear,
+            docDate: values.startDate,
+        });
+    }
 
     try {
-        await promise;
+        const batch = writeBatch(firestore);
+        const subRef = subscription && subscription.id
+            ? doc(firestore, `ecoles/${schoolId}/transport_abonnements/${subscription.id}`)
+            : doc(collection(firestore, `ecoles/${schoolId}/transport_abonnements`));
+
+        // N'enregistre le paiement en comptabilité qu'une seule fois : dès
+        // qu'un abonnement passe (ou est créé) à "Payé" et qu'aucune
+        // transaction n'a encore été rattachée.
+        if (values.paymentStatus === 'paid' && !subscription?.accountingTransactionId) {
+            const { ref: txRef, data: txData } = prepareServicePaymentTransaction(firestore, schoolId, {
+                category: 'Transport',
+                description: `Abonnement transport (${values.type}, ${values.period})`,
+                amount: values.price,
+                date: values.startDate,
+                studentId: values.studentId,
+                schoolCurrentYear: (schoolData as any)?.currentAcademicYear,
+            });
+            batch.set(txRef, txData);
+            dataToSave.accountingTransactionId = txRef.id;
+        }
+
+        batch.set(subRef, dataToSave, { merge: true });
+        await batch.commit();
         toast({ title: 'Abonnement enregistré', description: 'L\'abonnement au transport a été mis à jour.' });
         onSave();
     } catch (e) {
@@ -90,7 +147,16 @@ export function SubscriptionForm({ schoolId, students, routes, subscription, onS
                 <FormItem><FormLabel>Élève</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!!subscription}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un élève" /></SelectTrigger></FormControl><SelectContent>{students.map(s => <SelectItem key={s.id} value={s.id!}>{s.firstName} {s.lastName}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
             )}/>
             <FormField control={form.control} name="routeId" render={({ field }) => (
-                <FormItem><FormLabel>Ligne</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner une ligne" /></SelectTrigger></FormControl><SelectContent>{routes.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                <FormItem>
+                    <FormLabel>Ligne</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner une ligne" /></SelectTrigger></FormControl><SelectContent>{routes.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent></Select>
+                    {selectedBus && (
+                        <p className={isAtCapacity ? 'text-xs font-medium text-destructive' : 'text-xs text-muted-foreground'}>
+                            {activeCountOnRoute} / {selectedBus.capacity} places occupées{isAtCapacity ? ' — bus complet' : ''}
+                        </p>
+                    )}
+                    <FormMessage />
+                </FormItem>
             )}/>
              <FormField control={form.control} name="type" render={({ field }) => (
                 <FormItem><FormLabel>Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="aller_retour">Aller-Retour</SelectItem><SelectItem value="aller_seul">Aller Seul</SelectItem><SelectItem value="retour_seul">Retour Seul</SelectItem></SelectContent></Select><FormMessage /></FormItem>

@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { User, CreditCard, UserX, UserPlus, ShieldAlert } from 'lucide-react';
+import { User, CreditCard, UserX, UserPlus, ShieldAlert, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { student, staff, absence, accountingTransaction, discipline_incident as DisciplineIncident } from '@/lib/data-types';
 import { formatCurrency } from '@/lib/currency-utils';
@@ -256,7 +256,7 @@ export function RecentActivity({ schoolId: propSchoolId }: RecentActivityProps) 
                                                         "w-1 h-1 rounded-full",
                                                         item.type === 'payment' ? "bg-emerald-500" : "bg-primary"
                                                     )} />
-                                                    <p className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors">
+                                                    <p className="text-[10px] uppercase tracking-[0.08em] sm:tracking-[0.2em] font-black text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors">
                                                         {item.timestamp ? formatDistanceToNow(new Date(item.timestamp), { addSuffix: true, locale: fr }) : ''}
                                                     </p>
                                                 </div>
@@ -266,8 +266,15 @@ export function RecentActivity({ schoolId: propSchoolId }: RecentActivityProps) 
                                 </div>
                             </div>
                         ) : (
-                            <div className="text-center py-10">
-                                <p className="text-sm text-muted-foreground">Aucune activité récente à afficher.</p>
+                            <div className="flex flex-col items-center gap-2 py-10 text-center">
+                                <div className="rounded-full bg-muted/50 p-3">
+                                    <History className="h-5 w-5 text-muted-foreground/60" />
+                                </div>
+                                <p className="text-sm font-medium text-muted-foreground">Aucune activité récente</p>
+                                <p className="max-w-[38ch] text-xs text-muted-foreground/70">
+                                    Les inscriptions, paiements, absences et incidents enregistrés
+                                    apparaîtront ici au fil de l&apos;eau.
+                                </p>
                             </div>
                         )}
                     </div>

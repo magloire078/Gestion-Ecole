@@ -21,7 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { doc, deleteDoc } from 'firebase/firestore';
+import { doc, deleteDoc, updateDoc, deleteField } from 'firebase/firestore';
 import { signOut } from "firebase/auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
@@ -106,12 +106,37 @@ export default function SettingsPage() {
   };
 
   const handleResetAccount = async () => {
-    if (!user || !user.authUser || !firestore) return;
+    if (!user || !user.authUser || !firestore || !user.schoolId) return;
     try {
-      await deleteDoc(doc(firestore, 'users', user.authUser.uid));
-      await signOut(auth);
-      window.location.href = '/login';
+      const leavingSchoolId = user.schoolId;
+      const remainingSchoolIds = Object.keys(user.schools || {}).filter(id => id !== leavingSchoolId);
+
+      // Ne retire que l'affiliation à CETTE école du document racine — avant,
+      // deleteDoc effaçait tout le compte utilisateur, y compris l'accès à
+      // d'éventuels autres établissements, malgré ce que dit ce dialogue.
+      await updateDoc(doc(firestore, 'users', user.authUser.uid), {
+        [`schools.${leavingSchoolId}`]: deleteField(),
+        ...(remainingSchoolIds.length > 0
+          ? { activeSchoolId: remainingSchoolIds[0] }
+          : { activeSchoolId: deleteField() }),
+      });
+
+      // Nettoie la fiche orpheline dans l'école quittée (non bloquant).
+      try {
+        const profileCollection = user.isParent ? 'parents' : 'personnel';
+        await deleteDoc(doc(firestore, `ecoles/${leavingSchoolId}/${profileCollection}/${user.authUser.uid}`));
+      } catch (cleanupError) {
+        console.warn('Impossible de nettoyer la fiche personnel/parent orpheline :', cleanupError);
+      }
+
+      if (remainingSchoolIds.length === 0) {
+        await signOut(auth);
+        window.location.href = '/login';
+      } else {
+        window.location.href = '/dashboard';
+      }
     } catch (e) {
+      console.error(e);
       toast({ variant: "destructive", title: "Erreur", description: "Échec de réinitialisation." });
     }
   };

@@ -4,13 +4,11 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, where, doc, updateDoc } from 'firebase/firestore';
+import { useCollection, useFirestore, useUser } from '@/firebase';
+import { collection, query, doc, updateDoc } from 'firebase/firestore';
 import {
   Shield,
-  ShieldAlert,
   ShieldCheck,
-  UserCheck,
   Edit,
   Loader2,
   Check,
@@ -24,11 +22,19 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { allPermissionsList, permissionCategories } from '@/lib/permissions';
+import { writeAuditLog } from '@/lib/audit-log';
 import type { staff as Staff } from '@/lib/data-types';
+
+const DEFAULT_PERMISSIONS: Record<string, boolean> = allPermissionsList.reduce((acc, p) => {
+  acc[p.id] = false;
+  return acc;
+}, {} as Record<string, boolean>);
 
 export default function RhAdministrationPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { user } = useUser();
   const { schoolId, loading: schoolLoading } = useSchoolData();
 
   // États
@@ -37,16 +43,10 @@ export default function RhAdministrationPage() {
   const [isPermissionDialogOpen, setIsPermissionDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Habilitations locales temporaires
-  const [permissions, setPermissions] = useState<Record<string, boolean>>({
-    manageUsers: false,
-    manageBilling: false,
-    manageClasses: false,
-    manageSchedule: false,
-    manageAttendance: false,
-    manageGrades: false,
-    manageDiscipline: false,
-  });
+  // Habilitations locales temporaires — les 21 permissions de l'app, pas un
+  // sous-ensemble : sauvegarder ce state remplace tout le champ `permissions`
+  // sur Firestore, donc toute permission absente d'ici serait sinon effacée.
+  const [permissions, setPermissions] = useState<Record<string, boolean>>(DEFAULT_PERMISSIONS);
 
   // Charger tous les membres du personnel de l'école
   const staffQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [firestore, schoolId]);
@@ -66,19 +66,16 @@ export default function RhAdministrationPage() {
   // Ouvrir la boîte de dialogue d'édition des permissions
   const handleOpenPermissions = (member: Staff & { id: string }) => {
     setSelectedStaff(member);
-    
-    // Déterminer les permissions existantes (ou mettre false par défaut)
+
+    // Partir des 21 permissions à false, puis appliquer celles déjà accordées
+    // (quelle que soit leur origine — rôle admin ou habilitation individuelle).
     const currentPerms = (member as any).permissions || {};
-    setPermissions({
-      manageUsers: !!currentPerms.manageUsers,
-      manageBilling: !!currentPerms.manageBilling,
-      manageClasses: !!currentPerms.manageClasses,
-      manageSchedule: !!currentPerms.manageSchedule,
-      manageAttendance: !!currentPerms.manageAttendance,
-      manageGrades: !!currentPerms.manageGrades,
-      manageDiscipline: !!currentPerms.manageDiscipline,
+    const seeded: Record<string, boolean> = { ...DEFAULT_PERMISSIONS };
+    Object.keys(currentPerms).forEach(key => {
+      seeded[key] = !!currentPerms[key];
     });
-    
+    setPermissions(seeded);
+
     setIsPermissionDialogOpen(true);
   };
 
@@ -95,13 +92,33 @@ export default function RhAdministrationPage() {
 
     setIsSaving(true);
     try {
+      const previousPerms = (selectedStaff as any).permissions || {};
       const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${selectedStaff.id}`);
-      
-      // Mettre à jour l'objet permissions et isAdmin dans Firestore
+
+      // On écrit les 21 permissions au complet (state seedé depuis l'existant
+      // à l'ouverture) : aucune habilitation en dehors de celles affichées
+      // n'est donc plus silencieusement effacée.
       await updateDoc(staffDocRef, {
         isAdmin: Object.values(permissions).some(Boolean),
         permissions: permissions,
         updatedAt: new Date().toISOString()
+      });
+
+      const changedKeys = allPermissionsList
+        .map(p => p.id)
+        .filter(key => !!previousPerms[key] !== !!permissions[key]);
+
+      await writeAuditLog(firestore, schoolId, {
+        action: 'personnel.permissions_modifiees',
+        details: changedKeys.length > 0
+          ? `Habilitations de ${selectedStaff.firstName} ${selectedStaff.lastName} modifiées : ${changedKeys.join(', ')}`
+          : `Habilitations de ${selectedStaff.firstName} ${selectedStaff.lastName} validées sans changement`,
+        userId: user?.uid || 'inconnu',
+        userName: user?.displayName || undefined,
+        userRole: user?.profile?.role,
+        targetId: selectedStaff.id,
+        targetType: 'personnel',
+        payload: { before: previousPerms, after: permissions },
       });
 
       toast({
@@ -120,17 +137,6 @@ export default function RhAdministrationPage() {
   };
 
   const isLoading = schoolLoading || staffLoading;
-
-  // Liste des permissions explicites à afficher
-  const permissionMeta = [
-    { key: 'manageUsers', label: 'Gestion des Élèves & Parents', desc: 'Inscrire, modifier et radier les élèves et profils parents.' },
-    { key: 'manageBilling', label: 'Gestion Financière & Tarifs', desc: 'Définir les tarifs, enregistrer les versements et sorties de caisse.' },
-    { key: 'manageClasses', label: 'Gestion Pédagogique & Classes', desc: 'Créer des classes, attribuer des matières et des cycles.' },
-    { key: 'manageSchedule', label: 'Gestion des Emplois du Temps', desc: 'Éditer et attribuer les emplois du temps des classes.' },
-    { key: 'manageAttendance', label: 'Suivi des Présences', desc: 'Saisir les absences et retards des élèves.' },
-    { key: 'manageGrades', label: 'Gestion des Évaluations & Notes', desc: 'Saisir les notes, calculer les moyennes et imprimer les bulletins.' },
-    { key: 'manageDiscipline', label: 'Suivi Disciplinaire', desc: 'Enregistrer les avertissements, exclusions et sanctions.' },
-  ];
 
   if (isLoading) {
     return (
@@ -246,26 +252,33 @@ export default function RhAdministrationPage() {
 
       {/* Modal d'édition des habilitations */}
       <Dialog open={isPermissionDialogOpen} onOpenChange={setIsPermissionDialogOpen}>
-        <DialogContent className="sm:max-w-lg rounded-2xl bg-white border shadow-2xl overflow-y-auto max-h-[85vh]">
+        <DialogContent className="sm:max-w-2xl rounded-2xl bg-white border shadow-2xl overflow-y-auto max-h-[85vh]">
           <DialogHeader className="border-b pb-4 mb-2">
             <DialogTitle className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
               <Shield className="h-5 w-5 text-indigo-600" /> Droits d&apos;accès : {selectedStaff?.firstName} {selectedStaff?.lastName}
             </DialogTitle>
             <DialogDescription className="text-xs">Configurez les habilitations de sécurité pour cet utilisateur.</DialogDescription>
           </DialogHeader>
-          
-          <div className="space-y-4 py-2">
-            {permissionMeta.map((p) => (
-              <div key={p.key} className="flex items-start gap-3 p-3 border rounded-xl hover:bg-slate-50/50 transition-colors">
-                <Checkbox 
-                  id={p.key}
-                  checked={!!permissions[p.key]}
-                  onCheckedChange={(checked) => handleTogglePermission(p.key, !!checked)}
-                  className="mt-1"
-                />
-                <div className="space-y-0.5">
-                  <label htmlFor={p.key} className="text-xs font-bold text-slate-800 cursor-pointer">{p.label}</label>
-                  <p className="text-[10px] text-slate-500 leading-normal">{p.desc}</p>
+
+          <div className="space-y-5 py-2">
+            {permissionCategories.map((cat) => (
+              <div key={cat.id} className="space-y-2">
+                <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-400">{cat.label}</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {allPermissionsList.filter(p => p.category === cat.id).map((p) => (
+                    <div key={p.id} className="flex items-start gap-3 p-3 border rounded-xl hover:bg-slate-50/50 transition-colors">
+                      <Checkbox
+                        id={p.id}
+                        checked={!!permissions[p.id]}
+                        onCheckedChange={(checked) => handleTogglePermission(p.id, !!checked)}
+                        className="mt-1"
+                      />
+                      <div className="space-y-0.5">
+                        <label htmlFor={p.id} className="text-xs font-bold text-slate-800 cursor-pointer">{p.label}</label>
+                        <p className="text-[10px] text-slate-500 leading-normal">{p.desc}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}

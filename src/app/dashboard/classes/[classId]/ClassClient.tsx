@@ -10,14 +10,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, User, Users, Clock, BookOpen, CalendarDays, Download, Upload, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, User, Users, CalendarDays } from 'lucide-react';
 import Link from 'next/link';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import type { class_type as Class, student as Student, timetableEntry as TimetableEntry } from '@/lib/data-types';
 import { formatCurrency } from '@/lib/currency-utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
 
 function ClassDetailsSkeleton() {
     return (
@@ -45,7 +43,6 @@ export default function ClassDetailsClient() {
     const classId = params.classId as string;
     const { schoolId, loading: schoolLoading } = useSchoolData();
     const firestore = useFirestore();
-    const { toast } = useToast();
 
     // Fetch Class Details
     const classRef = useMemo(() =>
@@ -89,26 +86,8 @@ export default function ClassDetailsClient() {
         { nom: "A2", start: "15:00", end: "16:00", type: "Cours" }
     ];
 
-    // Volumes horaires par matière (Exemple école)
-    const volumesHoraires = [
-        { matiere: "Mathématiques", volume: "5 heures", coef: 4 },
-        { matiere: "Français & Composition", volume: "6 heures", coef: 5 },
-        { matiere: "Histoire-Géographie", volume: "3 heures", coef: 2 },
-        { matiere: "Sciences de la Vie et de la Terre", volume: "2 heures", coef: 2 },
-        { matiere: "Anglais", volume: "3 heures", coef: 3 },
-        { matiere: "Éducation Physique et Sportive", volume: "2 heures", coef: 1 }
-    ];
-
     // Jours de la semaine
     const joursSemaine = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
-
-    // Simulation d'importation
-    const handleImportExcel = () => {
-        toast({
-            title: "Importation Réussie !",
-            description: "Le volume horaire a été mis à jour via Excel.",
-        });
-    };
 
     return (
         <div className="space-y-6">
@@ -157,18 +136,10 @@ export default function ClassDetailsClient() {
             {/* Onglets Multiniveau de Détails Classe */}
             <div className="bg-white/40 backdrop-blur-xl border border-white/60 p-2 rounded-2xl shadow-md">
                 <Tabs defaultValue="eleves" className="w-full">
-                    <TabsList className="grid w-full grid-cols-4 bg-transparent p-1 h-auto gap-2">
+                    <TabsList className="grid w-full grid-cols-2 bg-transparent p-1 h-auto gap-2">
                         <TabsTrigger value="eleves" className="rounded-xl py-3 font-bold text-xs">
                             <Users className="mr-2 h-4 w-4 text-slate-500" />
                             Planning Classe
-                        </TabsTrigger>
-                        <TabsTrigger value="plages" className="rounded-xl py-3 font-bold text-xs">
-                            <Clock className="mr-2 h-4 w-4 text-slate-500" />
-                            Plages horaires
-                        </TabsTrigger>
-                        <TabsTrigger value="volumes" className="rounded-xl py-3 font-bold text-xs">
-                            <BookOpen className="mr-2 h-4 w-4 text-slate-500" />
-                            Volume Horaires
                         </TabsTrigger>
                         <TabsTrigger value="emploi" className="rounded-xl py-3 font-bold text-xs">
                             <CalendarDays className="mr-2 h-4 w-4 text-slate-500" />
@@ -228,83 +199,7 @@ export default function ClassDetailsClient() {
                             </Card>
                         </TabsContent>
 
-                        {/* Tab 2: Plages Horaires */}
-                        <TabsContent value="plages" className="focus-visible:ring-0">
-                            <Card className="border-none shadow-none bg-transparent">
-                                <CardHeader className="px-0 pt-0">
-                                    <CardTitle className="text-base font-bold text-slate-700">Configuration des Plages Horaires</CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-0">
-                                    <Table>
-                                        <TableHeader className="bg-slate-50/50">
-                                            <TableRow>
-                                                <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Plage / Code</TableHead>
-                                                <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Heure Début</TableHead>
-                                                <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Heure Fin</TableHead>
-                                                <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Type</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {plagesHoraires.map(p => (
-                                                <TableRow key={p.nom} className="hover:bg-slate-50/40">
-                                                    <TableCell className="font-bold text-slate-800">{p.nom}</TableCell>
-                                                    <TableCell className="font-mono text-slate-600">{p.start}</TableCell>
-                                                    <TableCell className="font-mono text-slate-600">{p.end}</TableCell>
-                                                    <TableCell>
-                                                        <span className={cn(
-                                                            "text-[10px] font-bold px-2 py-0.5 rounded-full",
-                                                            p.type === 'Cours' ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-600'
-                                                        )}>{p.type}</span>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-
-                        {/* Tab 3: Volume Horaires */}
-                        <TabsContent value="volumes" className="focus-visible:ring-0">
-                            <Card className="border-none shadow-none bg-transparent">
-                                <CardHeader className="px-0 pt-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4">
-                                    <div>
-                                        <CardTitle className="text-base font-bold text-slate-700">Volumes Horaires Hebdomadaires</CardTitle>
-                                        <CardDescription className="text-xs">Gérez le volume horaire requis par matière.</CardDescription>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <Button variant="outline" size="sm" className="rounded-xl text-xs gap-1.5" onClick={() => toast({ title: "Téléchargement", description: "Le gabarit Excel a été téléchargé." })}>
-                                            <Download className="h-3.5 w-3.5" /> Gabarit
-                                        </Button>
-                                        <Button size="sm" className="rounded-xl text-xs bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5" onClick={handleImportExcel}>
-                                            <Upload className="h-3.5 w-3.5" /> Importer Excel
-                                        </Button>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="p-0">
-                                    <Table>
-                                        <TableHeader className="bg-slate-50/50">
-                                            <TableRow>
-                                                <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Matière</TableHead>
-                                                <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Volume Requis</TableHead>
-                                                <TableHead className="text-xs font-black uppercase tracking-widest text-slate-400">Coefficient</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {volumesHoraires.map(v => (
-                                                <TableRow key={v.matiere} className="hover:bg-slate-50/40">
-                                                    <TableCell className="font-bold text-slate-800">{v.matiere}</TableCell>
-                                                    <TableCell className="font-mono text-slate-600">{v.volume}</TableCell>
-                                                    <TableCell className="font-mono text-slate-600 font-bold">{v.coef}</TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-
-                        {/* Tab 4: Emploi du temps Visuel */}
+                        {/* Tab 2: Emploi du temps Visuel */}
                         <TabsContent value="emploi" className="focus-visible:ring-0">
                             <Card className="border-none shadow-none bg-transparent">
                                 <CardHeader className="px-0 pt-0">

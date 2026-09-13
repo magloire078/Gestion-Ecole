@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
+import { doc, setDoc, addDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
 import type { reservation_salle as Reservation, salle as Salle, staff as Staff } from '@/lib/data-types';
 import { format, set } from 'date-fns';
@@ -91,9 +91,40 @@ export function ReservationForm({ schoolId, salles, staff, reservation, preselec
         return;
     }
     setIsSubmitting(true);
-    
+
     const startDateTime = new Date(`${values.date}T${values.startTime}`);
     const endDateTime = new Date(`${values.date}T${values.endTime}`);
+
+    // Détection de chevauchement : deux réservations de la même salle ne
+    // peuvent pas se recouvrir sur le même créneau.
+    try {
+        const overlapQuery = query(
+            collection(firestore, `ecoles/${schoolId}/reservations_salles`),
+            where('salleId', '==', values.salleId),
+            where('startTime', '<', endDateTime.toISOString()),
+        );
+        const overlapSnap = await getDocs(overlapQuery);
+        const hasOverlap = overlapSnap.docs.some(d => {
+            if (reservation && d.id === reservation.id) return false;
+            const data = d.data() as Reservation;
+            if (data.status === 'annulée') return false;
+            return new Date(data.endTime) > startDateTime;
+        });
+        if (hasOverlap) {
+            toast({
+                variant: 'destructive',
+                title: 'Conflit de réservation',
+                description: 'Cette salle est déjà réservée sur ce créneau. Choisissez une autre salle ou un autre horaire.',
+            });
+            setIsSubmitting(false);
+            return;
+        }
+    } catch (e) {
+        console.error("Error checking reservation overlap:", e);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de vérifier les disponibilités de la salle.' });
+        setIsSubmitting(false);
+        return;
+    }
 
     const dataToSave = {
         salleId: values.salleId,

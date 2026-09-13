@@ -7,10 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useFirestore } from '@/firebase';
-import { collection, query, where, getDocs, writeBatch, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, RefreshCw, UserCheck, AlertCircle } from 'lucide-react';
-import type { class_type as Class, student as Student } from '@/lib/data-types';
+import type { class_type as Class, student as Student, student_enrollment as StudentEnrollment, fee as Fee, niveau as Niveau } from '@/lib/data-types';
+import { StudentService } from '@/services/student-services';
+import { getTuitionInfoForClass } from '@/lib/school-utils';
 
 interface ReRegistrationModalProps {
   isOpen: boolean;
@@ -19,6 +21,8 @@ interface ReRegistrationModalProps {
   schoolId: string;
   schoolData: any;
   classes: Class[];
+  niveaux: Niveau[];
+  fees: Fee[];
 }
 
 export function ReRegistrationModal({
@@ -28,6 +32,8 @@ export function ReRegistrationModal({
   schoolId,
   schoolData,
   classes,
+  niveaux,
+  fees,
 }: ReRegistrationModalProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
@@ -134,43 +140,76 @@ export function ReRegistrationModal({
     }
 
     setIsSubmitting(true);
-    const batch = writeBatch(firestore);
+    let succeeded = 0;
+    const failures: string[] = [];
 
     try {
       const targetClassInfo = classes.find(c => c.id === selectedTargetClassId);
+      // Frais de la classe cible : un élève réinscrit dans une classe à frais
+      // différents ne doit pas garder le solde de son ancienne classe/année.
+      const { fee: newFee } = getTuitionInfoForClass(selectedTargetClassId, classes, niveaux, fees);
+      const newTuitionStatus: 'Soldé' | 'Partiel' = newFee === 0 ? 'Soldé' : 'Partiel';
 
       for (const student of studentsToRegister) {
         if (!student.id) continue;
-        const studentRef = doc(firestore, `ecoles/${schoolId}/eleves/${student.id}`);
-        
-        // Mettre à jour l'élève avec la nouvelle classe et la nouvelle année académique
-        batch.update(studentRef, {
-          classId: selectedTargetClassId,
-          class: targetClassInfo?.name || 'N/A',
-          academicYear: currentAcademicYear,
-          inscriptionYear: parseInt(currentAcademicYear.split('-')[0]),
-          updatedAt: serverTimestamp(),
+        try {
+          const newEnrollment: StudentEnrollment = {
+            schoolId,
+            studentId: student.id,
+            academicYear: currentAcademicYear,
+            classId: selectedTargetClassId,
+            status: 'Promu',
+            tuitionFee: newFee,
+            amountDue: newFee,
+            tuitionStatus: 'Non payé',
+            createdAt: new Date().toISOString(),
+            createdBy: 'system',
+          };
+          // Pousse une entrée pour l'année courante : sans elle, l'élève reste
+          // invisible des listes filtrées par année (useStudents exclut tout
+          // élève sans entrée `enrollments` pour l'année sélectionnée).
+          const updatedEnrollments = [...(student.enrollments || []), newEnrollment];
+
+          await StudentService.updateStudent(schoolId, student.id, {
+            classId: selectedTargetClassId,
+            class: targetClassInfo?.name || 'N/A',
+            academicYear: currentAcademicYear,
+            inscriptionYear: parseInt(currentAcademicYear.split('-')[0]),
+            tuitionFee: newFee,
+            amountDue: newFee,
+            tuitionStatus: newTuitionStatus,
+            enrollments: updatedEnrollments,
+            status: 'Actif',
+          }, student);
+          succeeded += 1;
+        } catch (rowErr: any) {
+          console.error(rowErr);
+          failures.push(`${student.lastName} ${student.firstName}`);
+        }
+      }
+
+      if (succeeded > 0) {
+        toast({
+          title: "Réinscriptions terminées !",
+          description: `${succeeded} élève(s) transféré(s) avec succès.${failures.length ? ` ${failures.length} échec(s) : ${failures.join(', ')}.` : ''}`,
+        });
+      }
+      if (failures.length > 0 && succeeded === 0) {
+        toast({
+          variant: "destructive",
+          title: "Erreur de réinscription",
+          description: failures.join(', '),
         });
       }
 
-      await batch.commit();
-
-      toast({
-        title: "Réinscriptions terminées !",
-        description: `${studentsToRegister.length} élèves ont été transférés avec succès.`,
-      });
-
-      onSuccess();
-      onClose();
-      setSelectedPrevClassId('');
-      setSelectedTargetClassId('');
-    } catch (err: any) {
-      console.error(err);
-      toast({
-        variant: "destructive",
-        title: "Erreur de réinscription",
-        description: err?.message || "Impossible de traiter la réinscription.",
-      });
+      if (succeeded > 0) {
+        onSuccess();
+        if (failures.length === 0) {
+          onClose();
+          setSelectedPrevClassId('');
+          setSelectedTargetClassId('');
+        }
+      }
     } finally {
       setIsSubmitting(false);
     }

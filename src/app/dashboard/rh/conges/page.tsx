@@ -36,7 +36,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, PlusCircle, CheckCircle, XCircle } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, orderBy, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, where, doc, updateDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -63,13 +63,24 @@ export default function LeaveManagementPage() {
     newStatus: 'Approuvé' | 'Rejeté';
   } | null>(null);
 
+  // Ne charge que les 12 derniers mois par défaut : sans cette borne, la
+  // requête ramène l'historique complet des demandes de congé de toute
+  // l'école, quelle que soit son ancienneté.
+  const oneYearAgo = useMemo(() => Timestamp.fromDate(new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)), []);
+
   const leavesQuery = useMemo(() =>
-    schoolId ? query(collection(firestore, `ecoles/${schoolId}/conges_personnel`), orderBy('requestedAt', 'desc')) : null,
-    [firestore, schoolId]);
+    schoolId ? query(
+      collection(firestore, `ecoles/${schoolId}/conges_personnel`),
+      where('requestedAt', '>=', oneYearAgo),
+      orderBy('requestedAt', 'desc'),
+    ) : null,
+    [firestore, schoolId, oneYearAgo]);
 
   const { data: leavesData, loading: leavesLoading } = useCollection(leavesQuery);
 
-  const staffQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [firestore, schoolId]);
+  // Le personnel inactif ne doit pas apparaître dans le sélecteur de la
+  // nouvelle demande (on ne dépose pas de congé pour un employé parti).
+  const staffQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('status', '==', 'Actif')) : null, [firestore, schoolId]);
   const { data: staffData, loading: staffLoading } = useCollection(staffQuery);
 
   const staffMembers = useMemo(() => staffData?.map(d => ({ id: d.id, ...d.data() } as Staff & { id: string })) || [], [staffData]);

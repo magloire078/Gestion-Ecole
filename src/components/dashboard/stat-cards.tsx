@@ -113,7 +113,7 @@ export function StatCards({ schoolId, academicYear }: { schoolId: string, academ
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       {statsCards.map((stat, index) => (
         <Link href={stat.href} key={stat.title}>
           <motion.div
@@ -145,32 +145,32 @@ export function StatCards({ schoolId, academicYear }: { schoolId: string, academ
                   stat.bgColor
                 )} />
 
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-                  <CardTitle className="text-[11px] font-black uppercase tracking-[0.25em] text-muted-foreground/60 transition-colors group-hover:text-foreground/80 leading-none">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 gap-2 p-4 pb-1.5 sm:p-6 sm:pb-2 relative z-10">
+                  <CardTitle className="min-w-0 truncate text-[10px] tracking-[0.12em] sm:text-[11px] sm:tracking-[0.25em] font-black uppercase text-muted-foreground/60 transition-colors group-hover:text-foreground/80 leading-none">
                     {stat.title}
                   </CardTitle>
                   <div className={cn(
-                    "p-2.5 rounded-xl transition-all duration-500 shadow-sm",
+                    "shrink-0 p-2 sm:p-2.5 rounded-xl transition-all duration-500 shadow-sm",
                     stat.bgColor,
                     "group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(0,0,0,0.2)]",
                     "border border-white/10"
                   )}>
-                    <stat.icon className={cn("h-5 w-5 transition-transform duration-500 group-hover:rotate-12", stat.color)} />
+                    <stat.icon className={cn("h-4 w-4 sm:h-5 sm:w-5 transition-transform duration-500 group-hover:rotate-12", stat.color)} />
                   </div>
                 </CardHeader>
 
-                <CardContent className="relative z-10 pt-4">
+                <CardContent className="relative z-10 p-4 pt-2 sm:p-6 sm:pt-4">
                   <div className="flex items-baseline gap-1">
-                    <div className="text-5xl font-black tracking-tighter transition-transform duration-500 group-hover:scale-105">
-                      {loading || studentsLoading ? <Skeleton className="h-12 w-24" /> : (
+                    <div className="text-3xl sm:text-5xl font-black tracking-tighter transition-transform duration-500 group-hover:scale-105">
+                      {loading || studentsLoading ? <Skeleton className="h-8 w-16 sm:h-12 sm:w-24" /> : (
                         <span className="bg-clip-text text-transparent bg-gradient-to-br from-foreground via-foreground/90 to-foreground/50 drop-shadow-xl">
                           {stat.value}
                         </span>
                       )}
                     </div>
                   </div>
-                  <div className="mt-6 flex items-center justify-between">
-                    <p className="text-[10px] text-muted-foreground/50 font-black uppercase tracking-[0.3em] group-hover:text-foreground/70 transition-colors">
+                  <div className="mt-3 sm:mt-6 flex items-center justify-between">
+                    <p className="text-[9px] tracking-[0.15em] sm:text-[10px] sm:tracking-[0.3em] text-muted-foreground/50 font-black uppercase group-hover:text-foreground/70 transition-colors">
                       Visionner
                     </p>
                     <div className="h-[3px] w-0 bg-gradient-to-r from-blue-500 to-indigo-500 group-hover:w-16 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
