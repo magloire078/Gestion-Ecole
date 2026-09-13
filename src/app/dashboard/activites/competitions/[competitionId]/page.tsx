@@ -8,6 +8,7 @@ export function generateStaticParams() {
 // Cette route a été remplacée par /dashboard/activites/competitions/details?id=...
 // (seule version reliée depuis le menu, avec l'envoi d'email de résultats aux
 // parents). On redirige plutôt que de maintenir deux implémentations divergentes.
-export default function CompetitionParticipantsPage({ params }: { params: { competitionId: string } }) {
-  redirect(`/dashboard/activites/competitions/details?id=${params.competitionId}`);
+export default async function CompetitionParticipantsPage({ params }: { params: Promise<{ competitionId: string }> }) {
+  const { competitionId } = await params;
+  redirect(`/dashboard/activites/competitions/details?id=${competitionId}`);
 }

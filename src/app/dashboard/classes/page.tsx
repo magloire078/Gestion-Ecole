@@ -27,9 +27,7 @@ export default function ClassesPage() {
         </p>
       </div>
 
-      <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/40 dark:border-slate-800/40 rounded-2xl overflow-hidden shadow-sm p-4">
-        <ClassesList academicYear={schoolData?.currentAcademicYear} />
-      </div>
+      <ClassesList academicYear={schoolData?.currentAcademicYear} />
     </div>
   );
 }

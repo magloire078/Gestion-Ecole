@@ -543,7 +543,7 @@ export default function GradeEntryPage() {
                 )}
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               <Table>
                 <TableHeader className="bg-slate-50/40">
                   <TableRow className="border-b-slate-100/50 hover:bg-transparent">
