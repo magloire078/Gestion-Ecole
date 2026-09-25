@@ -5,7 +5,6 @@ import { doc, getDoc, getCountFromServer, query, where, updateDoc, writeBatch, i
 import { firebaseFirestore } from '@/firebase/config';
 import { getPlanLimits } from '@/lib/subscription-plans';
 import { buildLimitReachedMessage } from '@/lib/subscription-guards';
-import { assignStudentToClass } from '@/services/class-assignment-service';
 
 const db = firebaseFirestore as Firestore;
 import type { student as Student } from '@/lib/data-types';
@@ -80,6 +79,12 @@ export const StudentService = {
 
             batch.set(newStudentRef, studentData);
 
+            // Update Class Count if classId provided
+            if (data.classId) {
+                const classRef = doc(db, `ecoles/${schoolId}/classes/${data.classId}`);
+                batch.update(classRef, { studentCount: increment(1) });
+            }
+
             // Update Finance Stats
             const statsRef = doc(db, `ecoles/${schoolId}/stats/finance`);
             batch.set(statsRef, {
@@ -88,23 +93,6 @@ export const StudentService = {
                 studentCount: increment(1),
                 lastUpdated: serverTimestamp()
             }, { merge: true });
-
-            // Affectation à la classe (inscriptions_classe + studentCount) via le
-            // point d'écriture centralisé, composée dans le même batch (atomique
-            // avec la création de l'élève). newStudentRef.id existe déjà côté
-            // client même si le document n'est pas encore commité.
-            if (data.classId) {
-                await assignStudentToClass(schoolId, {
-                    studentId: newStudentRef.id,
-                    toClassId: data.classId,
-                    academicYear: currentAcademicYear,
-                    promotionType: 'normal',
-                    userId: userId || 'system',
-                    toClassName: data.class,
-                    toGrade: data.grade,
-                    toCycleId: data.cycle,
-                }, batch);
-            }
 
             await batch.commit();
             return newStudentRef.id;
@@ -143,8 +131,9 @@ export const StudentService = {
             }
 
             // Le changement de classe (studentCount + historique inscriptions_classe)
-            // ne passe plus par ici : voir assignStudentToClass (class-assignment-service.ts),
-            // point d'écriture unique de la relation élève↔classe.
+            // ne passe plus par ici : voir assignStudentsToClass (class-assignment-service.ts),
+            // point d'écriture unique de la relation élève↔classe (utilisé par
+            // student-edit-form.tsx quand la classe change).
 
             await batch.commit();
         } catch (error) {
@@ -285,6 +274,86 @@ export const StudentService = {
             await batch.commit();
         } catch (error) {
             console.error("Error restoring student:", error);
+            throw error;
+        }
+    },
+    /**
+     * Met un élève à la corbeille (status "Supprimé", réversible) en
+     * synchronisant l'effectif de sa classe et les agrégats financiers —
+     * contrairement à `archiveStudent`, qui marque "Radié" (sortie
+     * définitive) : la corbeille et le retrait sont deux statuts distincts.
+     */
+    moveToTrash: async (schoolId: string, student: Student) => {
+        if (!schoolId || !student || !student.id) {
+            throw new Error("Les informations de l'école et de l'élève sont requises.");
+        }
+
+        const wasActive = ['Actif', 'En attente'].includes(student.status);
+
+        const batch = writeBatch(db);
+        const studentDocRef = doc(db, `ecoles/${schoolId}/${COLLECTION_NAME}/${student.id}`);
+
+        batch.update(studentDocRef, {
+            status: 'Supprimé',
+            updatedAt: serverTimestamp(),
+        });
+
+        if (wasActive && student.classId) {
+            const classDocRef = doc(db, `ecoles/${schoolId}/classes/${student.classId}`);
+            batch.update(classDocRef, { studentCount: increment(-1) });
+        }
+
+        if (wasActive) {
+            const statsRef = doc(db, `ecoles/${schoolId}/stats/finance`);
+            batch.set(statsRef, {
+                totalTuitionFees: increment(-(student.tuitionFee || 0)),
+                totalAmountDue: increment(-(student.amountDue || 0)),
+                studentCount: increment(-1),
+                lastUpdated: serverTimestamp()
+            }, { merge: true });
+        }
+
+        try {
+            await batch.commit();
+        } catch (error) {
+            console.error("Error moving student to trash:", error);
+            throw error;
+        }
+    },
+
+    /**
+     * Restaure un élève de la corbeille (status "Actif") en synchronisant
+     * l'effectif de classe et les agrégats financiers.
+     */
+    restoreFromTrash: async (schoolId: string, student: Student) => {
+        if (!schoolId || !student || !student.id) {
+            throw new Error("Les informations de l'école et de l'élève sont requises.");
+        }
+
+        const batch = writeBatch(db);
+        const studentDocRef = doc(db, `ecoles/${schoolId}/${COLLECTION_NAME}/${student.id}`);
+        batch.update(studentDocRef, {
+            status: 'Actif',
+            updatedAt: serverTimestamp(),
+        });
+
+        if (student.classId) {
+            const classDocRef = doc(db, `ecoles/${schoolId}/classes/${student.classId}`);
+            batch.update(classDocRef, { studentCount: increment(1) });
+        }
+
+        const statsRef = doc(db, `ecoles/${schoolId}/stats/finance`);
+        batch.set(statsRef, {
+            totalTuitionFees: increment(student.tuitionFee || 0),
+            totalAmountDue: increment(student.amountDue || 0),
+            studentCount: increment(1),
+            lastUpdated: serverTimestamp()
+        }, { merge: true });
+
+        try {
+            await batch.commit();
+        } catch (error) {
+            console.error("Error restoring student from trash:", error);
             throw error;
         }
     },

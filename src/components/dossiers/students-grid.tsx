@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MoreHorizontal, Edit, UserX, UserCheck, Printer, Eye, CreditCard, FileText, CalendarDays, FileSignature, Cake, VenetianMask } from 'lucide-react';
+import { MoreHorizontal, Edit, UserX, UserCheck, Printer, Eye, CreditCard, FileText, CalendarDays, FileSignature, Cake, VenetianMask, Camera, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,6 +13,7 @@ import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { differenceInYears, addYears, differenceInMonths } from 'date-fns';
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 
 
 const getStatusBadgeVariant = (status: Student['status']) => {
@@ -37,6 +38,7 @@ interface StudentCardProps {
     onArchive: (student: Student) => void;
     onRestore: (student: Student) => void;
     actionType: 'active' | 'archived';
+    isLocked?: boolean;
 }
 
 const getAge = (dateOfBirth: string | undefined) => {
@@ -58,13 +60,13 @@ const getAge = (dateOfBirth: string | undefined) => {
     }
 }
 
-const StudentCard = ({ student, onEdit, onArchive, onRestore, actionType }: StudentCardProps) => {
+const StudentCard = ({ student, onEdit, onArchive, onRestore, actionType, isLocked }: StudentCardProps) => {
     const router = useRouter();
     const studentFullName = `${student.lastName.toUpperCase()} ${student.firstName}`;
     const fallback = `${student.lastName?.[0] || ''}${student.firstName?.[0] || ''}`.toUpperCase();
 
     return (
-        <Card className="flex flex-col">
+        <Card className={cn("flex flex-col", isLocked && "opacity-60")}>
             <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4">
@@ -80,10 +82,20 @@ const StudentCard = ({ student, onEdit, onArchive, onRestore, actionType }: Stud
                             )}
                         </div>
                         <div>
-                            <CardTitle className="text-lg">
-                                <Link href={`/dashboard/dossiers-eleves/${student.id}`} className="hover:underline">
-                                    {studentFullName}
-                                </Link>
+                            <CardTitle className="text-lg flex items-center gap-1.5">
+                                {isLocked ? (
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span className="cursor-not-allowed">{studentFullName}</span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>Fiche verrouillée — passez à un plan supérieur pour la consulter.</TooltipContent>
+                                    </Tooltip>
+                                ) : (
+                                    <Link href={`/dashboard/dossiers-eleves/${student.id}`} className="hover:underline">
+                                        {studentFullName}
+                                    </Link>
+                                )}
+                                {isLocked && <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
                             </CardTitle>
                             <CardDescription>{student.matricule}</CardDescription>
                         </div>
@@ -106,6 +118,16 @@ const StudentCard = ({ student, onEdit, onArchive, onRestore, actionType }: Stud
                 </div>
             </CardContent>
             <CardFooter>
+                {isLocked ? (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Badge variant="outline" className="gap-1 text-muted-foreground cursor-not-allowed w-full justify-center py-1.5">
+                                <Lock className="h-3 w-3" /> Verrouillé — mettez à niveau
+                            </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>Passez à un plan supérieur pour consulter et modifier cette fiche.</TooltipContent>
+                    </Tooltip>
+                ) : (
                 <div className="flex w-full items-center justify-between">
                     <Button asChild size="sm" variant="outline">
                         <Link href={`/dashboard/dossiers-eleves/${student.id}`}>
@@ -120,6 +142,9 @@ const StudentCard = ({ student, onEdit, onArchive, onRestore, actionType }: Stud
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             {actionType === 'active' && <DropdownMenuItem onClick={() => onEdit(student)}><Edit className="mr-2 h-4 w-4" /> Modifier</DropdownMenuItem>}
+                            <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/photos?classId=${student.classId || ''}`)}>
+                                <Camera className="mr-2 h-4 w-4" /> Photos de la classe
+                            </DropdownMenuItem>
                             <DropdownMenuSub>
                                 <DropdownMenuSubTrigger><Printer className="mr-2 h-4 w-4" /> Imprimer</DropdownMenuSubTrigger>
                                 <DropdownMenuPortal>
@@ -145,6 +170,7 @@ const StudentCard = ({ student, onEdit, onArchive, onRestore, actionType }: Stud
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
+                )}
             </CardFooter>
         </Card>
     );
@@ -157,9 +183,11 @@ interface StudentsGridProps {
     onArchive: (student: Student) => void;
     onRestore: (student: Student) => void;
     actionType: 'active' | 'archived';
+    /** IDs des élèves verrouillés (plan Essentiel après expiration de l'abonnement) : visibles mais non consultables/modifiables. */
+    lockedStudentIds?: Set<string>;
 }
 
-export const StudentsGrid = ({ students, isLoading, onEdit, onArchive, onRestore, actionType }: StudentsGridProps) => {
+export const StudentsGrid = ({ students, isLoading, onEdit, onArchive, onRestore, actionType, lockedStudentIds }: StudentsGridProps) => {
     if (isLoading) {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -186,6 +214,7 @@ export const StudentsGrid = ({ students, isLoading, onEdit, onArchive, onRestore
                     onArchive={onArchive}
                     onRestore={onRestore}
                     actionType={actionType}
+                    isLocked={!!student.id && !!lockedStudentIds?.has(student.id)}
                 />
             ))}
         </div>

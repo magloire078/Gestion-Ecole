@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PlusCircle, Upload, Download, Printer, Search, Users, School, GraduationCap, LayoutGrid, List, Calendar } from "lucide-react";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -47,7 +47,7 @@ import {
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import Link from "next/link";
 import { useCollection, useFirestore, useUser } from "@/firebase";
-import { collection, doc, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { collection, doc, query } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from 'next/navigation';
 import { useSchoolData } from "@/hooks/use-school-data";
@@ -65,56 +65,23 @@ import { StudentService } from "@/services/student-services";
 import { useStudents } from "@/hooks/use-students";
 import { useDebounce } from "@/hooks/use-debounce";
 import { computeAcademicYearFromDate } from "@/lib/academic-year-utils";
+import { useEditableStudentIds } from "@/hooks/use-editable-student-ids";
 
 
 export default function StudentsPage() {
   const router = useRouter();
   const firestore = useFirestore();
   const { user, loading: userLoading } = useUser();
-  const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
+  const { schoolId, schoolData, subscription, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
 
   const canManageUsers = !!user?.profile?.permissions?.manageUsers;
 
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string | undefined>(undefined);
 
-  // Déterminer l'année scolaire par défaut (dernière inscription d'élève ou année en cours)
-  useEffect(() => {
-    if (!schoolId) return;
-
-    const latestStudentQuery = query(
-      collection(firestore, `ecoles/${schoolId}/eleves`),
-      orderBy('createdAt', 'desc'),
-      limit(1)
-    );
-
-    getDocs(latestStudentQuery)
-      .then((snap) => {
-        if (!snap.empty) {
-          const data = snap.docs[0].data();
-          const enrollments = data.enrollments || [];
-          const latestEnrollment = enrollments[enrollments.length - 1];
-          let latestYear = latestEnrollment?.academicYear || data.academicYear;
-
-          if (!latestYear && data.inscriptionYear) {
-            latestYear = `${data.inscriptionYear}-${data.inscriptionYear + 1}`;
-          }
-
-          if (!latestYear && data.createdAt) {
-            const createdDate = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
-            latestYear = computeAcademicYearFromDate(createdDate);
-          }
-
-          if (latestYear) {
-            setSelectedAcademicYear(latestYear);
-          }
-        }
-      })
-      .catch((err) => {
-        console.error("Error fetching latest student for default year:", err);
-      });
-  }, [schoolId, firestore]);
-
+  // Année scolaire par défaut = l'année courante réelle de l'école, pas une
+  // devinette basée sur le dernier élève créé (qui pouvait être une saisie de
+  // test ou d'une autre année et masquer les élèves de l'année réelle).
   const effectiveAcademicYear = selectedAcademicYear || schoolData?.currentAcademicYear || computeAcademicYearFromDate();
 
   const availableYears = useMemo(() => {
@@ -129,6 +96,14 @@ export default function StudentsPage() {
 
   // Use new hooks for data fetching
   const { students: allStudents, loading: studentsLoading } = useStudents(schoolId, undefined, undefined, effectiveAcademicYear);
+
+  // Abonnement expiré => compte basculé sur le plan Essentiel : seuls les
+  // premiers élèves inscrits (par date d'inscription) restent modifiables.
+  const { editableStudentIds, isLimited: isPlanDowngraded } = useEditableStudentIds(schoolId, subscription);
+  const lockedStudentIds = useMemo(() => {
+    if (!isPlanDowngraded || !editableStudentIds) return undefined;
+    return new Set(allStudents.filter(s => s.id && !editableStudentIds.has(s.id)).map(s => s.id!));
+  }, [isPlanDowngraded, editableStudentIds, allStudents]);
 
   const classesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
   const feesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/frais_scolarite`)) : null, [firestore, schoolId]);
@@ -203,11 +178,13 @@ export default function StudentsPage() {
 
 
   const handleOpenEditDialog = (student: Student) => {
+    if (student.id && lockedStudentIds?.has(student.id)) return;
     setEditingStudent(student);
     setIsEditDialogOpen(true);
   };
 
   const handleOpenArchiveDialog = (student: Student) => {
+    if (student.id && lockedStudentIds?.has(student.id)) return;
     setStudentToArchive(student);
     setIsArchiveDialogOpen(true);
   };
@@ -254,8 +231,21 @@ export default function StudentsPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedCycle, setSelectedCycle] = useState('all');
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    try {
+      const selectedClassName = selectedClass !== 'all' ? classes.find(c => c.id === selectedClass)?.name : undefined;
+      await StudentReportsService.generateStudentListPdf(
+        filteredByClass,
+        schoolData?.name || 'Notre École',
+        effectiveAcademicYear,
+        schoolData?.mainLogoUrl,
+        selectedClassName,
+        'print'
+      );
+    } catch (e) {
+      console.error(e);
+      toast({ variant: 'destructive', title: 'Erreur', description: "Erreur lors de la génération de l'impression." });
+    }
   };
 
   const handleExportPDF = async () => {
@@ -286,34 +276,34 @@ export default function StudentsPage() {
                Pédagogie
              </span>
           </div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900 bg-gradient-to-r from-slate-900 to-slate-500 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
             Dossiers Élèves
           </h1>
-          <p className="text-slate-500 max-w-2xl text-sm font-medium">
+          <p className="text-slate-500 dark:text-slate-400 max-w-2xl text-sm font-medium">
             Gestion centrale des effectifs : inscriptions, suivi pédagogique et informations personnelles.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button 
-            variant="outline" 
+        <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto">
+          <Button
+            variant="outline"
             onClick={handlePrint}
-            className="rounded-xl border-slate-200 hover:bg-slate-50 transition-all font-semibold"
+            className="flex-1 md:flex-none rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all font-semibold"
           >
             <Printer className="mr-2 h-4 w-4" />
             Imprimer Liste
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={handleExportPDF}
-            className="rounded-xl border-slate-200 hover:bg-slate-50 transition-all font-semibold"
+            className="flex-1 md:flex-none rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all font-semibold"
           >
             <Download className="mr-2 h-4 w-4" />
             Exporter PDF
           </Button>
           {canManageUsers && (
-            <Button 
+            <Button
               onClick={() => router.push('/dashboard/inscription')}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 transition-all duration-300 hover:-translate-y-1 rounded-xl px-6 font-bold"
+              className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 dark:shadow-indigo-950/50 transition-all duration-300 hover:-translate-y-1 rounded-xl px-6 font-bold"
             >
               <PlusCircle className="mr-2 h-5 w-5" />
               Inscrire un Élève
@@ -417,6 +407,7 @@ export default function StudentsPage() {
                   onEdit={handleOpenEditDialog}
                   onArchive={handleOpenArchiveDialog}
                   onRestore={handleOpenRestoreDialog}
+                  lockedStudentIds={lockedStudentIds}
                 />
               ) : (
                 <div className="p-4 md:p-6">
@@ -427,6 +418,7 @@ export default function StudentsPage() {
                     onEdit={handleOpenEditDialog}
                     onArchive={handleOpenArchiveDialog}
                     onRestore={handleOpenRestoreDialog}
+                    lockedStudentIds={lockedStudentIds}
                   />
                 </div>
               )}
@@ -442,6 +434,7 @@ export default function StudentsPage() {
                   onEdit={handleOpenEditDialog}
                   onArchive={handleOpenArchiveDialog}
                   onRestore={handleOpenRestoreDialog}
+                  lockedStudentIds={lockedStudentIds}
                 />
               ) : (
                 <div className="p-4 md:p-6">
@@ -452,6 +445,7 @@ export default function StudentsPage() {
                     onEdit={handleOpenEditDialog}
                     onArchive={handleOpenArchiveDialog}
                     onRestore={handleOpenRestoreDialog}
+                    lockedStudentIds={lockedStudentIds}
                   />
                 </div>
               )}

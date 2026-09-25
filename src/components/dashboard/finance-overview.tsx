@@ -41,10 +41,21 @@ export function FinanceOverview({ schoolId: propSchoolId, academicYear }: Financ
         return { totalFees, totalDue, paidPercentage };
     }, [students]);
 
-    const chartData = useMemo(() => [
-        { name: 'Encaissé', value: financeStats.totalFees - financeStats.totalDue, color: 'hsl(var(--primary))' },
-        { name: 'Solde Dû', value: financeStats.totalDue, color: 'rgba(239, 68, 68, 0.4)' },
-    ], [financeStats]);
+    const hasFeeData = financeStats.totalFees > 0;
+
+    // Un total de 0 (aucun élève inscrit pour l'année sélectionnée, ou
+    // aucune scolarité configurée) donnerait deux parts à 0 : Recharts ne
+    // dessine alors aucun anneau, laissant un grand vide autour du "100 %"
+    // par défaut — trompeur puisqu'il ne s'agit pas d'une collecte réelle.
+    const chartData = useMemo(() => {
+        if (!hasFeeData) {
+            return [{ name: 'Aucune donnée', value: 1, color: 'hsl(var(--muted))' }];
+        }
+        return [
+            { name: 'Encaissé', value: financeStats.totalFees - financeStats.totalDue, color: 'hsl(var(--primary))' },
+            { name: 'Solde Dû', value: financeStats.totalDue, color: 'rgba(239, 68, 68, 0.4)' },
+        ];
+    }, [financeStats, hasFeeData]);
 
     if (loading) {
         return (
@@ -79,7 +90,7 @@ export function FinanceOverview({ schoolId: propSchoolId, academicYear }: Financ
                                 <PieChartIcon className="w-5 h-5 text-primary" />
                                 Finances
                             </CardTitle>
-                            <CardDescription className="text-[11px] font-medium text-muted-foreground/60 uppercase tracking-widest">
+                            <CardDescription className="text-[11px] font-medium text-muted-foreground/60 uppercase tracking-wide sm:tracking-widest">
                                 État des scolarités
                             </CardDescription>
                         </div>
@@ -136,8 +147,16 @@ export function FinanceOverview({ schoolId: propSchoolId, academicYear }: Financ
 
                         {/* Center Content */}
                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <span className="text-2xl font-black tracking-tighter">{financeStats.paidPercentage.toFixed(0)}%</span>
-                            <span className="text-[9px] uppercase font-black text-muted-foreground/60 leading-none">Collecté</span>
+                            {hasFeeData ? (
+                                <>
+                                    <span className="text-2xl font-black tracking-tighter">{financeStats.paidPercentage.toFixed(0)}%</span>
+                                    <span className="text-[9px] uppercase font-black text-muted-foreground/60 leading-none">Collecté</span>
+                                </>
+                            ) : (
+                                <span className="text-[10px] uppercase font-black text-muted-foreground/50 text-center px-6 leading-tight">
+                                    Aucune donnée<br />pour cette année
+                                </span>
+                            )}
                         </div>
                     </div>
 
@@ -154,7 +173,7 @@ export function FinanceOverview({ schoolId: propSchoolId, academicYear }: Financ
                 </CardContent>
 
                 <CardFooter className="pt-2">
-                    <Button className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl shadow-lg shadow-primary/20 font-black uppercase text-[11px] tracking-[0.2em] group/btn overflow-hidden relative" asChild>
+                    <Button className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl shadow-lg shadow-primary/20 font-black uppercase text-[11px] tracking-[0.08em] sm:tracking-[0.2em] group/btn overflow-hidden relative" asChild>
                         <Link href="/dashboard/paiements">
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:animate-[shine_1s_ease-in-out_infinite]" />
                             <Wallet className="mr-2 h-4 w-4 transition-transform group-hover/btn:-translate-y-0.5 group-hover/btn:translate-x-0.5" />

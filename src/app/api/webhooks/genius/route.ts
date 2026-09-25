@@ -27,11 +27,21 @@ export async function POST(req: NextRequest) {
         }
 
         const body = JSON.parse(rawBody);
-        const { id: eventId, transaction_id, reference, order_id, status, amount } = body;
-        const normalizedStatus = String(status ?? '').toLowerCase();
-        console.log(`[Genius Webhook] event=${event} id=${eventId} txn=${transaction_id} order=${order_id} status=${status}`);
+        // Format officiel GeniusPay : la transaction est imbriquée sous `data`,
+        // l'identifiant de livraison et le type d'événement sont à la racine, et
+        // NOTRE référence est dans `data.metadata.order_id`.
+        //   { id, event, timestamp, data: { id, reference, amount, status,
+        //     metadata: { order_id } }, environment }
+        const eventType = String(body.event ?? event ?? '').toLowerCase(); // ex: payment.success
+        const txn = body.data || {};
+        const eventId = body.id;                       // UUID de livraison (racine)
+        const reference = txn.reference;               // référence GeniusPay (MTX-...)
+        const orderId = txn?.metadata?.order_id;       // notre référence interne
+        const normalizedStatus = String(txn.status ?? '').toLowerCase();
+        const amount = typeof txn.amount === 'number' ? txn.amount : Number(txn.amount);
+        console.log(`[Genius Webhook] event=${eventType} id=${eventId} ref=${reference} order=${orderId} status=${normalizedStatus}`);
 
-        const idempotenceKey = String(eventId ?? transaction_id ?? reference ?? '').trim();
+        const idempotenceKey = String(eventId ?? reference ?? '').trim();
         if (!idempotenceKey) {
             console.error('[Genius Webhook] Payload sans identifiant exploitable — refusé.');
             return NextResponse.json({ error: 'Missing event identifier' }, { status: 400 });
@@ -39,34 +49,40 @@ export async function POST(req: NextRequest) {
         const isNew = await claimWebhookEvent('genius', idempotenceKey, {
             rawBody,
             status: normalizedStatus,
-            eventType: event,
+            eventType,
         });
         if (!isNew) {
             return NextResponse.json({ received: true, duplicate: true });
         }
 
-        if (FAILURE_STATUSES.has(normalizedStatus)) {
-            console.warn(`[Genius Webhook] Paiement échoué/annulé pour order=${order_id} status=${status}.`);
-            return NextResponse.json({ received: true, ignored: true, reason: normalizedStatus });
+        // On décide à partir de l'événement OU du statut (les deux sont fournis).
+        const isSuccess = eventType === 'payment.success' || SUCCESS_STATUSES.has(normalizedStatus);
+        const isFailure = ['payment.failed', 'payment.cancelled', 'payment.expired'].includes(eventType)
+            || FAILURE_STATUSES.has(normalizedStatus);
+        const isRefund = eventType === 'payment.refunded' || REFUND_STATUSES.has(normalizedStatus);
+
+        if (isFailure) {
+            console.warn(`[Genius Webhook] Paiement échoué/annulé pour order=${orderId} (event=${eventType} status=${normalizedStatus}).`);
+            return NextResponse.json({ received: true, ignored: true, reason: normalizedStatus || eventType });
         }
 
-        if (REFUND_STATUSES.has(normalizedStatus)) {
-            console.warn(`[Genius Webhook] Remboursement reçu pour order=${order_id} — non géré automatiquement.`);
+        if (isRefund) {
+            console.warn(`[Genius Webhook] Remboursement reçu pour order=${orderId} — non géré automatiquement.`);
             return NextResponse.json({ received: true, ignored: true, reason: 'refund_manual_review' });
         }
 
-        if (!SUCCESS_STATUSES.has(normalizedStatus)) {
-            // pending / processing — on accuse réception et on attend l'événement final.
-            return NextResponse.json({ received: true, awaiting: normalizedStatus || 'unknown' });
+        if (!isSuccess) {
+            // initiated / pending / processing — on accuse réception et on attend l'événement final.
+            return NextResponse.json({ received: true, awaiting: normalizedStatus || eventType || 'unknown' });
         }
 
-        const parsed = parsePaymentReference(order_id);
+        const parsed = parsePaymentReference(orderId);
         if (!parsed) {
-            console.warn(`[Genius Webhook] order_id invalide: ${order_id}`);
+            console.warn(`[Genius Webhook] order_id invalide: ${orderId}`);
             return NextResponse.json({ error: 'Invalid order_id format' }, { status: 400 });
         }
 
-        const paidAmount = typeof amount === 'number' ? amount : parsed.amount;
+        const paidAmount = Number.isFinite(amount) ? amount : parsed.amount;
 
         if (parsed.type === 'subscription') {
             await processSubscriptionPayment(parsed.schoolId, parsed.planName, parsed.durationMonths, 'Genius Pay', paidAmount, 'XOF');

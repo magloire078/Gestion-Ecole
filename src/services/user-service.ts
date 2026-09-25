@@ -51,6 +51,7 @@ export async function fetchUserAppData(firestore: Firestore, firebaseUser: Fireb
 
         const userData = userRootDoc.data() as user_root;
         const isSuperAdmin = userData.isSuperAdmin === true;
+        const isCommercial = userData.commercialAccess === true;
         const schoolAffiliations = userData.schools || {};
         const schoolIds = Object.keys(schoolAffiliations).filter(id => id.length > 10);
 
@@ -114,7 +115,13 @@ export async function fetchUserAppData(firestore: Firestore, firebaseUser: Fireb
                 } else if (userProfile.adminRole) {
                     const roleSnap = await getDoc(doc(firestore, `ecoles/${activeSchoolId}/admin_roles/${userProfile.adminRole}`));
                     if (roleSnap.exists()) {
-                        userProfile.permissions = roleSnap.data().permissions;
+                        // Le rôle sert de base ; les habilitations individuelles déjà
+                        // présentes sur la fiche personnel (accordées ou révoquées via
+                        // RH > Administration) restent prioritaires — sans quoi une
+                        // restriction posée sur un utilisateur donné était effacée
+                        // dès que son rôle admin était rechargé.
+                        const rolePermissions = roleSnap.data().permissions || {};
+                        userProfile.permissions = { ...rolePermissions, ...(userProfile.permissions || {}) };
                     }
                 }
             }
@@ -123,6 +130,13 @@ export async function fetchUserAppData(firestore: Firestore, firebaseUser: Fireb
                 if (!userProfile) userProfile = {} as UserProfile;
                 userProfile.isAdmin = true;
                 userProfile.isSuperAdmin = true;
+            } else if (isCommercial) {
+                // Un commercial n'a généralement aucune fiche personnel
+                // (aucune affiliation à une école cliente) : userProfile
+                // reste undefined jusqu'ici, il faut l'initialiser comme
+                // pour un super-admin.
+                if (!userProfile) userProfile = {} as UserProfile;
+                userProfile.isCommercial = true;
             }
 
             return {

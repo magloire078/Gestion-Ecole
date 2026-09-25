@@ -12,6 +12,7 @@ import {
 } from 'firebase/auth';
 import { useEffect } from 'react';
 import { useAuth } from '@/firebase';
+import { useUser } from '@/hooks/use-user';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -63,6 +64,22 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
+  const { user, loading: userLoading } = useUser();
+
+  // Si l'utilisateur est déjà authentifié (profil résolu), on le renvoie vers
+  // l'app. Sans cela, un compte connecté qui atterrit sur /auth/login — via le
+  // flux de redirection Google, ou après un rebond du garde d'accès pendant que
+  // l'observateur d'auth se met à jour — reste bloqué sur la page de connexion,
+  // car cette page n'est pas enveloppée par AuthGuard. On se base sur `user`
+  // (contexte, profil chargé) et non sur auth.currentUser : si Firestore est
+  // momentanément indisponible, `user` reste null et on évite toute boucle
+  // login ⇄ dashboard. Le garde du dashboard oriente ensuite vers l'onboarding
+  // si aucune école n'est rattachée.
+  useEffect(() => {
+    if (!userLoading && user) {
+      router.replace('/dashboard');
+    }
+  }, [user, userLoading, router]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,13 +146,46 @@ export default function LoginPage() {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
 
-      // Use redirect directly to avoid COOP/COEP issues with popups
-      await signInWithRedirect(auth, provider);
+      // Popup en priorité : contrairement à signInWithRedirect, la popup n'est
+      // pas affectée par le partitionnement du stockage tiers (Safari/Chrome)
+      // lorsque le domaine d'auth Firebase diffère du domaine de l'app. On ne
+      // bascule sur le redirect qu'en cas d'échec propre à la popup (bloquée,
+      // non supportée sur mobile...).
+      try {
+        await signInWithPopup(auth, provider);
+        toast({
+          title: "Connexion réussie",
+          description: "Bienvenue sur votre espace GèreEcole."
+        });
+        router.push('/dashboard');
+      } catch (popupError) {
+        const code = (popupError as AuthError)?.code || '';
+        const popupUnavailable =
+          code === 'auth/popup-blocked' ||
+          code === 'auth/operation-not-supported-in-this-environment' ||
+          code === 'auth/cancelled-popup-request';
 
+        // L'utilisateur a simplement fermé la popup : ne pas relancer un redirect.
+        if (code === 'auth/popup-closed-by-user') {
+          setIsGoogleProcessing(false);
+          return;
+        }
+
+        if (popupUnavailable) {
+          await signInWithRedirect(auth, provider);
+          return; // La page va se recharger ; getRedirectResult prend le relais.
+        }
+        throw popupError;
+      }
     } catch (error) {
       console.error("Google Sign-in error:", error);
-      const authError = error as AuthError;
-      setError('Erreur de connexion avec Google. Veuillez réessayer.');
+      const code = (error as AuthError)?.code;
+      const msg = (error as AuthError)?.message;
+      // On affiche le vrai code d'erreur Firebase (ex: auth/web-storage-unsupported,
+      // auth/internal-error…) au lieu d'un message générique, pour permettre le
+      // diagnostic sans ouvrir la console du navigateur.
+      setError(`Échec de la connexion Google : ${code || msg || 'erreur inconnue'}`);
+    } finally {
       setIsGoogleProcessing(false);
     }
   };

@@ -25,36 +25,41 @@ export default function AcademicYearPage() {
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<AcademicPeriod | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [periodToDelete, setPeriodToDelete] = useState<AcademicPeriod | null>(null);
+  const [periodToDelete, setPeriodToDelete] = useState<{ period: AcademicPeriod; index: number } | null>(null);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
-  
+
   const academicPeriods = schoolData?.academicPeriods || [];
 
-  const handleOpenForm = (period: AcademicPeriod | null) => {
+  const handleOpenForm = (period: AcademicPeriod | null, index: number | null) => {
     setEditingPeriod(period);
+    setEditingIndex(index);
     setIsFormOpen(true);
   };
-  
+
   const handleSavePeriods = async (updatedPeriods: AcademicPeriod[]) => {
       try {
         await updateSchoolData({ academicPeriods: updatedPeriods });
         toast({ title: 'Périodes mises à jour', description: 'La liste des périodes académiques a été enregistrée.' });
         setIsFormOpen(false);
         setEditingPeriod(null);
+        setEditingIndex(null);
       } catch (error) {
           toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de sauvegarder les périodes.'});
       }
   };
 
-  const handleOpenDeleteDialog = (period: AcademicPeriod) => {
-      setPeriodToDelete(period);
+  const handleOpenDeleteDialog = (period: AcademicPeriod, index: number) => {
+      setPeriodToDelete({ period, index });
       setIsDeleteDialogOpen(true);
   };
 
   const handleDeletePeriod = async () => {
       if (!periodToDelete) return;
-      const updatedPeriods = academicPeriods.filter((p: AcademicPeriod) => p.name !== periodToDelete.name);
+      // Suppression par position, pas par nom : deux périodes homonymes ne
+      // doivent pas être effacées ensemble.
+      const updatedPeriods = academicPeriods.filter((_: AcademicPeriod, i: number) => i !== periodToDelete.index);
       await handleSavePeriods(updatedPeriods);
       setIsDeleteDialogOpen(false);
       setPeriodToDelete(null);
@@ -103,7 +108,7 @@ export default function AcademicYearPage() {
                         </CardDescription>
                     </div>
                     {canManageSettings && (
-                        <Button onClick={() => handleOpenForm(null)}>
+                        <Button onClick={() => handleOpenForm(null, null)}>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Ajouter une période
                         </Button>
@@ -118,8 +123,8 @@ export default function AcademicYearPage() {
                     </div>
                 ) : academicPeriods.length > 0 ? (
                     <div className="space-y-2">
-                        {academicPeriods.map((period: AcademicPeriod) => (
-                            <div key={period.name} className="flex items-center justify-between p-3 border rounded-lg">
+                        {academicPeriods.map((period: AcademicPeriod, index: number) => (
+                            <div key={`${period.name}-${index}`} className="flex items-center justify-between p-3 border rounded-lg">
                                 <div>
                                     <p className="font-semibold">{period.name}</p>
                                     <p className="text-sm text-muted-foreground">
@@ -128,8 +133,8 @@ export default function AcademicYearPage() {
                                 </div>
                                 {canManageSettings && (
                                     <div className="flex gap-2">
-                                        <Button variant="outline" size="sm" onClick={() => handleOpenForm(period)}><Edit className="mr-2 h-4 w-4" /> Modifier</Button>
-                                        <Button variant="ghost" size="icon" onClick={() => handleOpenDeleteDialog(period)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                        <Button variant="outline" size="sm" onClick={() => handleOpenForm(period, index)}><Edit className="mr-2 h-4 w-4" /> Modifier</Button>
+                                        <Button variant="ghost" size="icon" onClick={() => handleOpenDeleteDialog(period, index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                                     </div>
                                 )}
                             </div>
@@ -149,9 +154,10 @@ export default function AcademicYearPage() {
                 <DialogHeader>
                     <DialogTitle>{editingPeriod ? 'Modifier la' : 'Nouvelle'} Période</DialogTitle>
                 </DialogHeader>
-                <AcademicPeriodForm 
+                <AcademicPeriodForm
                     existingPeriods={academicPeriods}
                     editingPeriod={editingPeriod}
+                    editingIndex={editingIndex}
                     onSave={(newPeriods) => handleSavePeriods(newPeriods)}
                     onCancel={() => setIsFormOpen(false)}
                 />
@@ -165,7 +171,7 @@ export default function AcademicYearPage() {
                 <AlertDialogHeader>
                     <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        La période <strong>"{periodToDelete?.name}"</strong> sera supprimée.
+                        La période <strong>&quot;{periodToDelete?.period.name}&quot;</strong> sera supprimée.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

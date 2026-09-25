@@ -17,6 +17,7 @@ const subjectSchema = z.object({
     name: z.string().min(2, "Le nom est requis."),
     code: z.string().min(2, "Le code est requis.").max(20, "Le code ne peut pas dépasser 20 caractères"),
     color: z.string().optional(),
+    coefficient: z.coerce.number().min(0.5, "Le coefficient doit être d'au moins 0.5."),
 });
 
 type SubjectFormValues = z.infer<typeof subjectSchema>;
@@ -36,7 +37,7 @@ export function SubjectForm({ schoolId, subject, onSave }: SubjectFormProps) {
     });
 
     useEffect(() => {
-        form.reset(subject || { name: '', code: '', color: '#8B5CF6' });
+        form.reset(subject || { name: '', code: '', color: '#8B5CF6', coefficient: 1 });
     }, [subject, form]);
 
     const handleFormSubmit = async (values: SubjectFormValues) => {
@@ -63,10 +64,12 @@ export function SubjectForm({ schoolId, subject, onSave }: SubjectFormProps) {
         <Form {...form}>
             <form id="subject-form" onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
                 <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom de la matière</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                     <FormField control={form.control} name="code" render={({ field }) => (<FormItem><FormLabel>Code</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="coefficient" render={({ field }) => (<FormItem><FormLabel>Coefficient</FormLabel><FormControl><Input type="number" step="0.5" min="0.5" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="color" render={({ field }) => (<FormItem><FormLabel>Couleur</FormLabel><FormControl><Input type="color" {...field} className="h-10" /></FormControl><FormMessage /></FormItem>)} />
                 </div>
+                <p className="text-xs text-muted-foreground">Le coefficient pondère cette matière dans la moyenne générale des bulletins (distinct du coefficient d&apos;un devoir individuel, réglable note par note).</p>
                 <DialogFooter className="pt-4">
                     <Button variant="outline" type="button" onClick={onSave}>Annuler</Button>
                     <Button type="submit" disabled={isSubmitting}>

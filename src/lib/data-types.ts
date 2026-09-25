@@ -7,6 +7,8 @@ export type user_root = {
     schools?: { [key: string]: string };
     activeSchoolId?: string;
     isSuperAdmin?: boolean;
+    /** Accès restreint réservé aux commerciaux : uniquement le pipeline prospects, pas le reste de l'espace admin. */
+    commercialAccess?: boolean;
 };
 
 export type school = {
@@ -36,6 +38,11 @@ export type school = {
     academicPeriods?: academicPeriod[];
     archivedYears?: string[];
     isSetupComplete?: boolean;
+    /** Nombre maximum de repas servis par jour et par type de repas (non défini = pas de limite). */
+    cantineDailyCapacity?: number;
+    /** Heure de couvre-feu de l'internat, format "HH:mm". */
+    internatCurfewWeekday?: string;
+    internatCurfewWeekend?: string;
     subscription?: {
         plan?: "Essentiel" | "Pro" | "Premium";
         status?: "active" | "trialing" | "past_due" | "canceled" | "expired";
@@ -67,6 +74,23 @@ export type academicYearTransition = {
     completedAt?: string;
     startedBy: string;
     notes?: string;
+};
+
+export type audit_log = {
+    action: string;
+    details: string;
+    userId: string;
+    userName?: string;
+    userRole?: string;
+    targetId?: string;
+    targetType?: string;
+    /** Données structurées propres à l'action (ex: entrées réversibles pour une attribution de classe). */
+    payload?: any;
+    reverted?: boolean;
+    revertedAt?: any;
+    revertedBy?: string;
+    timestamp?: any;
+    id?: string;
 };
 
 export type parent_profile = {
@@ -230,6 +254,8 @@ export type staff = {
     CG?: string;
     Cle_RIB?: string;
     CNPS?: boolean;
+    cni?: string;
+    autorisationEnseigner?: string;
 };
 
 export type staff_leave = {
@@ -260,7 +286,7 @@ export type student = {
     matricule: string;
     firstName: string;
     lastName: string;
-    status: "Actif" | "En attente" | "Transféré" | "Diplômé" | "Radié";
+    status: "Actif" | "En attente" | "Transféré" | "Diplômé" | "Radié" | "Supprimé";
     dateOfBirth: string;
     placeOfBirth: string;
     gender: "Masculin" | "Féminin";
@@ -292,6 +318,10 @@ export type student = {
     updatedBy?: string;
     inscriptionYear?: number;
     enrollments?: student_enrollment[];
+    academicYear?: string;
+    nationality?: string;
+    statusAff?: 'Affecté' | 'Non-Affecté';
+    isRepeater?: boolean;
     id?: string;
 };
 
@@ -437,6 +467,7 @@ export type accountingTransaction = {
     type: "Revenu" | "Dépense";
     amount: number;
     studentId?: string;
+    payrollRunId?: string;
     academicYear?: string;
 };
 
@@ -520,6 +551,13 @@ export type fee = {
     installments: string;
     details?: string;
     academicYear?: string;
+    inscription?: string;
+    scolarite?: string;
+    annexes?: string;
+    amountAff?: string;
+    inscriptionAff?: string;
+    scolariteAff?: string;
+    annexesAff?: string;
     id?: string;
 };
 
@@ -528,6 +566,8 @@ export type subject = {
     name: string;
     code?: string;
     color?: string;
+    /** Coefficient officiel de la matière, utilisé pour pondérer la moyenne générale (distinct du coefficient d'une note individuelle). */
+    coefficient?: number;
     id?: string;
 };
 
@@ -577,6 +617,12 @@ export type canteenReservation = {
     paidAmount?: number;
     attendanceTime?: string;
     notes?: string;
+    /** Transaction ecoles/{schoolId}/comptabilite créée pour ce paiement (évite un double enregistrement). */
+    accountingTransactionId?: string;
+    /** Abonnement cantine actif décrémenté par cette réservation, le cas échéant. */
+    linkedSubscriptionId?: string;
+    academicYear?: string;
+    id?: string;
 };
 
 export type canteenSubscription = {
@@ -586,11 +632,15 @@ export type canteenSubscription = {
     endDate: string;
     price: number;
     status: "active" | "inactive" | "expired";
+    paymentStatus?: "unpaid" | "paid";
     daysOfWeek?: string[];
     mealType?: "petit_dejeuner" | "dejeuner" | "gouter" | "diner";
     autoRenew?: boolean;
     missedMeals?: number;
     remainingMeals?: number;
+    /** Transaction ecoles/{schoolId}/comptabilite créée pour ce paiement (évite un double enregistrement). */
+    accountingTransactionId?: string;
+    academicYear?: string;
     id?: string;
 };
 
@@ -686,6 +736,9 @@ export type transportSubscription = {
     startDate: string;
     endDate: string;
     paymentStatus?: "unpaid" | "paid";
+    /** Transaction ecoles/{schoolId}/comptabilite créée pour ce paiement (évite un double enregistrement). */
+    accountingTransactionId?: string;
+    academicYear?: string;
     id?: string;
 };
 
@@ -704,6 +757,8 @@ export type room = {
     capacity: number;
     status: "available" | "occupied" | "maintenance";
     monthlyRate: number;
+    /** Nombre d'occupants actifs actuels, maintenu par transaction pour éviter tout dépassement de capacité. */
+    currentOccupancy?: number;
 };
 
 export type occupant = {
@@ -713,6 +768,7 @@ export type occupant = {
     status: "active" | "pending" | "terminated" | "suspended";
     endDate?: string;
     nextPaymentDue?: string;
+    academicYear?: string;
 };
 
 export type log = {
@@ -845,6 +901,8 @@ export type payrollRun = {
     status: "Terminé" | "En cours" | "Annulé";
     processedBy: string;
     processedByName?: string;
+    /** Transaction ecoles/{schoolId}/comptabilite créée pour cette paie (sortie de caisse). */
+    accountingTransactionId?: string;
 };
 
 export type payroll_payslip = {
@@ -857,6 +915,8 @@ export interface UserProfile extends staff {
     permissions?: Partial<admin_role['permissions']>;
     isAdmin?: boolean;
     isSuperAdmin?: boolean;
+    /** Accès restreint réservé aux commerciaux : uniquement le pipeline prospects, pas le reste de l'espace admin. */
+    isCommercial?: boolean;
 }
 
 export type classe = class_type;

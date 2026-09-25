@@ -299,14 +299,12 @@ function PaymentPageContent() {
 
     const isLoading = userLoading || schoolLoading || settingsLoading;
 
-    const availableProviders = useMemo(() => {
-        if (!settingsData || !settingsData.paymentProviders) return PROVIDERS;
-        return PROVIDERS.filter(p => {
-            // 'orangemoney' is stored as 'orangeMoney' in settings
-            const key = p.id === 'orangemoney' ? 'orangeMoney' : p.id;
-            return settingsData.paymentProviders[key] !== false;
-        });
-    }, [settingsData]);
+    // GeniusPay est l'unique prestataire de paiement de la plateforme :
+    // on ne propose que lui, quel que soit le réglage paymentProviders.
+    const availableProviders = useMemo(
+        () => PROVIDERS.filter(p => p.id === 'genius'),
+        [],
+    );
 
     if (isLoading) {
         return (

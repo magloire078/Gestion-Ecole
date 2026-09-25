@@ -10,7 +10,7 @@ import { PlusCircle, MoreHorizontal, Edit, Trash2, Search, Filter } from 'lucide
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, doc, deleteDoc, getDocs, where, updateDoc } from 'firebase/firestore';
+import { collection, query, doc, runTransaction } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { occupant, student as Student, room as Room } from '@/lib/data-types';
@@ -25,6 +25,8 @@ import { OccupantForm } from '@/components/internat/occupant-form';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useAcademicYear } from '@/providers/academic-year-provider';
+import { filterByAcademicYear } from '@/lib/academic-year-utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,6 +50,7 @@ export default function OccupantsPage() {
   const { user } = useUser();
   const { toast } = useToast();
   const canManageContent = !!user?.profile?.permissions?.manageInternat;
+  const { selectedYear, currentYear } = useAcademicYear();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingOccupant, setEditingOccupant] = useState<(occupant & { id: string }) | null>(null);
@@ -85,13 +88,15 @@ export default function OccupantsPage() {
       };
     });
 
-    return allOccupants.filter(occ => {
-      const matchesSearch = occ.studentName?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    const forYear = filterByAcademicYear(allOccupants, selectedYear, currentYear);
+
+    return forYear.filter(occ => {
+      const matchesSearch = occ.studentName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            occ.roomNumber?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus = statusFilter === 'all' || occ.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
-  }, [occupantsData, studentsData, roomsData, searchQuery, statusFilter]);
+  }, [occupantsData, studentsData, roomsData, searchQuery, statusFilter, selectedYear, currentYear]);
 
   const isLoading = schoolLoading || occupantsLoading || studentsLoading || roomsLoading;
 
@@ -113,29 +118,26 @@ export default function OccupantsPage() {
   const handleDeleteOccupant = async () => {
     if (!schoolId || !occupantToDelete) return;
     try {
-      // 1. Delete the occupant doc
-      await deleteDoc(doc(firestore, `ecoles/${schoolId}/internat_occupants`, occupantToDelete.id));
+      const occupantRef = doc(firestore, `ecoles/${schoolId}/internat_occupants`, occupantToDelete.id);
+      const roomRef = occupantToDelete.roomId ? doc(firestore, `ecoles/${schoolId}/internat_chambres/${occupantToDelete.roomId}`) : null;
 
-      // 2. Synchronize Room Status
-      if (occupantToDelete.roomId) {
-        const roomOccupantsQuery = query(
-            collection(firestore, `ecoles/${schoolId}/internat_occupants`),
-            where('roomId', '==', occupantToDelete.roomId),
-            where('status', '==', 'active')
-        );
-        const snapshot = await getDocs(roomOccupantsQuery);
-        const currentOccupantCount = snapshot.size;
-
-        const room = rooms.find(r => r.id === occupantToDelete.roomId);
-        if (room) {
-            const newStatus = currentOccupantCount >= room.capacity ? 'occupied' : 'available';
-            if (room.status !== newStatus) {
-                await updateDoc(doc(firestore, `ecoles/${schoolId}/internat_chambres/${occupantToDelete.roomId}`), {
-                    status: newStatus
-                });
-            }
+      // Décrémente le compteur d'occupation de la chambre dans la même
+      // transaction que la suppression, pour rester cohérent avec le
+      // compteur maintenu par le formulaire d'assignation.
+      await runTransaction(firestore, async (transaction) => {
+        if (roomRef && occupantToDelete.status === 'active') {
+          const roomSnap = await transaction.get(roomRef);
+          if (roomSnap.exists()) {
+            const roomData = roomSnap.data() as Room;
+            const newOccupancy = Math.max(0, (roomData.currentOccupancy || 0) - 1);
+            transaction.update(roomRef, {
+              currentOccupancy: newOccupancy,
+              status: newOccupancy >= roomData.capacity ? 'occupied' : 'available',
+            });
+          }
         }
-      }
+        transaction.delete(occupantRef);
+      });
 
       toast({ title: 'Occupation supprimée', description: "L'occupation a bien été supprimée." });
     } catch (e) {

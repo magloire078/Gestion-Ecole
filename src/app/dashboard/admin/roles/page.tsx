@@ -1,12 +1,13 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useTransition, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Edit, Trash2, Search, Users, Shield, ShieldCheck, UserCheck, MoreVertical, LayoutGrid, List } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, doc, writeBatch } from 'firebase/firestore';
+import { writeAuditLog } from '@/lib/audit-log';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -42,6 +43,20 @@ export default function RolesPage() {
     const [roleToDelete, setRoleToDelete] = useState<(AdminRole & { id: string }) | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
+    const [isPending, startTransition] = useTransition();
+    const [shouldRenderForm, setShouldRenderForm] = useState(false);
+
+    useEffect(() => {
+        if (isFormOpen) {
+            const timer = setTimeout(() => {
+                setShouldRenderForm(true);
+            }, 100);
+            return () => clearTimeout(timer);
+        } else {
+            setShouldRenderForm(false);
+        }
+    }, [isFormOpen]);
+
     // Fetch Roles
     const rolesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/admin_roles`)) : null, [firestore, schoolId]);
     const { data: rolesData, loading: rolesLoading } = useCollection(rolesQuery);
@@ -60,25 +75,31 @@ export default function RolesPage() {
         );
     }, [roles, searchTerm]);
 
-    // Calculate user counts per role
+    // Nombre de membres du personnel affectés à chaque rôle admin (par
+    // `staff.adminRole`, le champ qui relie réellement un membre du personnel
+    // à un document `admin_roles` — pas `staff.role`, qui est son métier).
     const usersByRole = useMemo(() => {
         const counts: Record<string, number> = {};
         staff.forEach(s => {
-            if (s.role) {
-                counts[s.role] = (counts[s.role] || 0) + 1;
+            if (s.adminRole) {
+                counts[s.adminRole] = (counts[s.adminRole] || 0) + 1;
             }
         });
         return counts;
     }, [staff]);
 
     const handleOpenForm = (role: (AdminRole & { id: string }) | null) => {
-        setEditingRole(role);
-        setIsFormOpen(true);
+        startTransition(() => {
+            setEditingRole(role);
+            setIsFormOpen(true);
+        });
     };
 
     const handleFormSave = () => {
-        setIsFormOpen(false);
-        setEditingRole(null);
+        startTransition(() => {
+            setIsFormOpen(false);
+            setEditingRole(null);
+        });
     };
 
     const handleOpenDeleteDialog = (role: AdminRole & { id: string }) => {
@@ -88,21 +109,40 @@ export default function RolesPage() {
 
     const handleDeleteRole = async () => {
         if (!schoolId || !roleToDelete) return;
-        const docRef = doc(firestore, `ecoles/${schoolId}/admin_roles`, roleToDelete.id);
-        deleteDoc(docRef)
-            .then(() => {
-                toast({ title: 'Rôle supprimé', description: `Le rôle "${roleToDelete.name}" a été supprimé.` });
-            }).catch(error => {
-                console.error("Error deleting role: ", error);
-                toast({
-                    variant: "destructive",
-                    title: "Erreur de suppression",
-                    description: "Impossible de supprimer le rôle. Vérifiez vos permissions.",
-                });
-            }).finally(() => {
-                setIsDeleteDialogOpen(false);
-                setRoleToDelete(null);
-            })
+        try {
+            // Le personnel affecté à ce rôle garde sinon une référence vers un
+            // document admin_roles inexistant, et fetchUserAppData ne réinitialise
+            // alors jamais ses permissions au prochain chargement de session.
+            const affectedStaff = staff.filter(s => s.adminRole === roleToDelete.id);
+            const batch = writeBatch(firestore);
+            affectedStaff.forEach(s => {
+                batch.update(doc(firestore, `ecoles/${schoolId}/personnel/${s.id}`), { adminRole: null });
+            });
+            batch.delete(doc(firestore, `ecoles/${schoolId}/admin_roles`, roleToDelete.id));
+            await batch.commit();
+
+            await writeAuditLog(firestore, schoolId, {
+                action: 'admin_role.supprime',
+                details: `Rôle "${roleToDelete.name}" supprimé${affectedStaff.length ? ` (${affectedStaff.length} membre(s) du personnel réinitialisé(s))` : ''}`,
+                userId: user?.uid || 'inconnu',
+                userName: user?.displayName || undefined,
+                targetId: roleToDelete.id,
+                targetType: 'admin_role',
+                payload: { role: roleToDelete, affectedStaffIds: affectedStaff.map(s => s.id) },
+            });
+
+            toast({ title: 'Rôle supprimé', description: `Le rôle "${roleToDelete.name}" a été supprimé.` });
+        } catch (error) {
+            console.error("Error deleting role: ", error);
+            toast({
+                variant: "destructive",
+                title: "Erreur de suppression",
+                description: "Impossible de supprimer le rôle. Vérifiez vos permissions.",
+            });
+        } finally {
+            setIsDeleteDialogOpen(false);
+            setRoleToDelete(null);
+        }
     };
 
     const formatPermissionName = (name: string) => {
@@ -293,12 +333,36 @@ export default function RolesPage() {
                             {editingRole ? `Ajustez les accès pour "${editingRole.name}".` : "Définissez les responsabilités et les accès."}
                         </DialogDescription>
                     </DialogHeader>
-                    <RoleForm
-                        key={editingRole?.id || 'new-role'}
-                        schoolId={schoolId!}
-                        role={editingRole}
-                        onSave={handleFormSave}
-                    />
+                    {!shouldRenderForm ? (
+                        <div className="space-y-6 py-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Skeleton className="h-4 w-24" />
+                                    <Skeleton className="h-10 w-full" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Skeleton className="h-4 w-24" />
+                                    <Skeleton className="h-10 w-full" />
+                                </div>
+                            </div>
+                            <div className="space-y-4">
+                                <Skeleton className="h-6 w-48" />
+                                <Skeleton className="h-12 w-full" />
+                                <div className="space-y-2">
+                                    <Skeleton className="h-16 w-full" />
+                                    <Skeleton className="h-16 w-full" />
+                                    <Skeleton className="h-16 w-full" />
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <RoleForm
+                            key={editingRole?.id || 'new-role'}
+                            schoolId={schoolId!}
+                            role={editingRole}
+                            onSave={handleFormSave}
+                        />
+                    )}
                 </DialogContent>
             </Dialog>
 

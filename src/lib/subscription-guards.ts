@@ -102,6 +102,23 @@ export function remainingCycleSlots(
 }
 
 /**
+ * Nombre d'élèves modifiables quand l'abonnement n'est plus effectivement
+ * actif : le compte est alors traité comme s'il était basculé sur le plan
+ * Essentiel (gratuit), quel que soit le plan payant précédemment souscrit.
+ * Les élèves déjà enregistrés au-delà de cette limite restent visibles
+ * (rien n'est supprimé) mais ne sont plus consultables/modifiables tant que
+ * l'abonnement n'est pas renouvelé.
+ */
+export function getEffectiveEditableStudentLimit(sub?: SubscriptionGuardInput | null): number {
+    if (isSubscriptionEffectivelyActive(sub)) {
+        const limits = getPlanLimits(sub?.plan);
+        return limits ? limits.maxStudents : Infinity;
+    }
+    const essentiel = getPlanLimits('Essentiel');
+    return essentiel ? essentiel.maxStudents : 50;
+}
+
+/**
  * Helper de message d'erreur uniforme pour les limites atteintes.
  */
 export function buildLimitReachedMessage(kind: 'students' | 'cycles', plan: string, limit: number): string {

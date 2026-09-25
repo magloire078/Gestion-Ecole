@@ -10,7 +10,7 @@ import { collection, query, orderBy } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import React from 'react';
-import type { gradeEntry as GradeEntry } from '@/lib/data-types';
+import type { gradeEntry as GradeEntry, subject as Subject } from '@/lib/data-types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -32,7 +32,13 @@ interface GradesTabProps {
     studentId: string;
 }
 
-const calculateAverages = (grades: GradeEntry[]) => {
+// Pondération identique à ReportCardService.calculateStudentAverages /
+// calculateGeneralAverage : chaque devoir pèse pour son propre coefficient
+// au sein d'une matière (Composition > Devoir > Interrogation), puis
+// chaque matière pèse pour son coefficient officiel (subjectCoefficients)
+// dans la moyenne générale — jamais la somme des coefficients de ses notes,
+// qui dépend arbitrairement du nombre de devoirs saisis.
+const calculateAverages = (grades: GradeEntry[], subjectCoefficients: Record<string, number>) => {
     const gradesBySubject: Record<string, { totalPoints: number; totalCoeffs: number }> = {};
     grades.forEach(g => {
         if (!gradesBySubject[g.subject]) {
@@ -43,19 +49,20 @@ const calculateAverages = (grades: GradeEntry[]) => {
     });
 
     const averages: Record<string, { average: number, totalCoeffs: number }> = {};
-    let totalPoints = 0;
-    let totalCoeffs = 0;
+    let totalWeightedPoints = 0;
+    let totalSubjectCoef = 0;
 
     for (const subject in gradesBySubject) {
         const { totalPoints: subjectTotalPoints, totalCoeffs: subjectTotalCoeffs } = gradesBySubject[subject];
         if (subjectTotalCoeffs > 0) {
             const average = subjectTotalPoints / subjectTotalCoeffs;
             averages[subject] = { average, totalCoeffs: subjectTotalCoeffs };
-            totalPoints += subjectTotalPoints;
-            totalCoeffs += subjectTotalCoeffs;
+            const officialCoef = subjectCoefficients[subject] ?? 1;
+            totalWeightedPoints += average * officialCoef;
+            totalSubjectCoef += officialCoef;
         }
     }
-    const generalAverage = totalCoeffs > 0 ? totalPoints / totalCoeffs : 0;
+    const generalAverage = totalSubjectCoef > 0 ? totalWeightedPoints / totalSubjectCoef : 0;
     return { subjectAverages: averages, generalAverage };
 };
 
@@ -153,6 +160,17 @@ export function GradesTab({ schoolId, studentId }: GradesTabProps) {
 
     const grades: GradeEntry[] = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() } as GradeEntry)) || [], [gradesData]);
 
+    const subjectsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/matieres`)), [firestore, schoolId]);
+    const { data: subjectsData } = useCollection(subjectsQuery);
+    const subjectCoefficients = useMemo(() => {
+        const map: Record<string, number> = {};
+        subjectsData?.forEach(d => {
+            const s = d.data() as Subject;
+            map[s.name] = s.coefficient ?? 1;
+        });
+        return map;
+    }, [subjectsData]);
+
     const progressionsMap = useMemo(() => {
         const diffs = new Map<string, number>();
         const dates = new Map<string, string>();
@@ -185,7 +203,7 @@ export function GradesTab({ schoolId, studentId }: GradesTabProps) {
         return { diffs, dates };
     }, [grades]);
 
-    const { subjectAverages, generalAverage } = useMemo(() => calculateAverages(grades), [grades]);
+    const { subjectAverages, generalAverage } = useMemo(() => calculateAverages(grades, subjectCoefficients), [grades, subjectCoefficients]);
     const sortedSubjects = useMemo(() => Object.keys(subjectAverages).sort((a, b) => subjectAverages[b].average - subjectAverages[a].average), [subjectAverages]);
 
     return (

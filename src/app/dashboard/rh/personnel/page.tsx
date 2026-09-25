@@ -120,11 +120,11 @@ export default function PersonnelPage() {
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [staffToDelete, setStaffToDelete] = useState<StaffMember | null>(null);
 
-  const handleDelete = () => {
-    if (!schoolId || !staffToDelete) return;
+  const handleDelete = async () => {
+    if (!schoolId || !staffToDelete || !user?.authUser) return;
 
-    // Use StaffService for deletion
-    StaffService.deleteStaffMember(schoolId, staffToDelete.id)
+    const idToken = await user.authUser.getIdToken();
+    StaffService.deleteStaffMember(schoolId, staffToDelete.id, idToken)
       .then(() => {
         toast({ title: "Membre du personnel supprimé", description: `${staffToDelete.firstName} ${staffToDelete.lastName} a été retiré(e) de la liste.` });
       }).catch((serverError) => {

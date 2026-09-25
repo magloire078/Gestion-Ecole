@@ -32,7 +32,7 @@ const studentSchema = z.object({
   discountReason: z.string().optional(),
   amountDue: z.coerce.number().min(0, "Le montant dû ne peut pas être négatif."),
   tuitionStatus: z.enum(['Soldé', 'En retard', 'Partiel']),
-  status: z.enum(['Actif', 'En attente', 'Transféré', 'Diplômé', 'Radié']),
+  status: z.enum(['Actif', 'En attente', 'Transféré', 'Diplômé', 'Radié', 'Supprimé']),
   feedback: z.string().optional(),
   grade: z.string().optional(),
   academicYear: z.string().optional(),
@@ -133,13 +133,17 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
 
     const startYearInt = values.academicYear ? parseInt(values.academicYear.split('-')[0]) : student.inscriptionYear;
 
-    // classId/class/cycle/grade ne sont plus patchés ici : c'est
-    // assignStudentToClass (class-assignment-service.ts) qui en est
-    // seul responsable, avec l'historique inscriptions_classe et les
-    // compteurs studentCount qui vont avec.
+    // classId/class ne sont plus patchés ici : c'est assignStudentsToClass
+    // (class-assignment-service.ts) qui en est seul responsable, avec
+    // l'historique inscriptions_classe, le journal d'audit réversible et
+    // les compteurs studentCount qui vont avec. grade/cycle restent ici :
+    // ce sont de simples métadonnées d'affichage sur l'élève (bulletins,
+    // fiche élève), pas suivies dans l'historique inscriptions_classe.
     const updatedData = {
       firstName: values.firstName,
       lastName: values.lastName,
+      cycle: selectedClassInfo?.cycleId || student.cycle,
+      grade: values.grade || 'N/A',
       dateOfBirth: values.dateOfBirth,
       tuitionFee: values.tuitionFee,
       discountAmount: values.discountAmount,
@@ -156,18 +160,17 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
     try {
       const { StudentService } = await import('@/services/student-services');
 
-      if (classHasChanged) {
-        const { assignStudentToClass } = await import('@/services/class-assignment-service');
-        await assignStudentToClass(schoolId, {
-          studentId: student.id!,
+      if (classHasChanged && selectedClassInfo) {
+        const { assignStudentsToClass } = await import('@/services/class-assignment-service');
+        await assignStudentsToClass({
+          schoolId,
+          studentIds: [student.id!],
           toClassId: newClassId,
-          fromClassId: oldClassId,
+          toClassName: selectedClassInfo.name,
           academicYear: values.academicYear || '2024-2025',
-          promotionType: 'normal',
           userId: user.uid,
-          toClassName: selectedClassInfo?.name,
-          toGrade: values.grade,
-          toCycleId: selectedClassInfo?.cycleId,
+          userName: user.displayName ?? undefined,
+          reason: 'Modification manuelle de la fiche élève',
         });
       }
 

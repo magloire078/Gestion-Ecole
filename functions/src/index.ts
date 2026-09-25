@@ -131,7 +131,7 @@ function baseTemplate(title: string, bodyHtml: string, cta: string): string {
                 <h2 style="color: #0C365A;">${title}</h2>
                 ${bodyHtml}
                 <div style="margin: 30px 0; text-align: center;">
-                    <a href="https://gereecole.com/dashboard/parametres/abonnement" style="background-color: #2D9CDB; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">${cta}</a>
+                    <a href="https://www.gerecole.com/dashboard/parametres/abonnement" style="background-color: #2D9CDB; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">${cta}</a>
                 </div>
                 <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
                 <p style="font-size: 0.8em; color: #777; text-align: center;">L'équipe GèreEcole</p>
@@ -274,18 +274,21 @@ export const subscriptionLifecycle = onSchedule(
  * =========================================================================
  * Notifie les super-admins par email (collection `mail`) et par WhatsApp
  * (Evolution API, même configuration que le chat support :
- * EVOLUTION_API_URL, EVOLUTION_API_KEY, WhatsApp_INSTANCE_NAME,
- * WhatsApp_GROUP_ID). Si la configuration WhatsApp est absente, seule
- * l'alerte email part.
+ * EVOLUTION_API_URL, EVOLUTION_API_KEY, WhatsApp_INSTANCE_NAME).
+ * La destination WhatsApp de ces alertes est ADMIN_ALERT_WHATSAPP_NUMBER
+ * (numéro individuel, ex: 2250707942880 — indicatif pays inclus, sans '+'
+ * ni espaces), avec repli sur WhatsApp_GROUP_ID (groupe support) si cette
+ * variable n'est pas définie. Si aucune destination n'est configurée,
+ * seule l'alerte email part.
  */
 
 async function sendAdminWhatsApp(text: string): Promise<boolean> {
     const apiUrl = process.env.EVOLUTION_API_URL;
     const apiKey = process.env.EVOLUTION_API_KEY;
     const instance = process.env.WhatsApp_INSTANCE_NAME;
-    const groupId = process.env.WhatsApp_GROUP_ID;
+    const recipient = process.env.ADMIN_ALERT_WHATSAPP_NUMBER || process.env.WhatsApp_GROUP_ID;
 
-    if (!apiUrl || !apiKey || !instance || !groupId || apiUrl.includes('votre-serveur.com')) {
+    if (!apiUrl || !apiKey || !instance || !recipient || apiUrl.includes('votre-serveur.com')) {
         logger.warn('[adminAlerts] WhatsApp non configuré, alerte email uniquement');
         return false;
     }
@@ -295,7 +298,7 @@ async function sendAdminWhatsApp(text: string): Promise<boolean> {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', apikey: apiKey },
             body: JSON.stringify({
-                number: groupId,
+                number: recipient,
                 options: { delay: 1200, presence: 'composing', linkPreview: false },
                 textMessage: { text },
             }),

@@ -20,6 +20,10 @@
                 "isSuperAdmin": {
                     "type": "boolean",
                     "description": "Indique si l'utilisateur est un super-admin de la plateforme."
+                },
+                "commercialAccess": {
+                    "type": "boolean",
+                    "description": "Accès restreint réservé aux commerciaux : uniquement le pipeline prospects (/admin/system/prospects), pas le reste de l'espace admin."
                 }
             }
         },

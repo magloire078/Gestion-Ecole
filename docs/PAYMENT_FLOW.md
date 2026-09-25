@@ -201,7 +201,7 @@ GENIUS_WEBHOOK_SECRET=...
 
 ### Général
 ```
-NEXT_PUBLIC_BASE_URL=https://app.gereecole.com   # (optionnel)
+NEXT_PUBLIC_BASE_URL=https://app.gerecole.com   # (optionnel)
 ```
 
 > Si `NEXT_PUBLIC_BASE_URL` n'est pas défini, le serveur déduit l'URL de

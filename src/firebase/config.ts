@@ -7,7 +7,8 @@ import {
   initializeFirestore,
   memoryLocalCache,
   enableNetwork,
-  Firestore
+  Firestore,
+  FirestoreSettings
 } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 
@@ -15,9 +16,23 @@ import { getStorage, FirebaseStorage } from 'firebase/storage';
 // On utilise .trim() et on retire tout espace/retour à la ligne pour éviter les erreurs de copier-coller dans Vercel
 const clean = (val: string | undefined) => val?.trim()?.replace(/[\s\n\r]/g, '') || '';
 
+// authDomain = domaine courant de l'app (first-party) sur les environnements
+// déployés. Combiné au proxy /__/auth/* de next.config.js, cela évite les
+// cookies tiers et fait fonctionner la connexion Google sur mobile (le
+// signInWithRedirect échouait silencieusement quand authDomain
+// = greecole.firebaseapp.com différait du domaine de l'app). En SSR et en
+// local (localhost), on retombe sur la variable d'environnement classique.
+const resolveAuthDomain = () => {
+  const envDomain = clean(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN);
+  if (typeof window === 'undefined') return envDomain;
+  const host = window.location.host; // inclut le port éventuel
+  const isLocalhost = /^(localhost|127\.0\.0\.1|\[::1\])/.test(window.location.hostname);
+  return isLocalhost || !host ? envDomain : host;
+};
+
 export const firebaseConfig = {
   apiKey: clean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY),
-  authDomain: clean(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN),
+  authDomain: resolveAuthDomain(),
   projectId: clean(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID),
   storageBucket: clean(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "greecole.appspot.com"),
   messagingSenderId: clean(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID),
@@ -37,9 +52,26 @@ if (getApps().length === 0) {
   app = getApp();
 }
 
-// Initialisation des Services
-auth = getAuth(app);
-storage = getStorage(app, firebaseConfig.storageBucket);
+// Initialisation des Services.
+// On protège getAuth/getStorage par try/catch : si les variables
+// NEXT_PUBLIC_FIREBASE_* sont absentes au moment du build (ex. environnement
+// Preview mal configuré), getAuth lève `auth/invalid-api-key` et fait échouer
+// le pré-rendu de TOUTES les pages. Le garde-fou permet au build d'aboutir en
+// mode dégradé ; en production (clés présentes) le comportement est identique.
+// NB : sans les clés, l'app reste non fonctionnelle au runtime — ce garde-fou
+// ne dispense pas de configurer les variables, il évite juste un build cassé.
+try {
+  auth = getAuth(app);
+} catch (e) {
+  console.error('[FirebaseConfig] getAuth a échoué (clés Firebase absentes au build ?) :', e);
+  auth = undefined as unknown as Auth;
+}
+try {
+  storage = getStorage(app, firebaseConfig.storageBucket);
+} catch (e) {
+  console.error('[FirebaseConfig] getStorage a échoué :', e);
+  storage = undefined as unknown as FirebaseStorage;
+}
 
 // Initialisation Firestore (Gestion robuste du Singleton et du Cache)
 if (typeof window !== 'undefined') {
@@ -48,12 +80,18 @@ if (typeof window !== 'undefined') {
 
   try {
     // On force le cache en mémoire pour éviter les erreurs "offline" liées à IndexedDB/Tabs
-    // et on force le long-polling pour les réseaux restrictifs (évite QUIC_PROTOCOL_ERROR)
-    firestore = initializeFirestore(app, {
+    // et on force le long-polling pour les réseaux restrictifs (évite QUIC_PROTOCOL_ERROR).
+    // useFetchStreams: false => bascule sur le transport XHR historique, plus tolérant aux
+    // proxys/réseaux d'entreprise stricts qui provoquent des 400 "WebChannel transport errored".
+    // NB: useFetchStreams est bien lu par le SDK au runtime mais absent du type public
+    // FirestoreSettings (firebase 11.9.0), d'où l'extension de type locale ci-dessous.
+    const firestoreSettings: FirestoreSettings & { useFetchStreams?: boolean } = {
       localCache: memoryLocalCache(),
       experimentalForceLongPolling: true,
+      useFetchStreams: false,
       ignoreUndefinedProperties: true,
-    });
+    };
+    firestore = initializeFirestore(app, firestoreSettings);
     console.log("[FirebaseConfig] Firestore initialized successfully with MemoryCache + LongPolling");
   } catch (e: any) {
     if (e.code === 'failed-precondition') {
@@ -68,8 +106,14 @@ if (typeof window !== 'undefined') {
   // Tentative proactive d'activer le réseau
   enableNetwork(firestore).catch(err => console.error("[FirebaseConfig] enableNetwork failed:", err));
 } else {
-  // Côté Serveur
-  firestore = getFirestore(app);
+  // Côté Serveur (SSR / build). Protégé par précaution : si la config est
+  // incomplète au build, on ne fait pas échouer le pré-rendu.
+  try {
+    firestore = getFirestore(app);
+  } catch (e) {
+    console.error('[FirebaseConfig] getFirestore (serveur) a échoué :', e);
+    firestore = undefined as unknown as Firestore;
+  }
 }
 
 // Exports sécurisés

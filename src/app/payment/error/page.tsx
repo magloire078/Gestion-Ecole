@@ -136,8 +136,8 @@ function ErrorPageContent() {
                 <p className="font-bold text-slate-800 mb-1">Besoin d'aide ?</p>
                 <p>
                   Si le problème persiste, contactez notre support à{' '}
-                  <a href="mailto:support@gereecole.com" className="font-semibold text-primary underline-offset-2 hover:underline">
-                    support@gereecole.com
+                  <a href="mailto:support@gerecole.com" className="font-semibold text-primary underline-offset-2 hover:underline">
+                    support@gerecole.com
                   </a>{' '}
                   en précisant le fournisseur utilisé et l'heure de la tentative.
                 </p>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { addDays, format } from 'date-fns';
-import { getAdminAuth, getAdminDb } from '@/firebase/admin';
+import { getAdminDb } from '@/firebase/admin';
+import { requireSuperAdmin as requireAdmin } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,27 +13,6 @@ export interface PlannedAction {
     note: string | null;
     contact: { phone: string | null; email: string | null };
     overdue: boolean;
-}
-
-async function requireAdmin(request: NextRequest): Promise<{ uid: string } | { error: string; status: number }> {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-        return { error: 'Missing Authorization header', status: 401 };
-    }
-    const token = authHeader.slice(7);
-    let decoded;
-    try {
-        decoded = await getAdminAuth().verifyIdToken(token);
-    } catch (err) {
-        console.error('[Admin Actions] verifyIdToken failed', err);
-        return { error: 'Invalid token', status: 401 };
-    }
-    const userSnap = await getAdminDb().collection('users').doc(decoded.uid).get();
-    const profile = userSnap.data()?.profile;
-    if (!profile?.isAdmin) {
-        return { error: 'Admin access required', status: 403 };
-    }
-    return { uid: decoded.uid };
 }
 
 export async function GET(request: NextRequest) {

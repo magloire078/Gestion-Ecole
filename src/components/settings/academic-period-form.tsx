@@ -30,11 +30,13 @@ type PeriodFormValues = z.infer<typeof periodSchema>;
 interface AcademicPeriodFormProps {
     existingPeriods: AcademicPeriod[];
     editingPeriod: AcademicPeriod | null;
+    /** Position de la période éditée dans existingPeriods — identifie la période sans ambiguïté si son nom est partagé par une autre. */
+    editingIndex: number | null;
     onSave: (updatedPeriods: AcademicPeriod[]) => Promise<void>;
     onCancel: () => void;
 }
 
-export function AcademicPeriodForm({ existingPeriods, editingPeriod, onSave, onCancel }: AcademicPeriodFormProps) {
+export function AcademicPeriodForm({ existingPeriods, editingPeriod, editingIndex, onSave, onCancel }: AcademicPeriodFormProps) {
     const [isSaving, setIsSaving] = useState(false);
     const form = useForm<PeriodFormValues>({
         resolver: zodResolver(periodSchema),
@@ -54,9 +56,17 @@ export function AcademicPeriodForm({ existingPeriods, editingPeriod, onSave, onC
     const handleFormSubmit = async (values: PeriodFormValues) => {
         setIsSaving(true);
         let updatedPeriods;
-        if (editingPeriod) {
-            // Update existing period
-            updatedPeriods = existingPeriods.map(p => p.name === editingPeriod.name ? values : p);
+        if (editingPeriod && editingIndex !== null) {
+            // Une autre période portant déjà ce nom (hors celle éditée) bloque le renommage,
+            // pour éviter de recréer une ambiguïté nom<->période.
+            if (existingPeriods.some((p, i) => i !== editingIndex && p.name === values.name)) {
+                form.setError('name', { message: 'Une période avec ce nom existe déjà.' });
+                setIsSaving(false);
+                return;
+            }
+            // Mise à jour par position, pas par nom : deux périodes homonymes ne
+            // doivent pas être modifiées ensemble.
+            updatedPeriods = existingPeriods.map((p, i) => i === editingIndex ? values : p);
         } else {
             // Add new period
             if (existingPeriods.some(p => p.name === values.name)) {

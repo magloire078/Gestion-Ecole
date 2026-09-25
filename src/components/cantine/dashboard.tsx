@@ -6,9 +6,10 @@ import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Utensils, Users, Ticket, CalendarClock } from 'lucide-react';
-import type { canteenReservation, canteenSubscription, student } from '@/lib/data-types';
-import { format } from 'date-fns';
+import type { canteenReservation, canteenSubscription, student, accountingTransaction } from '@/lib/data-types';
+import { format, subDays, startOfMonth, isSameDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { formatCurrency } from '@/lib/currency-utils';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { InventoryPanel } from './inventory-panel';
@@ -55,10 +56,25 @@ export function CantineDashboard({ schoolId }: { schoolId: string }) {
 
     const studentsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/eleves`)), [firestore, schoolId]);
 
+    const monthStartString = useMemo(() => format(startOfMonth(new Date()), 'yyyy-MM-dd'), []);
+    // 30 jours suffisent à couvrir à la fois la tendance des 7 derniers
+    // jours et le décompte du mois en cours.
+    const trailingWindowStart = useMemo(() => format(subDays(new Date(), 30), 'yyyy-MM-dd'), []);
+
+    const trailingReservationsQuery = useMemo(() =>
+        query(collection(firestore, `ecoles/${schoolId}/cantine_reservations`), where('date', '>=', trailingWindowStart)),
+        [firestore, schoolId, trailingWindowStart]);
+
+    const monthlyRevenueQuery = useMemo(() =>
+        query(collection(firestore, `ecoles/${schoolId}/comptabilite`), where('category', '==', 'Cantine'), where('date', '>=', monthStartString)),
+        [firestore, schoolId, monthStartString]);
+
     const { data: reservationsData, loading: reservationsLoading } = useCollection(reservationsQuery);
     const { data: subscriptionsData, loading: subscriptionsLoading } = useCollection(subscriptionsQuery);
     const { data: recentReservationsData, loading: recentReservationsLoading } = useCollection(recentReservationsQuery);
     const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
+    const { data: trailingReservationsData, loading: trailingReservationsLoading } = useCollection(trailingReservationsQuery);
+    const { data: monthlyRevenueData, loading: monthlyRevenueLoading } = useCollection(monthlyRevenueQuery);
 
     const studentsMap = useMemo(() => {
         const map = new Map<string, string>();
@@ -81,12 +97,36 @@ export function CantineDashboard({ schoolId }: { schoolId: string }) {
     }, [recentReservationsData, studentsMap]);
 
 
+    const trailingReservations = useMemo(() =>
+        trailingReservationsData?.map(d => d.data() as canteenReservation) || [],
+        [trailingReservationsData]);
+
+    // Tendance réelle des 7 derniers jours (comptage des réservations non
+    // annulées par date, pas des chiffres inventés).
+    const weeklyTrend = useMemo(() => {
+        const days = [...Array(7)].map((_, i) => subDays(new Date(), 6 - i));
+        return days.map(day => ({
+            name: format(day, 'EEE', { locale: fr }),
+            qty: trailingReservations.filter(r => r.status !== 'cancelled' && isSameDay(new Date(r.date), day)).length,
+        }));
+    }, [trailingReservations]);
+
+    const mealsServedThisMonth = useMemo(() =>
+        trailingReservations.filter(r => r.status !== 'cancelled' && r.date >= monthStartString).length,
+        [trailingReservations, monthStartString]);
+
+    const revenueThisMonth = useMemo(() => {
+        if (!monthlyRevenueData) return 0;
+        return monthlyRevenueData.reduce((sum, d) => sum + ((d.data() as accountingTransaction).amount || 0), 0);
+    }, [monthlyRevenueData]);
+
     const stats = {
         reservationsToday: reservationsData?.length || 0,
         activeSubscriptions: subscriptionsData?.length || 0,
     };
 
     const loading = reservationsLoading || subscriptionsLoading || recentReservationsLoading || studentsLoading;
+    const statsLoading = loading || trailingReservationsLoading || monthlyRevenueLoading;
 
     return (
         <Tabs defaultValue="overview" className="space-y-6">
@@ -99,8 +139,16 @@ export function CantineDashboard({ schoolId }: { schoolId: string }) {
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <StatCard title="Réservations (Aujourd'hui)" value={stats.reservationsToday} icon={Utensils} loading={loading} />
                     <StatCard title="Abonnés Actifs" value={stats.activeSubscriptions} icon={Users} loading={loading} />
-                    <StatCard title="Repas servis (Mois)" value={Math.round(stats.reservationsToday * 20)} icon={Ticket} loading={loading} />
-                    <StatCard title="Revenus (Mois)" value={stats.reservationsToday * 2500 * 20} icon={Ticket} loading={loading} />
+                    <StatCard title="Repas servis (Mois)" value={mealsServedThisMonth} icon={Ticket} loading={statsLoading} />
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Revenus (Mois)</CardTitle>
+                            <Ticket className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            {statsLoading ? <Skeleton className="h-8 w-24" /> : <div className="text-2xl font-bold">{formatCurrency(revenueThisMonth)}</div>}
+                        </CardContent>
+                    </Card>
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2">
@@ -114,15 +162,7 @@ export function CantineDashboard({ schoolId }: { schoolId: string }) {
                         </CardHeader>
                         <CardContent className="h-[300px]">
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={[
-                                    { name: 'Lun', qty: 45 },
-                                    { name: 'Mar', qty: 52 },
-                                    { name: 'Mer', qty: 38 },
-                                    { name: 'Jeu', qty: 65 },
-                                    { name: 'Ven', qty: 48 },
-                                    { name: 'Sam', qty: 12 },
-                                    { name: 'Dim', qty: 0 },
-                                ]}>
+                                <BarChart data={weeklyTrend}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
                                     <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />

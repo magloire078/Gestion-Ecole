@@ -12,27 +12,20 @@ import {
     type Firestore,
 } from 'firebase/firestore';
 import { firebaseFirestore } from '@/firebase/config';
-import { assignStudentToClass } from '@/services/class-assignment-service';
+import { writeAuditLog } from '@/lib/audit-log';
 import type {
     academicYearTransition,
     class_type as ClassType,
-    studentClassAssignment as Assignment,
 } from '@/lib/data-types';
+import {
+    promoteStudentsToClasses,
+    type PromotionRule,
+    type PromoteStudentsResult,
+} from './class-assignment-service';
 
 const db = firebaseFirestore as Firestore;
 
-export interface PromotionRule {
-    studentId: string;
-    fromClassId: string;
-    toClassId: string;          // classe cible (déjà clonée dans la nouvelle année)
-    promotionType: Assignment['promotionType'];
-    // Champs dénormalisés de la classe cible, pour garder `student.class`/`cycle`/`grade`
-    // synchronisés sans relecture supplémentaire (voir student-edit-form.tsx pour la
-    // même convention lors d'un changement de classe manuel).
-    toClassName?: string;
-    toGrade?: string;
-    toCycleId?: string;
-}
+export type { PromotionRule, PromoteStudentsResult };
 
 export interface CloneClassesResult {
     cloned: number;
@@ -107,63 +100,20 @@ export async function cloneClassesForNewYear(
     return { cloned, archived, mapping };
 }
 
-export interface PromoteStudentsResult {
-    promoted: number;
-    skipped: number;
-    errors: { studentId: string; reason: string }[];
-}
-
 /**
- * Crée une nouvelle `studentClassAssignment` pour chaque élève listé,
- * en clôturant l'affectation précédente (`status: transferred`,
- * `endDate: today`).
- *
- * Délègue à `assignStudentToClass` (service centralisé, seul point d'écriture
- * de la relation élève↔classe) pour chaque élève, en composant les écritures
- * dans le même batch chunké — comportement inchangé, logique dédupliquée.
+ * @deprecated Conservé pour compatibilité d'import — délègue entièrement à
+ * `promoteStudentsToClasses` (logique partagée avec l'attribution en lot,
+ * source de vérité unique `inscriptions_classe` + `eleve.classId`, et
+ * journal d'audit réversible).
  */
 export async function promoteStudents(
     schoolId: string,
     rules: PromotionRule[],
     toYear: string,
     userId: string,
+    userName?: string,
 ): Promise<PromoteStudentsResult> {
-    const result: PromoteStudentsResult = { promoted: 0, skipped: 0, errors: [] };
-    if (!rules.length) return result;
-
-    // Firestore batch max = 500 ops. Chaque élève ≈ 4 ops (clôture + création
-    // d'affectation + update élève + update studentCount classe cible).
-    const CHUNK = 100;
-    for (let i = 0; i < rules.length; i += CHUNK) {
-        const chunk = rules.slice(i, i + CHUNK);
-        const batch = writeBatch(db);
-        for (const rule of chunk) {
-            try {
-                await assignStudentToClass(schoolId, {
-                    studentId: rule.studentId,
-                    toClassId: rule.toClassId,
-                    fromClassId: rule.fromClassId,
-                    academicYear: toYear,
-                    promotionType: rule.promotionType,
-                    userId,
-                    toClassName: rule.toClassName,
-                    toGrade: rule.toGrade,
-                    toCycleId: rule.toCycleId,
-                    // La classe source est déjà archivée (cf. cloneClassesForNewYear) :
-                    // son effectif doit rester un instantané historique, pas redescendre
-                    // vers 0 au fil des promotions.
-                    decrementSourceCount: false,
-                }, batch);
-                result.promoted += 1;
-            } catch (err: any) {
-                result.errors.push({ studentId: rule.studentId, reason: err?.message ?? 'unknown' });
-                result.skipped += 1;
-            }
-        }
-        await batch.commit();
-    }
-
-    return result;
+    return promoteStudentsToClasses(schoolId, rules, toYear, userId, userName);
 }
 
 /**
@@ -176,6 +126,7 @@ export async function finalizeAcademicYear(
     toYear: string,
     summary: Pick<academicYearTransition, 'classesCloned' | 'studentsPromoted' | 'notes'>,
     userId: string,
+    userName?: string,
 ): Promise<void> {
     const schoolRef = doc(db, `ecoles/${schoolId}`);
     const schoolSnap = await getDoc(schoolRef);
@@ -208,6 +159,20 @@ export async function finalizeAcademicYear(
     } satisfies academicYearTransition);
 
     await batch.commit();
+
+    // Bascule d'année scolaire = l'action la plus destructrice de l'app
+    // (archive toutes les classes, vide les périodes) : elle doit être
+    // traçable dans le même journal d'audit que le reste, pas seulement
+    // dans sa collection technique dédiée.
+    await writeAuditLog(db, schoolId, {
+        action: 'annee_scolaire.bascule',
+        details: `Bascule de l'année scolaire ${fromYear} vers ${toYear} — ${summary.classesCloned} classe(s) clonée(s).`,
+        userId,
+        userName,
+        targetId: transitionRef.id,
+        targetType: 'academic_year_transition',
+        payload: { fromYear, toYear, ...summary },
+    });
 }
 
 export const AcademicYearService = {
