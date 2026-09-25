@@ -37,6 +37,16 @@ export type school = {
     currentAcademicYear?: string;
     academicPeriods?: academicPeriod[];
     archivedYears?: string[];
+    /** Verrou de passage d'année scolaire (route serveur start-new-year), absent en dehors d'une transition en cours/terminée. */
+    yearTransition?: {
+        status: "in_progress" | "completed" | "failed";
+        fromYear: string;
+        toYear: string;
+        startedBy: string;
+        startedAt?: any;
+        completedAt?: any;
+        error?: string;
+    };
     isSetupComplete?: boolean;
     /** Nombre maximum de repas servis par jour et par type de repas (non défini = pas de limite). */
     cantineDailyCapacity?: number;
