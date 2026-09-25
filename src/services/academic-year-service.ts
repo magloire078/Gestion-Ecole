@@ -5,6 +5,7 @@ import {
     doc,
     getDoc,
     getDocs,
+    increment,
     query,
     serverTimestamp,
     where,
@@ -25,6 +26,12 @@ export interface PromotionRule {
     fromClassId: string;
     toClassId: string;          // classe cible (déjà clonée dans la nouvelle année)
     promotionType: Assignment['promotionType'];
+    // Champs dénormalisés de la classe cible, pour garder `student.class`/`cycle`/`grade`
+    // synchronisés sans relecture supplémentaire (voir student-edit-form.tsx pour la
+    // même convention lors d'un changement de classe manuel).
+    toClassName?: string;
+    toGrade?: string;
+    toCycleId?: string;
 }
 
 export interface CloneClassesResult {
@@ -159,8 +166,19 @@ export async function promoteStudents(
                 });
 
                 batch.update(doc(db, `ecoles/${schoolId}/eleves/${rule.studentId}`), {
-                    currentClassId: rule.toClassId,
+                    classId: rule.toClassId,
+                    ...(rule.toClassName ? { class: rule.toClassName } : {}),
+                    ...(rule.toCycleId ? { cycle: rule.toCycleId } : {}),
+                    ...(rule.toGrade ? { grade: rule.toGrade } : {}),
                     updatedAt: serverTimestamp(),
+                });
+
+                // La classe cible a été clonée avec `studentCount: 0` (cf. cloneClassesForNewYear) ;
+                // on la réincrémente au fil des promotions. On NE touche PAS au studentCount de la
+                // classe source (fromClassId) : elle est archivée et son effectif doit rester un
+                // instantané historique de l'année écoulée, pas être décrémenté vers 0.
+                batch.update(doc(db, `ecoles/${schoolId}/classes/${rule.toClassId}`), {
+                    studentCount: increment(1),
                 });
                 result.promoted += 1;
             } catch (err: any) {

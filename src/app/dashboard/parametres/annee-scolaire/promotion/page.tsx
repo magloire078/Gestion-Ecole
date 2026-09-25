@@ -202,11 +202,15 @@ export default function PromotionPage() {
             for (const s of list) {
                 if (s.promotionType === 'sortie') continue;
                 if (!s.targetClassId) continue;
+                const targetClass = newClasses.find(c => c.id === s.targetClassId);
                 rules.push({
                     studentId: s.studentId,
                     fromClassId: s.fromClassId,
                     toClassId: s.targetClassId,
                     promotionType: s.promotionType as Assignment['promotionType'],
+                    toClassName: targetClass?.name,
+                    toGrade: targetClass?.grade,
+                    toCycleId: targetClass?.cycleId,
                 });
             }
         }
