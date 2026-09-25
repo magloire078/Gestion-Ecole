@@ -133,13 +133,13 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
 
     const startYearInt = values.academicYear ? parseInt(values.academicYear.split('-')[0]) : student.inscriptionYear;
 
+    // classId/class/cycle/grade ne sont plus patchés ici : c'est
+    // assignStudentToClass (class-assignment-service.ts) qui en est
+    // seul responsable, avec l'historique inscriptions_classe et les
+    // compteurs studentCount qui vont avec.
     const updatedData = {
       firstName: values.firstName,
       lastName: values.lastName,
-      classId: newClassId,
-      class: selectedClassInfo?.name || student.class,
-      cycle: selectedClassInfo?.cycleId || student.cycle,
-      grade: values.grade || 'N/A',
       dateOfBirth: values.dateOfBirth,
       tuitionFee: values.tuitionFee,
       discountAmount: values.discountAmount,
@@ -155,6 +155,22 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
 
     try {
       const { StudentService } = await import('@/services/student-services');
+
+      if (classHasChanged) {
+        const { assignStudentToClass } = await import('@/services/class-assignment-service');
+        await assignStudentToClass(schoolId, {
+          studentId: student.id!,
+          toClassId: newClassId,
+          fromClassId: oldClassId,
+          academicYear: values.academicYear || '2024-2025',
+          promotionType: 'normal',
+          userId: user.uid,
+          toClassName: selectedClassInfo?.name,
+          toGrade: values.grade,
+          toCycleId: selectedClassInfo?.cycleId,
+        });
+      }
+
       await StudentService.updateStudent(schoolId, student.id!, updatedData, student);
 
       toast({

@@ -5,6 +5,7 @@ import { doc, getDoc, getCountFromServer, query, where, updateDoc, writeBatch, i
 import { firebaseFirestore } from '@/firebase/config';
 import { getPlanLimits } from '@/lib/subscription-plans';
 import { buildLimitReachedMessage } from '@/lib/subscription-guards';
+import { assignStudentToClass } from '@/services/class-assignment-service';
 
 const db = firebaseFirestore as Firestore;
 import type { student as Student } from '@/lib/data-types';
@@ -79,12 +80,6 @@ export const StudentService = {
 
             batch.set(newStudentRef, studentData);
 
-            // Update Class Count if classId provided
-            if (data.classId) {
-                const classRef = doc(db, `ecoles/${schoolId}/classes/${data.classId}`);
-                batch.update(classRef, { studentCount: increment(1) });
-            }
-
             // Update Finance Stats
             const statsRef = doc(db, `ecoles/${schoolId}/stats/finance`);
             batch.set(statsRef, {
@@ -93,6 +88,23 @@ export const StudentService = {
                 studentCount: increment(1),
                 lastUpdated: serverTimestamp()
             }, { merge: true });
+
+            // Affectation à la classe (inscriptions_classe + studentCount) via le
+            // point d'écriture centralisé, composée dans le même batch (atomique
+            // avec la création de l'élève). newStudentRef.id existe déjà côté
+            // client même si le document n'est pas encore commité.
+            if (data.classId) {
+                await assignStudentToClass(schoolId, {
+                    studentId: newStudentRef.id,
+                    toClassId: data.classId,
+                    academicYear: currentAcademicYear,
+                    promotionType: 'normal',
+                    userId: userId || 'system',
+                    toClassName: data.class,
+                    toGrade: data.grade,
+                    toCycleId: data.cycle,
+                }, batch);
+            }
 
             await batch.commit();
             return newStudentRef.id;
@@ -130,15 +142,9 @@ export const StudentService = {
                 }
             }
 
-            // Handle class change if previousData provided
-            if (previousData && data.classId && data.classId !== previousData.classId) {
-                if (previousData.classId) {
-                    const oldClassRef = doc(db, `ecoles/${schoolId}/classes/${previousData.classId}`);
-                    batch.update(oldClassRef, { studentCount: increment(-1) });
-                }
-                const newClassRef = doc(db, `ecoles/${schoolId}/classes/${data.classId}`);
-                batch.update(newClassRef, { studentCount: increment(1) });
-            }
+            // Le changement de classe (studentCount + historique inscriptions_classe)
+            // ne passe plus par ici : voir assignStudentToClass (class-assignment-service.ts),
+            // point d'écriture unique de la relation élève↔classe.
 
             await batch.commit();
         } catch (error) {

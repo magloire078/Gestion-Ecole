@@ -5,7 +5,6 @@ import {
     doc,
     getDoc,
     getDocs,
-    increment,
     query,
     serverTimestamp,
     where,
@@ -13,6 +12,7 @@ import {
     type Firestore,
 } from 'firebase/firestore';
 import { firebaseFirestore } from '@/firebase/config';
+import { assignStudentToClass } from '@/services/class-assignment-service';
 import type {
     academicYearTransition,
     class_type as ClassType,
@@ -117,6 +117,10 @@ export interface PromoteStudentsResult {
  * Crée une nouvelle `studentClassAssignment` pour chaque élève listé,
  * en clôturant l'affectation précédente (`status: transferred`,
  * `endDate: today`).
+ *
+ * Délègue à `assignStudentToClass` (service centralisé, seul point d'écriture
+ * de la relation élève↔classe) pour chaque élève, en composant les écritures
+ * dans le même batch chunké — comportement inchangé, logique dédupliquée.
  */
 export async function promoteStudents(
     schoolId: string,
@@ -127,59 +131,29 @@ export async function promoteStudents(
     const result: PromoteStudentsResult = { promoted: 0, skipped: 0, errors: [] };
     if (!rules.length) return result;
 
-    const today = new Date().toISOString().split('T')[0];
-    const assignmentsRef = collection(db, `ecoles/${schoolId}/inscriptions_classe`);
-
-    // Firestore batch max = 500 ops. Chaque élève = 2 ops (clôture + création) + 1 update élève.
-    const CHUNK = 150;
+    // Firestore batch max = 500 ops. Chaque élève ≈ 4 ops (clôture + création
+    // d'affectation + update élève + update studentCount classe cible).
+    const CHUNK = 100;
     for (let i = 0; i < rules.length; i += CHUNK) {
         const chunk = rules.slice(i, i + CHUNK);
         const batch = writeBatch(db);
         for (const rule of chunk) {
             try {
-                // Fermer l'ancienne affectation active sur fromClassId
-                const oldAssignSnap = await getDocs(query(
-                    assignmentsRef,
-                    where('studentId', '==', rule.studentId),
-                    where('classeId', '==', rule.fromClassId),
-                    where('status', '==', 'active'),
-                ));
-                oldAssignSnap.docs.forEach(oldDoc => {
-                    batch.update(oldDoc.ref, {
-                        status: 'transferred',
-                        endDate: today,
-                    });
-                });
-
-                const newAssignRef = doc(assignmentsRef);
-                batch.set(newAssignRef, {
-                    schoolId,
+                await assignStudentToClass(schoolId, {
                     studentId: rule.studentId,
-                    classeId: rule.toClassId,
+                    toClassId: rule.toClassId,
+                    fromClassId: rule.fromClassId,
                     academicYear: toYear,
-                    startDate: today,
                     promotionType: rule.promotionType,
-                    status: 'active',
-                    previousClass: rule.fromClassId,
-                    createdBy: userId,
-                    createdAt: serverTimestamp(),
-                });
-
-                batch.update(doc(db, `ecoles/${schoolId}/eleves/${rule.studentId}`), {
-                    classId: rule.toClassId,
-                    ...(rule.toClassName ? { class: rule.toClassName } : {}),
-                    ...(rule.toCycleId ? { cycle: rule.toCycleId } : {}),
-                    ...(rule.toGrade ? { grade: rule.toGrade } : {}),
-                    updatedAt: serverTimestamp(),
-                });
-
-                // La classe cible a été clonée avec `studentCount: 0` (cf. cloneClassesForNewYear) ;
-                // on la réincrémente au fil des promotions. On NE touche PAS au studentCount de la
-                // classe source (fromClassId) : elle est archivée et son effectif doit rester un
-                // instantané historique de l'année écoulée, pas être décrémenté vers 0.
-                batch.update(doc(db, `ecoles/${schoolId}/classes/${rule.toClassId}`), {
-                    studentCount: increment(1),
-                });
+                    userId,
+                    toClassName: rule.toClassName,
+                    toGrade: rule.toGrade,
+                    toCycleId: rule.toCycleId,
+                    // La classe source est déjà archivée (cf. cloneClassesForNewYear) :
+                    // son effectif doit rester un instantané historique, pas redescendre
+                    // vers 0 au fil des promotions.
+                    decrementSourceCount: false,
+                }, batch);
                 result.promoted += 1;
             } catch (err: any) {
                 result.errors.push({ studentId: rule.studentId, reason: err?.message ?? 'unknown' });
