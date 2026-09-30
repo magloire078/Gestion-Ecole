@@ -11,6 +11,7 @@
     "test:rules:watch": "vitest tests/firestore-rules",
     "test:services": "vitest run tests/services",
     "test:services:watch": "vitest tests/services",
+    "test:hooks": "vitest run tests/hooks",
     "test:admin": "firebase emulators:exec --only firestore \"vitest run tests/admin\""
   },
   "dependencies": {

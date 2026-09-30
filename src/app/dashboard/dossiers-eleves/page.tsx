@@ -419,11 +419,12 @@ export default function StudentsPage() {
                     onArchive={handleOpenArchiveDialog}
                     onRestore={handleOpenRestoreDialog}
                     lockedStudentIds={lockedStudentIds}
+                    canManageUsers={canManageUsers}
                   />
                 </div>
               )}
             </TabsContent>
-            
+
             <TabsContent value="archived" className="mt-6 focus-visible:ring-0">
               {viewMode === 'list' ? (
                 <StudentsTable

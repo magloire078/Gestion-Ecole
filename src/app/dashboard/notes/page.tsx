@@ -79,6 +79,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import type { subject as Subject } from '@/lib/data-types';
 import { GradesService, type GradeEntry } from '@/services/grades-service';
 import { useGrades } from '@/hooks/use-grades';
+import { EmptyState } from '@/components/ui/empty-state';
 
 // --- Interfaces ---
 interface Student {
@@ -608,26 +609,18 @@ export default function GradeEntryPage() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={canManageGrades ? 6 : 5} className="h-64">
-                        <div className="flex flex-col items-center justify-center text-center">
-                          <div className="p-4 bg-slate-50 rounded-full mb-4">
-                            <MinusCircle className="h-10 w-10 text-slate-300" />
-                          </div>
-                          <h4 className="text-lg font-semibold text-slate-900">Aucune note trouvée</h4>
-                          <p className="text-slate-500 max-w-[250px] mt-1">
-                            Commencez par ajouter la première note pour cette classe en {selectedSubject}.
-                          </p>
-                          {canManageGrades && (
-                            <Button 
-                              onClick={() => handleOpenFormDialog(null)}
-                              variant="outline"
-                              className="mt-6 rounded-xl border-slate-200"
-                            >
-                              <PlusCircle className="mr-2 h-4 w-4" />
-                              Saisir une note
-                            </Button>
-                          )}
-                        </div>
+                      <TableCell colSpan={canManageGrades ? 6 : 5}>
+                        <EmptyState
+                          icon={BarChart2}
+                          title="Aucune note trouvée"
+                          description={`Commencez par ajouter la première note pour cette classe en ${selectedSubject}.`}
+                          action={canManageGrades ? {
+                            label: 'Saisir une note',
+                            icon: PlusCircle,
+                            onClick: () => handleOpenFormDialog(null),
+                          } : undefined}
+                          compact
+                        />
                       </TableCell>
                     </TableRow>
                   )}
@@ -636,14 +629,12 @@ export default function GradeEntryPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="flex flex-col items-center justify-center h-96 bg-white/30 backdrop-blur-sm border-2 border-dashed border-slate-200 rounded-xl animate-in zoom-in-95 duration-500">
-            <div className="p-4 bg-indigo-50 rounded-xl mb-4">
-              <BarChart2 className="h-12 w-12 text-indigo-400" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-900">Analyse de Classe</h3>
-            <p className="text-slate-500 text-center max-w-sm mt-2 px-6">
-              Sélectionnez une classe et une matière ci-dessus pour accéder au tableau de bord des notes et aux statistiques de performance.
-            </p>
+          <div className="bg-white/40 backdrop-blur-xl border border-white/60 rounded-2xl shadow-xl shadow-slate-200/40 animate-in zoom-in-95 duration-500">
+            <EmptyState
+              icon={BarChart2}
+              title="Analyse de Classe"
+              description="Sélectionnez une classe et une matière ci-dessus pour accéder au tableau de bord des notes et aux statistiques de performance."
+            />
           </div>
         )}
       </div>
