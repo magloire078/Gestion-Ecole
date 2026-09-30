@@ -109,6 +109,7 @@ export default function DashboardLayoutContent({ children }: { children: React.R
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isNavCollapsed, setIsNavCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -140,6 +141,21 @@ export default function DashboardLayoutContent({ children }: { children: React.R
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Le tiroir de navigation mobile (Sheet) est un composant non contrôlé par
+  // défaut : cliquer sur un <Link> à l'intérieur navigue via le routeur
+  // Next.js sans jamais le fermer, ce qui laisse son overlay Radix (et le
+  // `pointer-events: none` qu'il pose sur <body>) actif par-dessus la page
+  // suivante — d'où l'écran qui paraît vide jusqu'au rafraîchissement
+  // manuel. En le rendant contrôlé et en le refermant dès qu'on détecte un
+  // changement de route (mise à jour pendant le rendu, pas dans un effet —
+  // cf. la doc React sur l'ajustement d'état suite à un changement de prop),
+  // l'overlay disparaît systématiquement dès la navigation.
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
+    setIsMobileSidebarOpen(false);
+  }
 
   const navProps = {
     isSuperAdmin,
@@ -240,7 +256,7 @@ export default function DashboardLayoutContent({ children }: { children: React.R
           )}>
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent pointer-events-none" />
             <div className="flex items-center gap-3">
-              <Sheet>
+              <Sheet open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen}>
                 <SheetTrigger asChild>
                   <Button size="icon" variant="outline" className="sm:hidden">
                     <Menu className="h-5 w-5" />
@@ -369,7 +385,18 @@ export default function DashboardLayoutContent({ children }: { children: React.R
               <ArchiveYearBanner />
               <PlatformAnnouncementsBanner />
             </div>
-            <AnimatePresence mode="wait">
+            {/*
+              Pas de `mode="wait"` ici : ce mode bloque le montage du nouveau
+              contenu tant que l'ancien n'a pas fini son animation de sortie.
+              Si une navigation déclenche une mise à jour concurrente (ex. la
+              fermeture du tiroir mobile ET le changement de route au même
+              tick), AnimatePresence peut rester bloqué entre les deux
+              transitions — la page suivante ne se monte alors jamais et
+              l'écran reste vide jusqu'à un rechargement manuel. Le mode par
+              défaut (entrée/sortie en parallèle) élimine ce blocage, au prix
+              d'un bref chevauchement visuel pendant la transition.
+            */}
+            <AnimatePresence>
               <motion.div
                 key={pathname}
                 initial={{ opacity: 0, y: 10 }}
