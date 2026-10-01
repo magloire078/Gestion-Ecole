@@ -18,10 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle, Loader2, Sparkles } from 'lucide-react';
-import {
-    cloneClassesForNewYear,
-    finalizeAcademicYear,
-} from '@/services/academic-year-service';
+import { useAuth } from '@/firebase';
 
 interface Props {
     open: boolean;
@@ -44,6 +41,7 @@ function nextYearGuess(current?: string): string {
 export function NewYearWizard({ open, onOpenChange, onCompleted }: Props) {
     const { schoolId, schoolData } = useSchoolData();
     const { user } = useUser();
+    const auth = useAuth();
     const { toast } = useToast();
 
     const fromYear = schoolData?.currentAcademicYear ?? '';
@@ -64,15 +62,23 @@ export function NewYearWizard({ open, onOpenChange, onCompleted }: Props) {
         if (!schoolId || !user?.uid || !canConfirm) return;
         setBusy(true);
         try {
-            const cloneResult = await cloneClassesForNewYear(schoolId, fromYear, toYear, user.uid);
-            await finalizeAcademicYear(schoolId, fromYear, toYear, {
-                classesCloned: cloneResult.cloned,
-                studentsPromoted: 0,
-                notes,
-            }, user.uid, user.displayName || undefined);
+            const current = auth.currentUser;
+            if (!current) throw new Error('Session invalide, reconnectez-vous.');
+            const token = await current.getIdToken();
+
+            const res = await fetch('/api/admin/academic-year/start-new-year', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ schoolId, toYear, notes }),
+            });
+            const result = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                throw new Error(result.error || `Échec (HTTP ${res.status}).`);
+            }
+
             toast({
                 title: 'Année basculée',
-                description: `${cloneResult.cloned} classe(s) clonée(s) et ${cloneResult.archived} archivée(s). Vous travaillez maintenant sur ${toYear}.`,
+                description: `${result.cloned} classe(s) clonée(s) et ${result.archived} archivée(s). Vous travaillez maintenant sur ${toYear}.`,
             });
             onCompleted?.();
             onOpenChange(false);

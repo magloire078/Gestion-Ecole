@@ -130,15 +130,10 @@ export const StudentService = {
                 }
             }
 
-            // Handle class change if previousData provided
-            if (previousData && data.classId && data.classId !== previousData.classId) {
-                if (previousData.classId) {
-                    const oldClassRef = doc(db, `ecoles/${schoolId}/classes/${previousData.classId}`);
-                    batch.update(oldClassRef, { studentCount: increment(-1) });
-                }
-                const newClassRef = doc(db, `ecoles/${schoolId}/classes/${data.classId}`);
-                batch.update(newClassRef, { studentCount: increment(1) });
-            }
+            // Le changement de classe (studentCount + historique inscriptions_classe)
+            // ne passe plus par ici : voir assignStudentsToClass (class-assignment-service.ts),
+            // point d'écriture unique de la relation élève↔classe (utilisé par
+            // student-edit-form.tsx quand la classe change).
 
             await batch.commit();
         } catch (error) {

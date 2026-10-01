@@ -218,6 +218,55 @@
                             }
                         }
                     }
+                },
+                "archivedYears": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "Années scolaires archivées (ex: [\"2024-2025\"]), alimenté par le passage à une nouvelle année."
+                },
+                "yearTransition": {
+                    "type": "object",
+                    "description": "Verrou de passage d'année scolaire, posé par la route serveur /api/admin/academic-year/start-new-year (transaction Firestore) pour empêcher deux lancements simultanés. Absent en dehors d'une transition en cours ou juste terminée.",
+                    "properties": {
+                        "status": {
+                            "type": "string",
+                            "enum": [
+                                "in_progress",
+                                "completed",
+                                "failed"
+                            ]
+                        },
+                        "fromYear": {
+                            "type": "string"
+                        },
+                        "toYear": {
+                            "type": "string"
+                        },
+                        "startedBy": {
+                            "type": "string",
+                            "description": "UID de l'utilisateur ayant démarré la transition."
+                        },
+                        "startedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                        },
+                        "completedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                        },
+                        "error": {
+                            "type": "string",
+                            "description": "Message d'erreur si status == \"failed\"."
+                        }
+                    },
+                    "required": [
+                        "status",
+                        "fromYear",
+                        "toYear",
+                        "startedBy"
+                    ]
                 }
             },
             "required": [
