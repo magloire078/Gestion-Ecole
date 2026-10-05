@@ -191,11 +191,11 @@ export default function StockPage() {
         }
     };
 
-    if (schoolLoading) return <div className="p-4 md:p-6"><Skeleton className="h-12 w-48 mb-6" /><Skeleton className="h-96 w-full" /></div>;
+    if (schoolLoading) return <div><Skeleton className="h-12 w-48 mb-6" /><Skeleton className="h-96 w-full" /></div>;
 
     if (error || stocksError) {
         return (
-            <div className="p-4 md:p-6">
+            <div>
                 <Card className="border-destructive/50 bg-destructive/10">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-destructive">

@@ -307,7 +307,7 @@ export default function TimetablePage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="space-y-4 max-w-[1600px] mx-auto p-4 md:p-6"
+        className="space-y-4 max-w-[1600px] mx-auto"
       >
         {/* Header Section */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">

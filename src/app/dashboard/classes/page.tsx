@@ -9,7 +9,7 @@ export default function ClassesPage() {
 
   if (loading) {
     return (
-        <div className="p-4 md:p-6 space-y-6">
+        <div className="space-y-6">
             <Skeleton className="h-12 w-1/2 rounded-xl" />
             <Skeleton className="h-96 w-full rounded-xl" />
         </div>
@@ -17,7 +17,7 @@ export default function ClassesPage() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="space-y-1">
         <h1 className="text-3xl font-black tracking-tight text-slate-900 bg-gradient-to-r from-slate-900 to-slate-500 bg-clip-text text-transparent">
           Gestion des Classes
