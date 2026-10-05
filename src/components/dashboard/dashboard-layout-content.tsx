@@ -25,7 +25,7 @@ import { Home } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
 import { NotificationsPanel } from "@/components/notifications-panel";
 import { useNotifications } from "@/hooks/use-notifications";
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Badge } from "@/components/ui/badge";
 import { useFirestore } from "@/firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -369,18 +369,17 @@ export default function DashboardLayoutContent({ children }: { children: React.R
               <ArchiveYearBanner />
               <PlatformAnnouncementsBanner />
             </div>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={pathname}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3, ease: 'easeInOut' }}
-                className="h-full"
-              >
-                {children}
-              </motion.div>
-            </AnimatePresence>
+            {/* Pas d'AnimatePresence/exit ici : avec l'App Router, l'animation de sortie
+                ne se termine pas toujours et la page restait blanche (opacity 0). */}
+            <motion.div
+              key={pathname}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              className="h-full"
+            >
+              {children}
+            </motion.div>
             <MobileNavTabs />
           </main>
 
