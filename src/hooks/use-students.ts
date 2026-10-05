@@ -12,6 +12,9 @@ import {
 import { useCollection, useFirestore } from '@/firebase';
 import type { student as Student, studentClassAssignment as Assignment } from '@/lib/data-types';
 import { useAcademicYear } from '@/providers/academic-year-provider';
+import { resolveStudentForYear } from '@/lib/student-year-resolution';
+
+export { resolveStudentForYear };
 
 /**
  * Hook to fetch students from Firestore.
@@ -34,10 +37,23 @@ export function useStudents(
     academicYear?: string | null,
 ) {
     const firestore = useFirestore();
-    const { selectedYear } = useAcademicYear();
+    const { selectedYear, currentYear } = useAcademicYear();
     const effectiveYear = academicYear === null
         ? null
         : (academicYear ?? selectedYear);
+
+    // `student.enrollments[]` est un instantané écrit une seule fois à la
+    // création de l'élève (StudentService.createStudent) et n'est plus tenu
+    // à jour depuis l'unification sur `inscriptions_classe` (promotions,
+    // changements de classe manuels) : un élève inscrit il y a deux ans et
+    // promu depuis n'a AUCUNE entrée pour l'année en cours. Appliquer le
+    // filtrage strict par enrollment pour l'année courante masquerait donc
+    // silencieusement tous les élèves déjà promus une fois — on ne
+    // reconstruit un instantané via enrollments[] que pour consulter une
+    // année RÉVOLUE (archivée), où c'est une best-effort acceptée ; pour
+    // l'année en cours, les champs racine de l'élève (classId, status, etc.,
+    // tenus à jour par class-assignment-service) restent la source de vérité.
+    const isHistoricalYear = !!effectiveYear && effectiveYear !== currentYear;
 
     const useAssignmentJoin = !!classId && classId !== 'all' && !!effectiveYear;
 
@@ -125,38 +141,18 @@ export function useStudents(
 
     const directStudents = useMemo(() => {
         if (!directData) return [];
-        return directData.map(doc => {
-            const data = doc.data();
-            let student = {
-                id: doc.id,
-                ...data,
-                photoURL: data.photoURL || data.photoUrl,
-            } as Student;
-
-            // If an academic year is specified, try to find the matching enrollment
-            if (effectiveYear) {
-                const enrollments = student.enrollments || [];
-                const enrollment = enrollments.find(e => e.academicYear === effectiveYear);
-                
-                if (enrollment) {
-                    // Override root properties with the enrollment specifics for this year
-                    student = {
-                        ...student,
-                        classId: enrollment.classId,
-                        tuitionFee: enrollment.tuitionFee,
-                        amountDue: enrollment.amountDue,
-                        tuitionStatus: enrollment.tuitionStatus as any,
-                        status: enrollment.status === 'Radié' || enrollment.status === 'Transféré' ? 'Radié' : 'Actif'
-                    };
-                } else {
-                    // STRICT FILTERING: If the student has no enrollment for the requested year, exclude them.
-                    (student as any)._exclude = true;
-                }
-            }
-
-            return student;
-        }).filter(s => !(s as any)._exclude);
-    }, [directData, effectiveYear]);
+        return directData
+            .map(doc => {
+                const data = doc.data();
+                const student = {
+                    id: doc.id,
+                    ...data,
+                    photoURL: data.photoURL || data.photoUrl,
+                } as Student;
+                return resolveStudentForYear(student, effectiveYear, isHistoricalYear);
+            })
+            .filter((s): s is Student => s !== null);
+    }, [directData, isHistoricalYear, effectiveYear]);
 
     const students = useMemo(() => {
         const base = useAssignmentJoin ? assignmentStudents : directStudents;

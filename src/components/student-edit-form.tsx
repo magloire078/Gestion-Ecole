@@ -133,11 +133,15 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
 
     const startYearInt = values.academicYear ? parseInt(values.academicYear.split('-')[0]) : student.inscriptionYear;
 
+    // classId/class ne sont plus patchés ici : c'est assignStudentsToClass
+    // (class-assignment-service.ts) qui en est seul responsable, avec
+    // l'historique inscriptions_classe, le journal d'audit réversible et
+    // les compteurs studentCount qui vont avec. grade/cycle restent ici :
+    // ce sont de simples métadonnées d'affichage sur l'élève (bulletins,
+    // fiche élève), pas suivies dans l'historique inscriptions_classe.
     const updatedData = {
       firstName: values.firstName,
       lastName: values.lastName,
-      classId: newClassId,
-      class: selectedClassInfo?.name || student.class,
       cycle: selectedClassInfo?.cycleId || student.cycle,
       grade: values.grade || 'N/A',
       dateOfBirth: values.dateOfBirth,
@@ -155,6 +159,21 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
 
     try {
       const { StudentService } = await import('@/services/student-services');
+
+      if (classHasChanged && selectedClassInfo) {
+        const { assignStudentsToClass } = await import('@/services/class-assignment-service');
+        await assignStudentsToClass({
+          schoolId,
+          studentIds: [student.id!],
+          toClassId: newClassId,
+          toClassName: selectedClassInfo.name,
+          academicYear: values.academicYear || '2024-2025',
+          userId: user.uid,
+          userName: user.displayName ?? undefined,
+          reason: 'Modification manuelle de la fiche élève',
+        });
+      }
+
       await StudentService.updateStudent(schoolId, student.id!, updatedData, student);
 
       toast({

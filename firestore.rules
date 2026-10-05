@@ -132,6 +132,32 @@ service cloud.firestore {
     function passesCycleQuota(schoolId) {
       return isSuperAdmin() || currentCycleCount(schoolId) < planMaxCycles(schoolPlan(schoolId));
     }
+
+    // =================================
+    //   VERROU ANNÉE SCOLAIRE ARCHIVÉE
+    // =================================
+    //
+    // "Consulter une archive reste en lecture seule" n'était jusqu'ici qu'une
+    // convention d'affichage (ArchiveYearBanner) : rien côté règles n'empêchait
+    // de modifier une classe ou une affectation (inscriptions_classe) d'une
+    // année qui n'est plus school.currentAcademicYear. isArchivedRelativeToSchool
+    // ferme cette porte pour les champs "métier" (nom, capacité, élève
+    // affecté, classe affectée…), tout en laissant passer les seuls champs que
+    // les flux de promotion/annulation touchent légitimement sur un document
+    // déjà archivé (academic-year-service.ts, class-assignment-service.ts) :
+    // le compteur d'effectif d'une classe archivée, et le statut/la date de
+    // fin d'une affectation archivée qu'on clôture ou qu'on réouvre.
+    //
+    // Fail-open volontaire si l'école ou son currentAcademicYear est introuvable
+    // (get(...,docYear) par défaut) : cette fonction ne fait que RESTREINDRE
+    // des champs sur un write déjà soumis à hasPermission() ; elle ne doit
+    // jamais, à elle seule, être ce qui bloque un accès légitime en cas d'état
+    // incomplet — hasPermission() reste la garde de sécurité principale.
+    function isArchivedRelativeToSchool(schoolId, docYear) {
+      let schoolPath = /databases/$(database)/documents/ecoles/$(schoolId);
+      return exists(schoolPath) &&
+             docYear != get(schoolPath).data.get('currentAcademicYear', docYear);
+    }
     
     // =================================
     //         PUBLIC COLLECTIONS
@@ -381,14 +407,22 @@ service cloud.firestore {
         allow update, delete: if hasPermission(schoolId, 'manageClasses');
       }
       match /niveaux/{niveauId} { allow read, write: if hasPermission(schoolId, 'manageClasses'); }
-      match /classes/{classId} { allow read, write: if hasPermission(schoolId, 'manageClasses'); }
+      match /classes/{classId} {
+        allow read, create, delete: if hasPermission(schoolId, 'manageClasses');
+        allow update: if hasPermission(schoolId, 'manageClasses') &&
+          (!isArchivedRelativeToSchool(schoolId, resource.data.get('academicYear', '')) ||
+           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['studentCount', 'status', 'updatedAt']));
+      }
       match /matieres/{subjectId} { allow read, write: if hasPermission(schoolId, 'manageClasses'); }
       match /emploi_du_temps/{entryId} { allow read, write: if hasPermission(schoolId, 'manageSchedule'); }
       match /frais_scolarite/{feeId} { allow read, write: if hasPermission(schoolId, 'manageBilling'); }
-      
+
       match /inscriptions_classe/{assignmentId} {
         allow read: if isSchoolMember(schoolId) || (isSignedIn() && isParentOfStudent(schoolId, resource.data.studentId));
-        allow write: if hasPermission(schoolId, 'manageClasses');
+        allow create, delete: if hasPermission(schoolId, 'manageClasses');
+        allow update: if hasPermission(schoolId, 'manageClasses') &&
+          (!isArchivedRelativeToSchool(schoolId, resource.data.get('academicYear', '')) ||
+           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'endDate']));
       }
 
       match /academic_year_transitions/{transitionId} {
