@@ -634,6 +634,7 @@ export default function GradeEntryPage() {
               icon={BarChart2}
               title="Analyse de Classe"
               description="Sélectionnez une classe et une matière ci-dessus pour accéder au tableau de bord des notes et aux statistiques de performance."
+              compact
             />
           </div>
         )}
