@@ -3,7 +3,8 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MoreHorizontal, Edit, UserX, UserCheck, Printer, Eye, CreditCard, FileText, CalendarDays, FileSignature, Cake, VenetianMask, Camera, Lock } from 'lucide-react';
+import { MoreHorizontal, Edit, UserX, UserCheck, Printer, Eye, CreditCard, FileText, CalendarDays, FileSignature, Cake, VenetianMask, Camera, Lock, Users, PlusCircle, Archive } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
 import Link from 'next/link';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -185,9 +186,12 @@ interface StudentsGridProps {
     actionType: 'active' | 'archived';
     /** IDs des élèves verrouillés (plan Essentiel après expiration de l'abonnement) : visibles mais non consultables/modifiables. */
     lockedStudentIds?: Set<string>;
+    canManageUsers?: boolean;
 }
 
-export const StudentsGrid = ({ students, isLoading, onEdit, onArchive, onRestore, actionType, lockedStudentIds }: StudentsGridProps) => {
+export const StudentsGrid = ({ students, isLoading, onEdit, onArchive, onRestore, actionType, lockedStudentIds, canManageUsers }: StudentsGridProps) => {
+    const router = useRouter();
+
     if (isLoading) {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -198,8 +202,25 @@ export const StudentsGrid = ({ students, isLoading, onEdit, onArchive, onRestore
 
     if (students.length === 0) {
         return (
-            <Card className="flex items-center justify-center h-48">
-                <p className="text-muted-foreground">Aucun élève trouvé pour les filtres actuels.</p>
+            <Card className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/40 dark:border-slate-800/40 rounded-2xl shadow-sm">
+                {actionType === 'active' ? (
+                    <EmptyState
+                        icon={Users}
+                        title="Aucun élève trouvé"
+                        description="Aucun élève ne correspond à la recherche ou aux filtres actuels. Ajustez-les, ou inscrivez un nouvel élève."
+                        action={canManageUsers ? {
+                            label: 'Inscrire un élève',
+                            icon: PlusCircle,
+                            onClick: () => router.push('/dashboard/inscription'),
+                        } : undefined}
+                    />
+                ) : (
+                    <EmptyState
+                        icon={Archive}
+                        title="Aucun élève archivé"
+                        description="Les élèves radiés ou transférés apparaîtront ici."
+                    />
+                )}
             </Card>
         );
     }

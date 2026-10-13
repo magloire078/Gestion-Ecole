@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MoreHorizontal, Eye, Printer, FileText, CalendarDays, FileSignature, CreditCard, Edit, UserX, UserCheck, Camera, Lock } from "lucide-react";
+import { MoreHorizontal, Eye, Printer, FileText, CalendarDays, FileSignature, CreditCard, Edit, UserX, UserCheck, Camera, Lock, Users, PlusCircle, Archive } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -232,7 +233,28 @@ export const StudentsTable = ({ students, isLoading, canManageUsers, actionType,
                             })
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={8} className="h-24 text-center">Aucun élève trouvé.</TableCell>
+                                <TableCell colSpan={8}>
+                                    {actionType === 'active' ? (
+                                        <EmptyState
+                                            icon={Users}
+                                            title="Aucun élève trouvé"
+                                            description="Aucun élève ne correspond à la recherche ou aux filtres actuels. Ajustez-les, ou inscrivez un nouvel élève."
+                                            action={canManageUsers ? {
+                                                label: 'Inscrire un élève',
+                                                icon: PlusCircle,
+                                                onClick: () => router.push('/dashboard/inscription'),
+                                            } : undefined}
+                                            compact
+                                        />
+                                    ) : (
+                                        <EmptyState
+                                            icon={Archive}
+                                            title="Aucun élève archivé"
+                                            description="Les élèves radiés ou transférés apparaîtront ici."
+                                            compact
+                                        />
+                                    )}
+                                </TableCell>
                             </TableRow>
                         )}
                     </TableBody>
