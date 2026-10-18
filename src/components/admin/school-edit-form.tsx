@@ -15,10 +15,12 @@ import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { school as School } from '@/lib/data-types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { COUNTRIES } from '@/lib/countries-data';
 
 const schoolEditSchema = z.object({
   name: z.string().min(2, "Le nom de l'école est requis."),
   status: z.enum(['active', 'suspended', 'deleted']),
+  country: z.string().min(1, "Le pays est requis."),
   'subscription.plan': z.enum(['Essentiel', 'Pro', 'Premium']),
   'subscription.status': z.enum(['active', 'trialing', 'past_due', 'canceled', 'expired']),
 });
@@ -40,6 +42,7 @@ export function SchoolEditForm({ school, onSave }: SchoolEditFormProps) {
     defaultValues: {
       name: school.name,
       status: school.status,
+      country: school.country || 'CI',
       'subscription.plan': school.subscription?.plan || 'Essentiel',
       'subscription.status': school.subscription?.status || 'trialing',
     },
@@ -52,6 +55,7 @@ export function SchoolEditForm({ school, onSave }: SchoolEditFormProps) {
       await updateDoc(schoolRef, {
         name: values.name,
         status: values.status,
+        country: values.country,
         'subscription.plan': values['subscription.plan'],
         'subscription.status': values['subscription.status'],
       });
@@ -86,6 +90,23 @@ export function SchoolEditForm({ school, onSave }: SchoolEditFormProps) {
                 <SelectItem value="deleted">Supprimé (Corbeille)</SelectItem>
               </SelectContent>
             </Select>
+            <FormMessage />
+          </FormItem>
+        )} />
+        <FormField control={form.control} name="country" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Pays (devise affichée)</FormLabel>
+            <Select onValueChange={field.onChange} value={field.value}>
+              <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+              <SelectContent>
+                {COUNTRIES.map(c => (
+                  <SelectItem key={c.code} value={c.code}>{c.flag} {c.name} ({c.currency})</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Change uniquement la devise affichée (tarifs, factures). Les cycles/niveaux déjà créés ne sont pas régénérés — à ajuster manuellement dans Structure Pédagogique si besoin.
+            </p>
             <FormMessage />
           </FormItem>
         )} />
